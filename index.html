@@ -156,9 +156,11 @@
             }
             firePattern(pid) {
                 if (pid === "fan_spread" && frameCount % 60 === 0) {
+                    // 修复：Boss 位于上方，子弹应向下发射 (180度)
                     for(let i=-4; i<=4; i++) enemyBullets.push(new Bullet(this.x, this.y + 40, 180 + i*15, "normal", 3, true));
                 }
                 if (pid === "homing_rain" && frameCount % 120 === 0) {
+                    // 追踪弹初始方向设为向下
                     let b = new Bullet(this.x, this.y, 180, "normal", 2, true); b.isHoming = true; enemyBullets.push(b);
                 }
                 if (pid === "spiral_vortex") {
@@ -175,8 +177,9 @@
                     }
                 }
                 if (pid === "mega_pierce" && frameCount % 200 === 0) {
-                    triggerShake(); // 蓄力预警
+                    triggerShake(); 
                     setTimeout(() => {
+                        // 蓄力贯穿弹，向下发射
                         for(let i=0; i<10; i++) enemyBullets.push(new Bullet(this.x, this.y, 180, "normal", 15, true));
                     }, 1000);
                 }
@@ -227,7 +230,17 @@
                         enemies.forEach((e, ei) => {
                             if (Math.abs(b.x - e.x) < 30 && Math.abs(b.y - e.y) < 30) {
                                 e.hp--; if(b.type.id !== "laser") group.splice(i, 1);
-                                if(e.hp <= 0) { createExplosion(e.x, e.y, "#f44"); score += 20; enemies.splice(ei, 1); if(Math.random()<0.2) powerups.push({x:e.x, y:e.y, info: gameConfig.powerups.types[Math.floor(Math.random()*3)]}); }
+                if(e.hp <= 0) { 
+                                    createExplosion(e.x, e.y, "#f44"); 
+                                    score += 20; 
+                                    enemies.splice(ei, 1); 
+                                    if(Math.random() < 0.3) {
+                                        // 修复：确保随机掉落所有类型的道具
+                                        const pTypes = gameConfig.powerups.types;
+                                        const randomType = pTypes[Math.floor(Math.random() * pTypes.length)];
+                                        powerups.push({ x: e.x, y: e.y, info: randomType });
+                                    }
+                                }
                             }
                         });
                         if (boss && Math.abs(b.x - boss.x) < 60 && Math.abs(b.y - boss.y) < 50) {
