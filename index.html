@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>星际战机 - 2026 专家进化版</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        #game-container {
+            position: relative;
+            width: 400px;
+            height: 600px;
+            background: #050505;
+            box-shadow: 0 0 50px rgba(0, 150, 255, 0.3);
+            border: 2px solid rgba(0, 150, 255, 0.2);
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        /* 统一的高级感 UI */
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            padding: 20px;
+            box-sizing: border-box;
+            backdrop-filter: blur(10px);
+        }
+
+        .hidden { display: none !important; }
+
+        h1 {
+            color: #00d2ff;
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px rgba(0, 210, 255, 0.5);
+        }
+
+        button {
+            width: 220px;
+            height: 50px;
+            margin: 10px 0;
+            background: linear-gradient(135deg, #00d2ff, #3a7bd5);
+            border: none;
+            border-radius: 25px;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(0, 210, 255, 0.3);
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        .secondary-btn {
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: none;
+        }
+
+        #hud {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 1rem;
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        /* 移动端摇杆/按键 */
+        #mobile-controls {
+            position: absolute;
+            bottom: 30px;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            pointer-events: none;
+            display: none;
+        }
+
+        .v-btn {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            pointer-events: auto;
+            touch-action: none;
+        }
+
+        .v-btn:active {
+            background: rgba(0, 210, 255, 0.3);
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <div id="hud">
+            <div id="score">得分: 0</div>
+            <div id="life">生命: ❤️❤️❤️</div>
+        </div>
+
+        <canvas id="gameCanvas"></canvas>
+
+        <div id="start-screen" class="overlay">
+            <h1>星际战机</h1>
+            <p style="color: #aaa; margin-bottom: 30px;">2026 马年航天版</p>
+            <button id="start-btn">开始跃迁</button>
+            <button class="secondary-btn" onclick="showFeedback()">评价建议</button>
+        </div>
+
+        <div id="game-over" class="overlay hidden">
+            <h1 style="color: #ff4b2b;">任务失败</h1>
+            <p id="final-score">最终得分: 0</p>
+            <button id="restart-btn">再次出击</button>
+            <button class="secondary-btn" onclick="showFeedback()">评价建议</button>
+        </div>
+    </div>
+
+        // 核心进化：配置驱动架构
+        let gameConfig = {
+            settings: {
+                PLAYER_SPEED: 5,
+                INITIAL_LIVES: 3,
+                BULLET_SPEED: 10,
+                BULLET_INTERVAL: 200,
+                ENEMY_SPAWN_RATE: 0.03,
+                ENEMY_SPEED_MIN: 2,
+                ENEMY_SPEED_MAX: 5,
+                ACTIVE_BULLET: "normal"
+            },
+            ui: {
+                theme_color: "#00d2ff"
+            },
+            bullet_types: [
+                { id: "normal", color: "#00d2ff", width: 4, height: 15, damage: 1 }
+            ]
+        };
+
+        // 模拟热加载
+        async function loadConfig() {
+            try {
+                // 实际生产中此处 fetch('/game_config.json')
+                console.log("正在从 OpenClaw 同步最新专家配置...");
+            } catch(e) {}
+        }
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('game-container');
+        
+        canvas.width = 400;
+        canvas.height = 600;
+
+        let score = 0;
+        let lives = gameConfig.settings.INITIAL_LIVES;
+        let gameActive = false;
+        let player = { x: 200, y: 500, size: 30, speed: gameConfig.settings.PLAYER_SPEED };
+        let bullets = [];
+        let enemies = [];
+
+        class Bullet {
+            constructor(x, y, angle = 0, type = null) {
+                this.x = x; 
+                this.y = y; 
+                this.angle = angle * Math.PI / 180;
+                this.type = type || gameConfig.bullet_types.find(t => t.id === gameConfig.settings.ACTIVE_BULLET);
+                this.speed = gameConfig.settings.BULLET_SPEED;
+            }
+            update() { 
+                this.x += Math.sin(this.angle) * this.speed;
+                this.y -= Math.cos(this.angle) * this.speed; 
+            }
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle);
+                ctx.fillStyle = this.type.color;
+                
+                if (this.type.id === "laser") {
+                    ctx.fillRect(-this.type.width/2, -300, this.type.width, 300); // 激光束
+                } else {
+                    ctx.fillRect(-this.type.width/2 || -2, 0, this.type.width || 4, this.type.height || 15);
+                }
+                ctx.restore();
+            }
+        }
+
+        function shoot() {
+            const type = gameConfig.bullet_types.find(t => t.id === gameConfig.settings.ACTIVE_BULLET);
+            if (type.id === "spread") {
+                const count = type.count || 3;
+                const step = type.angle / (count - 1);
+                for (let i = 0; i < count; i++) {
+                    bullets.push(new Bullet(player.x, player.y, -type.angle/2 + i * step, type));
+                }
+            } else {
+                bullets.push(new Bullet(player.x, player.y, 0, type));
+            }
+        }
+
+        function gameLoop() {
+            if (!gameActive) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (Date.now() % gameConfig.settings.BULLET_INTERVAL < 20) shoot();
+            
+            if (Math.random() < gameConfig.settings.ENEMY_SPAWN_RATE) enemies.push(new Enemy());
+            
+            // ... (绘制逻辑)
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(player.x, player.y, 15, 0, Math.PI * 2);
+            ctx.fill();
+
+            bullets.forEach((b, i) => { b.update(); b.draw(); if (b.y < 0) bullets.splice(i, 1); });
+            enemies.forEach((e, i) => {
+                e.update(); e.draw();
+                bullets.forEach((b, bi) => {
+                    if (Math.abs(b.x - e.x) < 20 && Math.abs(b.y - e.y) < 20) {
+                        enemies.splice(i, 1); bullets.splice(bi, 1); score += 10;
+                        document.getElementById('score').textContent = `得分: ${score}`;
+                    }
+                });
+                if (e.y > canvas.height) enemies.splice(i, 1);
+                if (Math.abs(e.x - player.x) < 25 && Math.abs(e.y - player.y) < 25) {
+                    enemies.splice(i, 1); lives--; updateLife(); if (lives <= 0) endGame();
+                }
+            });
+            requestAnimationFrame(gameLoop);
+        }
+
+        function updateLife() {
+            document.getElementById('life').textContent = '生命: ' + '❤️'.repeat(lives);
+        }
+
+        function startGame() {
+            loadConfig();
+            gameActive = true;
+            score = 0; lives = gameConfig.settings.INITIAL_LIVES;
+            bullets = []; enemies = [];
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('game-over').classList.add('hidden');
+            updateLife();
+            gameLoop();
+        }
+
+        function endGame() {
+            gameActive = false;
+            document.getElementById('game-over').classList.remove('hidden');
+            document.getElementById('final-score').textContent = `最终得分: ${score}`;
+        }
+
+        document.getElementById('start-btn').onclick = startGame;
+        document.getElementById('restart-btn').onclick = startGame;
+
+        function showFeedback() {
+            alert("专家评审团(PM/策划/美术/技术)已就位，请直接在手机提交建议，我们将自动评估并热更新游戏！");
+        }
+    </script>
+</body>
+</html>

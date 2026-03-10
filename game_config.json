@@ -1,0 +1,32 @@
+{
+    "version": "1.0.0",
+    "settings": {
+        "PLAYER_SPEED": 5,
+        "INITIAL_LIVES": 3,
+        "BULLET_SPEED": 10,
+        "BULLET_INTERVAL": 200,
+        "ENEMY_SPAWN_RATE": 0.03,
+        "ENEMY_SPEED_MIN": 2,
+        "ENEMY_SPEED_MAX": 5
+    },
+    "ui": {
+        "theme_color": "#00d2ff",
+        "bg_color": "#050505",
+        "font_family": "Segoe UI",
+        "btn_gradient": "linear-gradient(135deg, #00d2ff, #3a7bd5)"
+    },
+    "bullet_types": [
+        {
+            "id": "normal",
+            "name": "标准弹",
+            "color": "#00d2ff",
+            "width": 4,
+            "height": 15,
+            "damage": 1
+        }
+    ],
+    "enemy_behaviors": {
+        "move_pattern": "straight",
+        "spawn_logic": "random_top"
+    }
+}
