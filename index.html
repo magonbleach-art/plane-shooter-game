@@ -176,9 +176,19 @@
         // 模拟热加载
         async function loadConfig() {
             try {
-                // 实际生产中此处 fetch('/game_config.json')
-                console.log("正在从 OpenClaw 同步最新专家配置...");
-            } catch(e) {}
+                const response = await fetch('game_config.json?t=' + Date.now());
+                if (response.ok) {
+                    const newConfig = await response.json();
+                    // 深度合并配置，防止丢失前端特有逻辑
+                    gameConfig.settings = { ...gameConfig.settings, ...newConfig.settings };
+                    gameConfig.ui = { ...gameConfig.ui, ...newConfig.ui };
+                    gameConfig.bullet_types = newConfig.bullet_types || gameConfig.bullet_types;
+                    gameConfig.version = newConfig.version;
+                    console.log("✅ 已同步最新专家配置: v" + gameConfig.version);
+                }
+            } catch(e) {
+                console.warn("无法连接到配置服务器，使用本地默认配置");
+            }
         }
 
         const canvas = document.getElementById('gameCanvas');
@@ -189,18 +199,42 @@
         canvas.height = 600;
 
         let score = 0;
-        let lives = gameConfig.settings.INITIAL_LIVES;
+        let lives = 3;
         let gameActive = false;
-        let player = { x: 200, y: 500, size: 30, speed: gameConfig.settings.PLAYER_SPEED };
+        let player = { x: 200, y: 500, size: 30, speed: 5 };
         let bullets = [];
         let enemies = [];
+        let stars = [];
+
+        // 初始化背景星空
+        for(let i=0; i<50; i++) {
+            stars.push({ x: Math.random()*400, y: Math.random()*600, s: Math.random()*2 });
+        }
+
+        // 键盘监听
+        const keys = {};
+        window.addEventListener('keydown', e => keys[e.code] = true);
+        window.addEventListener('keyup', e => keys[e.code] = false);
+
+        // 移动端拖拽支持
+        container.addEventListener('touchstart', e => {
+            const touch = e.touches[0];
+            const rect = container.getBoundingClientRect();
+            player.targetX = touch.clientX - rect.left;
+        });
+        container.addEventListener('touchmove', e => {
+            const touch = e.touches[0];
+            const rect = container.getBoundingClientRect();
+            player.targetX = touch.clientX - rect.left;
+            e.preventDefault();
+        }, { passive: false });
 
         class Bullet {
             constructor(x, y, angle = 0, type = null) {
                 this.x = x; 
                 this.y = y; 
                 this.angle = angle * Math.PI / 180;
-                this.type = type || gameConfig.bullet_types.find(t => t.id === gameConfig.settings.ACTIVE_BULLET);
+                this.type = type || gameConfig.bullet_types.find(t => t.id === gameConfig.settings.ACTIVE_BULLET) || gameConfig.bullet_types[0];
                 this.speed = gameConfig.settings.BULLET_SPEED;
             }
             update() { 
@@ -212,18 +246,42 @@
                 ctx.translate(this.x, this.y);
                 ctx.rotate(this.angle);
                 ctx.fillStyle = this.type.color;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = this.type.color;
                 
                 if (this.type.id === "laser") {
-                    ctx.fillRect(-this.type.width/2, -300, this.type.width, 300); // 激光束
+                    ctx.fillRect(-this.type.width/2, -600, this.type.width, 600); // 激光束贯穿全屏
                 } else {
-                    ctx.fillRect(-this.type.width/2 || -2, 0, this.type.width || 4, this.type.height || 15);
+                    ctx.fillRect(-(this.type.width || 4)/2, 0, this.type.width || 4, this.type.height || 15);
                 }
                 ctx.restore();
             }
         }
 
+        class Enemy {
+            constructor() {
+                this.x = Math.random() * (canvas.width - 40) + 20;
+                this.y = -50;
+                this.speed = gameConfig.settings.ENEMY_SPEED_MIN + Math.random() * (gameConfig.settings.ENEMY_SPEED_MAX - gameConfig.settings.ENEMY_SPEED_MIN);
+            }
+            update() { this.y += this.speed; }
+            draw() {
+                ctx.save();
+                ctx.fillStyle = '#ff4b2b';
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#ff4b2b';
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y);
+                ctx.lineTo(this.x - 15, this.y - 30);
+                ctx.lineTo(this.x + 15, this.y - 30);
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
         function shoot() {
-            const type = gameConfig.bullet_types.find(t => t.id === gameConfig.settings.ACTIVE_BULLET);
+            const type = gameConfig.bullet_types.find(t => t.id === gameConfig.settings.ACTIVE_BULLET) || gameConfig.bullet_types[0];
             if (type.id === "spread") {
                 const count = type.count || 3;
                 const step = type.angle / (count - 1);
@@ -239,30 +297,80 @@
             if (!gameActive) return;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+            // 绘制星空
+            ctx.fillStyle = '#fff';
+            stars.forEach(s => {
+                s.y += 1;
+                if(s.y > 600) s.y = 0;
+                ctx.fillRect(s.x, s.y, s.s, s.s);
+            });
+
+            // 玩家移动逻辑
+            if (keys['ArrowLeft'] && player.x > 20) player.x -= player.speed;
+            if (keys['ArrowRight'] && player.x < canvas.width - 20) player.x += player.speed;
+            if (player.targetX !== undefined) {
+                player.x += (player.targetX - player.x) * 0.2;
+            }
+
             if (Date.now() % gameConfig.settings.BULLET_INTERVAL < 20) shoot();
             
             if (Math.random() < gameConfig.settings.ENEMY_SPAWN_RATE) enemies.push(new Enemy());
             
-            // ... (绘制逻辑)
+            // 绘制玩家 (马里奥航天员)
+            ctx.save();
             ctx.fillStyle = '#fff';
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = gameConfig.ui.theme_color;
             ctx.beginPath();
             ctx.arc(player.x, player.y, 15, 0, Math.PI * 2);
             ctx.fill();
+            ctx.fillStyle = '#f00';
+            ctx.fillRect(player.x - 10, player.y - 20, 20, 8); // 红色航天帽
+            ctx.restore();
 
-            bullets.forEach((b, i) => { b.update(); b.draw(); if (b.y < 0) bullets.splice(i, 1); });
-            enemies.forEach((e, i) => {
-                e.update(); e.draw();
-                bullets.forEach((b, bi) => {
-                    if (Math.abs(b.x - e.x) < 20 && Math.abs(b.y - e.y) < 20) {
-                        enemies.splice(i, 1); bullets.splice(bi, 1); score += 10;
-                        document.getElementById('score').textContent = `得分: ${score}`;
+            // 子弹更新与绘制 (倒序安全删除)
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                bullets[i].update();
+                bullets[i].draw();
+                if (bullets[i].y < -600 || bullets[i].y > 1200) bullets.splice(i, 1);
+            }
+
+            // 敌人更新与绘制 (双重循环碰撞检测，倒序安全删除)
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                const e = enemies[i];
+                e.update();
+                e.draw();
+
+                // 检测子弹碰撞
+                let hit = false;
+                for (let j = bullets.length - 1; j >= 0; j--) {
+                    const b = bullets[j];
+                    if (Math.abs(b.x - e.x) < 25 && b.y < e.y && b.y > e.y - 40) {
+                        if (b.type.id !== "laser") bullets.splice(j, 1); // 激光不消失
+                        hit = true;
+                        break;
                     }
-                });
-                if (e.y > canvas.height) enemies.splice(i, 1);
-                if (Math.abs(e.x - player.x) < 25 && Math.abs(e.y - player.y) < 25) {
-                    enemies.splice(i, 1); lives--; updateLife(); if (lives <= 0) endGame();
                 }
-            });
+
+                if (hit) {
+                    enemies.splice(i, 1);
+                    score += 10;
+                    document.getElementById('score').textContent = `得分: ${score}`;
+                    continue;
+                }
+
+                // 检测玩家碰撞
+                if (Math.abs(e.x - player.x) < 25 && Math.abs(e.y - player.y) < 25) {
+                    enemies.splice(i, 1);
+                    lives--;
+                    updateLife();
+                    if (lives <= 0) endGame();
+                    continue;
+                }
+
+                if (e.y > canvas.height + 50) enemies.splice(i, 1);
+            }
+
             requestAnimationFrame(gameLoop);
         }
 
