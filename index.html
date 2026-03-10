@@ -3,392 +3,325 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>星际战机 - 2026 专家进化正式版</title>
+    <title>星际战机 2.0 - 专家重制正式版</title>
     <style>
         body {
-            margin: 0;
-            padding: 0;
-            background: #000;
-            color: #fff;
+            margin: 0; padding: 0; background: #000; color: #fff;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
+            overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh;
         }
-
         #game-container {
-            position: relative;
-            width: 400px;
-            height: 600px;
-            background: #050505;
-            box-shadow: 0 0 50px rgba(0, 150, 255, 0.3);
-            border: 2px solid rgba(0, 150, 255, 0.2);
-            overflow: hidden;
+            position: relative; width: 400px; height: 600px;
+            background: #050505; box-shadow: 0 0 50px rgba(0, 150, 255, 0.3);
+            border: 2px solid rgba(0, 150, 255, 0.2); overflow: hidden;
         }
-
-        canvas {
-            display: block;
-        }
-
-        /* 统一的高级感 UI */
+        canvas { display: block; }
         .overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.9);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 100;
-            padding: 20px;
-            box-sizing: border-box;
-            backdrop-filter: blur(10px);
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.9); display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 100;
+            padding: 20px; box-sizing: border-box; backdrop-filter: blur(10px);
         }
-
         .hidden { display: none !important; }
-
-        h1 {
-            color: #00d2ff;
-            font-size: 2.5rem;
-            margin-bottom: 20px;
-            text-shadow: 0 0 10px rgba(0, 210, 255, 0.5);
-        }
-
+        h1 { color: #00d2ff; font-size: 2.5rem; margin-bottom: 10px; text-shadow: 0 0 10px rgba(0, 210, 255, 0.5); }
+        .tutorial { color: #aaa; font-size: 0.9rem; line-height: 1.6; text-align: center; margin-bottom: 20px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; }
+        .tutorial b { color: #00d2ff; }
         button {
-            width: 220px;
-            height: 50px;
-            margin: 10px 0;
+            width: 220px; height: 50px; margin: 10px 0;
             background: linear-gradient(135deg, #00d2ff, #3a7bd5);
-            border: none;
-            border-radius: 25px;
-            color: white;
-            font-size: 1.1rem;
-            font-weight: bold;
-            cursor: pointer;
+            border: none; border-radius: 25px; color: white;
+            font-size: 1.1rem; font-weight: bold; cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
             box-shadow: 0 4px 15px rgba(0, 210, 255, 0.3);
         }
-
-        button:active {
-            transform: scale(0.95);
-        }
-
-        .secondary-btn {
-            background: rgba(255, 255, 255, 0.1);
-            box-shadow: none;
-        }
-
+        button:active { transform: scale(0.95); }
         #hud {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            right: 10px;
-            display: flex;
-            justify-content: space-between;
-            font-size: 1rem;
-            pointer-events: none;
-            z-index: 50;
+            position: absolute; top: 10px; left: 10px; right: 10px;
+            display: flex; justify-content: space-between; font-size: 1rem;
+            pointer-events: none; z-index: 50; text-shadow: 1px 1px 2px #000;
         }
-
-        /* 移动端摇杆/按键 */
-        #mobile-controls {
-            position: absolute;
-            bottom: 30px;
-            left: 0;
-            width: 100%;
-            display: flex;
-            justify-content: space-around;
-            pointer-events: none;
-            display: none;
+        #boss-hp-container {
+            position: absolute; top: 40px; left: 50px; right: 50px; height: 10px;
+            background: rgba(255,0,0,0.2); border: 1px solid rgba(255,0,0,0.5);
+            display: none; z-index: 50;
         }
-
-        .v-btn {
-            width: 80px;
-            height: 80px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 24px;
-            pointer-events: auto;
-            touch-action: none;
-        }
-
-        .v-btn:active {
-            background: rgba(0, 210, 255, 0.3);
-            transform: scale(1.1);
-        }
+        #boss-hp-fill { width: 100%; height: 100%; background: #f00; transition: width 0.2s; }
     </style>
 </head>
 <body>
-
     <div id="game-container">
         <div id="hud">
             <div id="score">得分: 0</div>
+            <div id="level-info">第 1 关</div>
             <div id="life">生命: ❤️❤️❤️</div>
         </div>
-
+        <div id="boss-hp-container"><div id="boss-hp-fill"></div></div>
         <canvas id="gameCanvas"></canvas>
-
         <div id="start-screen" class="overlay">
-            <h1>星际战机</h1>
-            <p style="color: #aaa; margin-bottom: 30px;">2026 马年航天版</p>
+            <h1>星际战机 2.0</h1>
+            <div class="tutorial">
+                <b>操作说明</b><br>
+                1. 拖拽战机移动，<b>全自动射击</b><br>
+                2. 击败精英敌机可能掉落 <b>[S]散弹</b> 或 <b>[L]激光</b><br>
+                3. 每关最后都有强大的 <b>BOSS</b> 守卫
+            </div>
             <button id="start-btn">开始跃迁</button>
-            <button class="secondary-btn" onclick="showFeedback()">评价建议</button>
         </div>
-
         <div id="game-over" class="overlay hidden">
             <h1 style="color: #ff4b2b;">任务失败</h1>
             <p id="final-score">最终得分: 0</p>
             <button id="restart-btn">再次出击</button>
-            <button class="secondary-btn" onclick="showFeedback()">评价建议</button>
+        </div>
+        <div id="level-clear" class="overlay hidden">
+            <h1 style="color: #00ff00;">关卡胜利!</h1>
+            <p id="level-score">得分: 0</p>
+            <button id="next-level-btn">进入下一关</button>
         </div>
     </div>
 
     <script>
-        // 核心进化：配置驱动架构
         let gameConfig = {
-            settings: {
-                PLAYER_SPEED: 5,
-                INITIAL_LIVES: 3,
-                BULLET_SPEED: 10,
-                BULLET_INTERVAL: 200,
-                ENEMY_SPAWN_RATE: 0.03,
-                ENEMY_SPEED_MIN: 2,
-                ENEMY_SPEED_MAX: 5,
-                ACTIVE_BULLET: "normal"
-            },
-            ui: {
-                theme_color: "#00d2ff"
-            },
+            settings: { PLAYER_SPEED: 6, INITIAL_LIVES: 3, BULLET_SPEED: 12, ACTIVE_BULLET: "normal" },
+            ui: { theme_color: "#00d2ff" },
             bullet_types: [
-                { id: "normal", color: "#00d2ff", width: 4, height: 15, damage: 1 }
-            ]
+                { id: "normal", color: "#00d2ff", width: 4, height: 15, damage: 1 },
+                { id: "spread", color: "#ffaa00", width: 6, height: 12, damage: 0.8, count: 3, angle: 30 },
+                { id: "laser", color: "#ff00ff", width: 8, height: 600, damage: 0.2 }
+            ],
+            levels: [{ id: 1, waves: [] }],
+            powerups: { drop_rate: 0.3, types: [] }
         };
 
-        // 模拟热加载
         async function loadConfig() {
             try {
                 const response = await fetch('game_config.json?t=' + Date.now());
                 if (response.ok) {
                     const newConfig = await response.json();
-                    // 深度合并配置，防止丢失前端特有逻辑
-                    gameConfig.settings = { ...gameConfig.settings, ...newConfig.settings };
-                    gameConfig.ui = { ...gameConfig.ui, ...newConfig.ui };
-                    gameConfig.bullet_types = newConfig.bullet_types || gameConfig.bullet_types;
-                    gameConfig.version = newConfig.version;
-                    console.log("✅ 已同步最新专家配置: v" + gameConfig.version);
+                    gameConfig = { ...gameConfig, ...newConfig };
                 }
-            } catch(e) {
-                console.warn("无法连接到配置服务器，使用本地默认配置");
-            }
+            } catch(e) { console.warn("Fallback to local config"); }
         }
 
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const container = document.getElementById('game-container');
-        
-        canvas.width = 400;
-        canvas.height = 600;
+        canvas.width = 400; canvas.height = 600;
 
-        let score = 0;
-        let lives = 3;
-        let gameActive = false;
-        let player = { x: 200, y: 500, size: 30, speed: 5 };
-        let bullets = [];
-        let enemies = [];
-        let stars = [];
+        let score = 0, lives = 3, gameActive = false, currentLevelIdx = 0;
+        let player = { x: 200, y: 500, size: 30, speed: 6, bulletType: "normal" };
+        let bullets = [], enemies = [], stars = [], powerups = [], boss = null;
+        let frameCount = 0;
 
-        // 初始化背景星空
-        for(let i=0; i<50; i++) {
-            stars.push({ x: Math.random()*400, y: Math.random()*600, s: Math.random()*2 });
-        }
+        for(let i=0; i<50; i++) stars.push({ x: Math.random()*400, y: Math.random()*600, s: Math.random()*2 });
 
-        // 键盘监听
-        const keys = {};
-        window.addEventListener('keydown', e => keys[e.code] = true);
-        window.addEventListener('keyup', e => keys[e.code] = false);
-
-        // 移动端拖拽支持
-        container.addEventListener('touchstart', e => {
-            const touch = e.touches[0];
-            const rect = container.getBoundingClientRect();
-            player.targetX = touch.clientX - rect.left;
-        });
+        // 玩家移动逻辑
         container.addEventListener('touchmove', e => {
-            const touch = e.touches[0];
             const rect = container.getBoundingClientRect();
-            player.targetX = touch.clientX - rect.left;
+            player.x = e.touches[0].clientX - rect.left;
             e.preventDefault();
         }, { passive: false });
+        window.addEventListener('mousemove', e => {
+            const rect = container.getBoundingClientRect();
+            player.x = e.clientX - rect.left;
+        });
 
         class Bullet {
-            constructor(x, y, angle = 0, type = null) {
-                this.x = x; 
-                this.y = y; 
-                this.angle = angle * Math.PI / 180;
-                this.type = type || gameConfig.bullet_types.find(t => t.id === gameConfig.settings.ACTIVE_BULLET) || gameConfig.bullet_types[0];
+            constructor(x, y, angle = 0, typeId = "normal") {
+                this.x = x; this.y = y; this.angle = angle * Math.PI / 180;
+                this.type = gameConfig.bullet_types.find(t => t.id === typeId) || gameConfig.bullet_types[0];
                 this.speed = gameConfig.settings.BULLET_SPEED;
             }
-            update() { 
-                this.x += Math.sin(this.angle) * this.speed;
-                this.y -= Math.cos(this.angle) * this.speed; 
-            }
+            update() { this.x += Math.sin(this.angle) * this.speed; this.y -= Math.cos(this.angle) * this.speed; }
             draw() {
                 ctx.save();
-                ctx.translate(this.x, this.y);
-                ctx.rotate(this.angle);
-                ctx.fillStyle = this.type.color;
-                ctx.shadowBlur = 10;
-                ctx.shadowColor = this.type.color;
-                
-                if (this.type.id === "laser") {
-                    ctx.fillRect(-this.type.width/2, -600, this.type.width, 600); // 激光束贯穿全屏
-                } else {
-                    ctx.fillRect(-(this.type.width || 4)/2, 0, this.type.width || 4, this.type.height || 15);
-                }
+                ctx.translate(this.x, this.y); ctx.rotate(this.angle);
+                ctx.fillStyle = this.type.color; ctx.shadowBlur = 10; ctx.shadowColor = this.type.color;
+                if (this.type.id === "laser") ctx.fillRect(-this.type.width/2, -600, this.type.width, 600);
+                else ctx.fillRect(-this.type.width/2, 0, this.type.width, this.type.height);
                 ctx.restore();
             }
         }
 
         class Enemy {
-            constructor() {
-                this.x = Math.random() * (canvas.width - 40) + 20;
-                this.y = -50;
-                this.speed = gameConfig.settings.ENEMY_SPEED_MIN + Math.random() * (gameConfig.settings.ENEMY_SPEED_MAX - gameConfig.settings.ENEMY_SPEED_MIN);
+            constructor(type = "normal") {
+                this.x = Math.random() * (canvas.width - 40) + 20; this.y = -50;
+                this.type = type; this.hp = (type === "elite") ? 3 : 1;
+                this.speed = (type === "fast") ? 5 : 2;
             }
             update() { this.y += this.speed; }
             draw() {
                 ctx.save();
-                ctx.fillStyle = '#ff4b2b';
-                ctx.shadowBlur = 15;
-                ctx.shadowColor = '#ff4b2b';
+                ctx.fillStyle = (this.type === "elite") ? "#ffaa00" : "#ff4b2b";
+                ctx.shadowBlur = 15; ctx.shadowColor = ctx.fillStyle;
                 ctx.beginPath();
-                ctx.moveTo(this.x, this.y);
-                ctx.lineTo(this.x - 15, this.y - 30);
-                ctx.lineTo(this.x + 15, this.y - 30);
-                ctx.closePath();
-                ctx.fill();
+                if (this.type === "elite") { // 菱形精英怪
+                    ctx.moveTo(this.x, this.y); ctx.lineTo(this.x-20, this.y-20); ctx.lineTo(this.x, this.y-40); ctx.lineTo(this.x+20, this.y-20);
+                } else { // 三角形普通怪
+                    ctx.moveTo(this.x, this.y); ctx.lineTo(this.x-15, this.y-30); ctx.lineTo(this.x+15, this.y-30);
+                }
+                ctx.closePath(); ctx.fill(); ctx.restore();
+            }
+        }
+
+        class PowerUp {
+            constructor(x, y) {
+                const types = gameConfig.powerups.types;
+                this.info = types[Math.floor(Math.random() * types.length)];
+                this.x = x; this.y = y; this.size = 20; this.speed = 2;
+            }
+            update() { this.y += this.speed; }
+            draw() {
+                ctx.save();
+                ctx.fillStyle = this.info.color; ctx.beginPath(); ctx.arc(this.x, this.y, 15, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = "#fff"; ctx.font = "bold 12px Arial"; ctx.textAlign = "center";
+                ctx.fillText(this.info.label, this.x, this.y + 5);
+                ctx.restore();
+            }
+        }
+
+        class Boss {
+            constructor(config) {
+                this.name = config.name; this.maxHp = config.hp; this.hp = config.hp;
+                this.x = canvas.width / 2; this.y = -100; this.size = config.size;
+                this.targetY = 120; this.speed = 1; this.attackPattern = config.attack_pattern;
+            }
+            update() {
+                if (this.y < this.targetY) this.y += this.speed;
+                else this.x += Math.sin(frameCount * 0.02) * 2;
+            }
+            draw() {
+                ctx.save();
+                ctx.fillStyle = "#ff4b2b"; ctx.shadowBlur = 30; ctx.shadowColor = "#ff4b2b";
+                ctx.beginPath(); // 绘制一个复杂的 Boss 形状
+                ctx.moveTo(this.x, this.y + 40); ctx.lineTo(this.x - 50, this.y - 20); ctx.lineTo(this.x - 30, this.y - 50);
+                ctx.lineTo(this.x + 30, this.y - 50); ctx.lineTo(this.x + 50, this.y - 20);
+                ctx.closePath(); ctx.fill();
                 ctx.restore();
             }
         }
 
         function shoot() {
-            const type = gameConfig.bullet_types.find(t => t.id === gameConfig.settings.ACTIVE_BULLET) || gameConfig.bullet_types[0];
+            const type = gameConfig.bullet_types.find(t => t.id === player.bulletType) || gameConfig.bullet_types[0];
             if (type.id === "spread") {
-                const count = type.count || 3;
-                const step = type.angle / (count - 1);
-                for (let i = 0; i < count; i++) {
-                    bullets.push(new Bullet(player.x, player.y, -type.angle/2 + i * step, type));
-                }
-            } else {
-                bullets.push(new Bullet(player.x, player.y, 0, type));
-            }
+                const step = type.angle / (type.count - 1);
+                for (let i = 0; i < type.count; i++) bullets.push(new Bullet(player.x, player.y, -type.angle/2 + i * step, "spread"));
+            } else bullets.push(new Bullet(player.x, player.y, 0, player.bulletType));
         }
 
         function gameLoop() {
             if (!gameActive) return;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+            frameCount++;
 
-            // 绘制星空
+            // 背景星空
             ctx.fillStyle = '#fff';
-            stars.forEach(s => {
-                s.y += 1;
-                if(s.y > 600) s.y = 0;
-                ctx.fillRect(s.x, s.y, s.s, s.s);
-            });
+            stars.forEach(s => { s.y += 1; if(s.y > 600) s.y = 0; ctx.fillRect(s.x, s.y, s.s, s.s); });
 
-            // 玩家移动逻辑
-            if (keys['ArrowLeft'] && player.x > 20) player.x -= player.speed;
-            if (keys['ArrowRight'] && player.x < canvas.width - 20) player.x += player.speed;
-            if (player.targetX !== undefined) {
-                player.x += (player.targetX - player.x) * 0.2;
-            }
-
-            if (Date.now() % gameConfig.settings.BULLET_INTERVAL < 20) shoot();
-            
-            if (Math.random() < gameConfig.settings.ENEMY_SPAWN_RATE) enemies.push(new Enemy());
-            
-            // 绘制玩家 (马里奥航天员)
+            // 玩家绘制 (酷炫渐变版)
             ctx.save();
-            ctx.fillStyle = '#fff';
-            ctx.shadowBlur = 20;
-            ctx.shadowColor = gameConfig.ui.theme_color;
-            ctx.beginPath();
-            ctx.arc(player.x, player.y, 15, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = '#f00';
-            ctx.fillRect(player.x - 10, player.y - 20, 20, 8); // 红色航天帽
+            let grad = ctx.createLinearGradient(player.x-20, player.y, player.x+20, player.y);
+            grad.addColorStop(0, '#00d2ff'); grad.addColorStop(0.5, '#fff'); grad.addColorStop(1, '#00d2ff');
+            ctx.fillStyle = grad; ctx.shadowBlur = 20; ctx.shadowColor = '#00d2ff';
+            ctx.beginPath(); ctx.moveTo(player.x, player.y - 25); ctx.lineTo(player.x - 20, player.y + 15); ctx.lineTo(player.x + 20, player.y + 15); ctx.closePath(); ctx.fill();
+            // 喷气效果
+            ctx.fillStyle = (frameCount % 4 < 2) ? "#ffaa00" : "#ff4b2b";
+            ctx.fillRect(player.x - 5, player.y + 15, 10, 10 + Math.random()*10);
             ctx.restore();
 
-            // 子弹更新与绘制 (倒序安全删除)
+            // 关卡波次逻辑
+            const level = gameConfig.levels[currentLevelIdx];
+            level.waves.forEach(w => {
+                if (frameCount === w.time * 60) {
+                    for(let i=0; i<w.count; i++) setTimeout(() => enemies.push(new Enemy(w.enemies[0])), i * 500);
+                }
+            });
+            // 出现 Boss
+            if (frameCount === 40 * 60 && !boss) {
+                boss = new Boss(level.boss);
+                document.getElementById('boss-hp-container').style.display = 'block';
+            }
+
+            if (frameCount % 12 === 0) shoot();
+
+            // 子弹处理
             for (let i = bullets.length - 1; i >= 0; i--) {
-                bullets[i].update();
-                bullets[i].draw();
+                bullets[i].update(); bullets[i].draw();
                 if (bullets[i].y < -600 || bullets[i].y > 1200) bullets.splice(i, 1);
             }
 
-            // 敌人更新与绘制 (双重循环碰撞检测，倒序安全删除)
-            for (let i = enemies.length - 1; i >= 0; i--) {
-                const e = enemies[i];
-                e.update();
-                e.draw();
+            // 道具处理
+            for (let i = powerups.length - 1; i >= 0; i--) {
+                powerups[i].update(); powerups[i].draw();
+                if (Math.abs(powerups[i].x - player.x) < 30 && Math.abs(powerups[i].y - player.y) < 30) {
+                    const p = powerups[i].info;
+                    if (p.target === "life") { lives = Math.min(3, lives + 1); updateLife(); }
+                    else { player.bulletType = p.target; setTimeout(() => player.bulletType = "normal", 8000); }
+                    powerups.splice(i, 1); continue;
+                }
+                if (powerups[i].y > 600) powerups.splice(i, 1);
+            }
 
-                // 检测子弹碰撞
+            // 敌人处理
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                const e = enemies[i]; e.update(); e.draw();
                 let hit = false;
                 for (let j = bullets.length - 1; j >= 0; j--) {
                     const b = bullets[j];
                     if (Math.abs(b.x - e.x) < 25 && b.y < e.y && b.y > e.y - 40) {
-                        if (b.type.id !== "laser") bullets.splice(j, 1); // 激光不消失
-                        hit = true;
+                        if (b.type.id !== "laser") bullets.splice(j, 1);
+                        e.hp -= b.type.damage;
+                        if (e.hp <= 0) hit = true;
                         break;
                     }
                 }
-
                 if (hit) {
-                    enemies.splice(i, 1);
-                    score += 10;
+                    if (Math.random() < gameConfig.powerups.drop_rate) powerups.push(new PowerUp(e.x, e.y));
+                    enemies.splice(i, 1); score += 10;
                     document.getElementById('score').textContent = `得分: ${score}`;
                     continue;
                 }
-
-                // 检测玩家碰撞
                 if (Math.abs(e.x - player.x) < 25 && Math.abs(e.y - player.y) < 25) {
-                    enemies.splice(i, 1);
-                    lives--;
-                    updateLife();
-                    if (lives <= 0) endGame();
-                    continue;
+                    enemies.splice(i, 1); lives--; updateLife();
+                    if (lives <= 0) endGame(); continue;
                 }
+                if (e.y > 600) enemies.splice(i, 1);
+            }
 
-                if (e.y > canvas.height + 50) enemies.splice(i, 1);
+            // Boss 处理
+            if (boss) {
+                boss.update(); boss.draw();
+                document.getElementById('boss-hp-fill').style.width = (boss.hp / boss.maxHp * 100) + '%';
+                bullets.forEach((b, bi) => {
+                    if (Math.abs(b.x - boss.x) < boss.size/2 && b.y < boss.y + 40 && b.y > boss.y - 40) {
+                        boss.hp -= b.type.damage; bullets.splice(bi, 1);
+                        if (boss.hp <= 0) {
+                            score += 500; boss = null;
+                            document.getElementById('boss-hp-container').style.display = 'none';
+                            levelClear();
+                        }
+                    }
+                });
             }
 
             requestAnimationFrame(gameLoop);
         }
 
-        function updateLife() {
-            document.getElementById('life').textContent = '生命: ' + '❤️'.repeat(lives);
-        }
-
+        function updateLife() { document.getElementById('life').textContent = '生命: ' + '❤️'.repeat(lives); }
         function startGame() {
-            loadConfig();
-            gameActive = true;
-            score = 0; lives = gameConfig.settings.INITIAL_LIVES;
-            bullets = []; enemies = [];
-            document.getElementById('start-screen').classList.add('hidden');
-            document.getElementById('game-over').classList.add('hidden');
-            updateLife();
-            gameLoop();
+            loadConfig().then(() => {
+                gameActive = true; score = 0; lives = 3; frameCount = 0; currentLevelIdx = 0;
+                bullets = []; enemies = []; powerups = []; boss = null;
+                document.getElementById('start-screen').classList.add('hidden');
+                document.getElementById('game-over').classList.add('hidden');
+                document.getElementById('level-clear').classList.add('hidden');
+                updateLife(); gameLoop();
+            });
         }
-
+        function levelClear() {
+            gameActive = false;
+            document.getElementById('level-clear').classList.remove('hidden');
+            document.getElementById('level-score').textContent = `得分: ${score}`;
+        }
         function endGame() {
             gameActive = false;
             document.getElementById('game-over').classList.remove('hidden');
@@ -397,10 +330,7 @@
 
         document.getElementById('start-btn').onclick = startGame;
         document.getElementById('restart-btn').onclick = startGame;
-
-        function showFeedback() {
-            alert("专家评审团(PM/策划/美术/技术)已就位，请直接在手机提交建议，我们将自动评估并热更新游戏！");
-        }
+        document.getElementById('next-level-btn').onclick = () => { alert("后续关卡开发中！敬请期待。"); startGame(); };
     </script>
 </body>
 </html>
