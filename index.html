@@ -97,7 +97,12 @@
                 const response = await fetch('game_config.json?t=' + Date.now());
                 if (response.ok) {
                     const newConfig = await response.json();
-                    gameConfig = { ...gameConfig, ...newConfig };
+                    // 深度合并配置
+                    gameConfig.settings = { ...gameConfig.settings, ...newConfig.settings };
+                    gameConfig.bullet_types = newConfig.bullet_types || gameConfig.bullet_types;
+                    gameConfig.levels = newConfig.levels || gameConfig.levels;
+                    gameConfig.powerups = newConfig.powerups || gameConfig.powerups;
+                    console.log("✅ 自动化验证: 配置已同步");
                 }
             } catch(e) { console.warn("Fallback to local config"); }
         }
