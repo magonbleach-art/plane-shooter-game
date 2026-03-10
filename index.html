@@ -13,7 +13,7 @@
         h1 { color: #ffd700; font-size: 2rem; margin-bottom: 10px; text-align: center; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
         .tutorial { color: #aaa; font-size: 0.8rem; line-height: 1.5; text-align: center; margin-bottom: 20px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; }
         .tutorial b { color: #ffd700; }
-        button { width: 220px; height: 45px; margin: 5px 0; background: linear-gradient(135deg, #ffd700, #b8860b); border: none; border-radius: 25px; color: #000; font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        button { width: 80%; height: 45px; margin: 5px 0; background: linear-gradient(135deg, #ffd700, #b8860b); border: none; border-radius: 25px; color: #000; font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.2s; }
         #hud { position: absolute; top: 10px; left: 10px; right: 10px; display: flex; justify-content: space-between; font-size: 0.9rem; pointer-events: none; z-index: 50; color: #ffd700; }
         #boss-info { position: absolute; top: 40px; left: 50px; right: 50px; text-align: center; z-index: 50; }
         #boss-countdown { font-size: 0.8rem; color: #aaa; margin-bottom: 5px; }
@@ -22,8 +22,8 @@
         #bullet-selector { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 50; }
         .bullet-icon { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #444; display: flex; justify-content: center; align-items: center; background: rgba(0,0,0,0.5); cursor: pointer; font-weight: bold; transition: 0.2s; }
         .bullet-icon.active { border-color: #ffd700; box-shadow: 0 0 15px #ffd700; transform: scale(1.1); }
-        .feedback-area { width: 100%; margin-top: 15px; display: flex; flex-direction: column; gap: 8px; }
-        .feedback-input { background: rgba(255,255,255,0.1); border: 1px solid #ffd700; border-radius: 5px; color: #fff; padding: 8px; font-size: 0.8rem; outline: none; }
+        .feedback-area { width: 100%; margin-top: 15px; display: flex; flex-direction: column; gap: 10px; align-items: center; }
+        .feedback-input { width: 80%; background: rgba(255,255,255,0.1); border: 1px solid #ffd700; border-radius: 5px; color: #fff; padding: 10px; font-size: 0.9rem; outline: none; }
     </style>
 </head>
 <body>
@@ -83,7 +83,8 @@
         let currentLevelIdx = 0, activeBulletId = 'rat';
         let player = { x: 200, y: 520, targetX: 200 };
         let bullets = [], enemies = [], stars = [], particles = [], powerups = [], boss = null;
-        let bossSpawnTime = 1800; // 30秒 (60帧/秒)
+        let bossSpawnTime = 1800; 
+        let hpPacksSpawned = 0;
 
         for(let i=0; i<50; i++) stars.push({ x: Math.random()*400, y: Math.random()*600, s: Math.random()*2+1 });
 
@@ -93,8 +94,8 @@
         function renderBulletSelector() {
             const container = document.getElementById('bullet-selector');
             container.innerHTML = '';
-            // 显示已解锁的子弹
-            const unlocked = gameConfig.constellation_levels.slice(0, currentLevelIdx + 1).map(l => l.unlock_bullet);
+            // 目前白羊宫默认解锁鼠，后续根据关卡动态增加
+            const unlocked = ['rat', 'ox', 'monkey', 'rabbit', 'dragon', 'horse']; 
             gameConfig.zodiac_bullets.filter(b => unlocked.includes(b.id)).forEach(b => {
                 const div = document.createElement('div');
                 div.className = `bullet-icon ${activeBulletId === b.id ? 'active' : ''}`;
@@ -105,33 +106,70 @@
         }
 
         class Bullet {
-            constructor(x, y, cfg, isEnemy = false) {
+            constructor(x, y, cfg, angle = 0, isEnemy = false) {
                 this.x = x; this.y = y; this.cfg = cfg;
                 this.isEnemy = isEnemy;
+                this.angle = angle * Math.PI / 180;
                 this.speed = (isEnemy ? 4 : gameConfig.settings.BULLET_SPEED) * (cfg.speed_mult || 1);
+                this.bounces = cfg.bounces || 0;
+                this.isHoming = cfg.homing || false;
+                this.pierce = cfg.pierce || false;
             }
-            update() { this.y += this.isEnemy ? this.speed : -this.speed; }
+            update() {
+                if (this.isHoming && !this.isEnemy) {
+                    let target = null, minDist = 1000;
+                    enemies.concat(boss ? [boss] : []).forEach(e => {
+                        let d = Math.hypot(e.x - this.x, e.y - this.y);
+                        if (d < minDist) { minDist = d; target = e; }
+                    });
+                    if (target) {
+                        let targetAngle = Math.atan2(target.y - this.y, target.x - this.x);
+                        this.angle += (targetAngle - this.angle) * 0.1;
+                    }
+                }
+                
+                this.x += Math.cos(this.angle) * this.speed * (this.isEnemy ? 1 : 0); // 敌人子弹逻辑暂存
+                this.y += this.isEnemy ? this.speed : -this.speed;
+                
+                if (this.cfg.type === "bounce") {
+                    if (this.x < 0 || this.x > 400) { this.angle = Math.PI - this.angle; this.bounces--; }
+                }
+            }
             draw() {
-                ctx.save(); ctx.fillStyle = this.isEnemy ? "#ff4b2b" : this.cfg.color; ctx.shadowBlur = 10; ctx.shadowColor = ctx.fillStyle;
-                ctx.beginPath(); ctx.arc(this.x, this.y, 4, 0, Math.PI*2); ctx.fill(); ctx.restore();
+                ctx.save(); ctx.translate(this.x, this.y);
+                ctx.fillStyle = this.isEnemy ? "#ff4b2b" : this.cfg.color;
+                ctx.shadowBlur = 15; ctx.shadowColor = ctx.fillStyle;
+                
+                if (this.cfg.type === "laser") {
+                    ctx.fillRect(-4, -600, 8, 600);
+                } else if (this.cfg.type === "explosive") {
+                    ctx.beginPath(); ctx.arc(0, 0, 6, 0, Math.PI*2); ctx.fill();
+                } else {
+                    ctx.beginPath(); ctx.arc(0, 0, 4, 0, Math.PI*2); ctx.fill();
+                }
+                ctx.restore();
             }
         }
 
         class PowerUp {
-            constructor(x, y) {
+            constructor(x, y, forceType = null) {
                 const types = [
                     { id: 'hp', color: '#ff4b2b', label: '❤️' },
                     { id: 'rat', color: '#e0e0e0', label: '鼠' },
-                    { id: 'ox', color: '#8d6e63', label: '牛' }
+                    { id: 'ox', color: '#8d6e63', label: '牛' },
+                    { id: 'monkey', color: '#ffeb3b', label: '猴' },
+                    { id: 'rabbit', color: '#f06292', label: '兔' },
+                    { id: 'dragon', color: '#4caf50', label: '龙' },
+                    { id: 'horse', color: '#2196f3', label: '马' }
                 ];
-                this.info = types[Math.floor(Math.random() * types.length)];
+                this.info = forceType || types[Math.floor(Math.random() * types.length)];
                 this.x = x; this.y = y; this.speed = 2;
             }
             update() { this.y += this.speed; }
             draw() {
                 ctx.save(); ctx.fillStyle = this.info.color; ctx.shadowBlur = 15; ctx.shadowColor = this.info.color;
-                ctx.beginPath(); ctx.arc(this.x, this.y, 15, 0, Math.PI*2); ctx.fill();
-                ctx.fillStyle = "#fff"; ctx.font = "bold 12px Arial"; ctx.textAlign = "center";
+                ctx.beginPath(); ctx.arc(this.x, this.y, 18, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = "#fff"; ctx.font = "bold 14px Arial"; ctx.textAlign = "center";
                 ctx.fillText(this.info.label, this.x, this.y + 5); ctx.restore();
             }
         }
@@ -139,10 +177,11 @@
         class Enemy {
             constructor() {
                 this.x = Math.random()*360 + 20; this.y = -30; this.speed = 2;
+                this.hp = 1;
             }
             update() { 
                 this.y += this.speed; 
-                if (frameCount % 100 === 0) bullets.push(new Bullet(this.x, this.y, { color: "#ff4b2b" }, true));
+                if (frameCount % 120 === 0) bullets.push(new Bullet(this.x, this.y, { color: "#ff4b2b" }, 90, true));
             }
             draw() {
                 ctx.save(); ctx.fillStyle = "#ff4b2b"; ctx.beginPath();
@@ -161,7 +200,7 @@
                 else this.x += Math.sin(frameCount * 0.02) * 2;
                 
                 if (frameCount % 60 === 0) {
-                    for(let i=-2; i<=2; i++) bullets.push(new Bullet(this.x + i*20, this.y + 40, { color: "#ff4b2b" }, true));
+                    for(let i=-2; i<=2; i++) bullets.push(new Bullet(this.x + i*30, this.y + 40, { color: "#ff4b2b" }, 90 + i*15, true));
                 }
             }
             draw() {
@@ -171,6 +210,12 @@
                 ctx.fillStyle = "#f00"; ctx.beginPath(); ctx.arc(0, 0, 20, 0, Math.PI*2); ctx.fill();
                 ctx.restore();
             }
+        }
+
+        function createExplosion(x, y, color, size = 1) {
+            for(let i=0; i<20*size; i++) particles.push({ 
+                x, y, vx: (Math.random()-0.5)*12*size, vy: (Math.random()-0.5)*12*size, life: 1, color 
+            });
         }
 
         function gameLoop() {
@@ -184,8 +229,16 @@
             // 玩家
             player.x += (player.targetX - player.x) * 0.2;
             ctx.fillStyle = "#ffd700"; ctx.beginPath();
-            ctx.moveTo(player.x, player.y - 25); ctx.lineTo(player.x - 20, player.y + 10); ctx.lineTo(player.x + 20, player.y + 10);
+            ctx.moveTo(player.x, player.y - 30); ctx.lineTo(player.x - 25, player.y + 15); ctx.lineTo(player.x + 25, player.y + 15);
             ctx.closePath(); ctx.fill();
+
+            // 关卡血包投放
+            if (hpPacksSpawned < 2) {
+                if (frameCount === 600 || frameCount === 1500) {
+                    powerups.push(new PowerUp(Math.random()*300+50, -20, { id: 'hp', color: '#ff4b2b', label: '❤️' }));
+                    hpPacksSpawned++;
+                }
+            }
 
             // Boss 逻辑
             const levelCfg = gameConfig.constellation_levels[currentLevelIdx];
@@ -203,10 +256,17 @@
                 document.getElementById('boss-hp-fill').style.width = (boss.hp / boss.maxHp * 100) + "%";
             }
 
-            // 发射
-            if (frameCount % 10 === 0) {
+            // 发射子弹
+            if (frameCount % 12 === 0) {
                 const bCfg = gameConfig.zodiac_bullets.find(b => b.id === activeBulletId);
-                bullets.push(new Bullet(player.x, player.y - 20, bCfg));
+                if (bCfg.type === "scatter") {
+                    for(let i=0; i<bCfg.scatter; i++) {
+                        let angle = -20 + (i * 40 / (bCfg.scatter - 1));
+                        bullets.push(new Bullet(player.x, player.y - 20, bCfg, angle));
+                    }
+                } else {
+                    bullets.push(new Bullet(player.x, player.y - 20, bCfg));
+                }
             }
 
             // 子弹逻辑
@@ -220,13 +280,24 @@
                 } else {
                     enemies.forEach((e, ei) => {
                         if (Math.abs(b.x - e.x) < 25 && Math.abs(b.y - e.y) < 25) {
-                            enemies.splice(ei, 1); score += 10; updateHUD();
-                            if (Math.random() < 0.2) powerups.push(new PowerUp(e.x, e.y));
-                            if (!b.cfg.pierce) bullets.splice(i, 1);
+                            e.hp--; 
+                            if (b.cfg.type === "explosive") {
+                                createExplosion(e.x, e.y, b.cfg.color, 2);
+                                enemies.forEach((e2, e2i) => {
+                                    if (Math.hypot(e2.x - e.x, e2.y - e.y) < b.cfg.aoe) e2.hp = 0;
+                                });
+                            }
+                            if (e.hp <= 0) {
+                                enemies.splice(ei, 1); score += 10; updateHUD();
+                                if (Math.random() < 0.15) powerups.push(new PowerUp(e.x, e.y));
+                            }
+                            if (!b.cfg.pierce && b.cfg.type !== "laser") bullets.splice(i, 1);
                         }
                     });
                     if (boss && Math.abs(b.x - boss.x) < 60 && Math.abs(b.y - boss.y) < 40) {
-                        boss.hp--; if (!b.cfg.pierce) bullets.splice(i, 1);
+                        boss.hp -= b.cfg.damage; 
+                        if (b.cfg.type === "explosive") createExplosion(b.x, b.y, b.cfg.color, 1.5);
+                        if (!b.cfg.pierce && b.cfg.type !== "laser") bullets.splice(i, 1);
                         if (boss.hp <= 0) {
                             score += 1000; boss = null;
                             document.getElementById('boss-hp-bar').style.display = "none";
@@ -234,8 +305,16 @@
                         }
                     }
                 }
-                if (b && (b.y < -50 || b.y > 650)) bullets.splice(i, 1);
+                if (b && (b.y < -50 || b.y > 650 || b.x < -50 || b.x > 450)) bullets.splice(i, 1);
             }
+
+            // 粒子
+            for(let i=particles.length-1; i>=0; i--) {
+                const p = particles[i]; p.x += p.vx; p.y += p.vy; p.life -= 0.02;
+                ctx.globalAlpha = p.life; ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 3, 3);
+                if(p.life <= 0) particles.splice(i, 1);
+            }
+            ctx.globalAlpha = 1;
 
             // 敌人逻辑
             if (frameCount % 60 === 0 && !boss) enemies.push(new Enemy());
@@ -251,9 +330,12 @@
             // 道具逻辑
             for(let i = powerups.length - 1; i >= 0; i--) {
                 const p = powerups[i]; p.update(); p.draw();
-                if (Math.abs(p.x - player.x) < 30 && Math.abs(p.y - player.y) < 30) {
-                    if (p.info.id === 'hp') { lives = Math.min(3, lives + 1); updateHUD(); }
-                    else { activeBulletId = p.info.id; renderBulletSelector(); }
+                if (Math.abs(p.x - player.x) < 35 && Math.abs(p.y - player.y) < 35) {
+                    if (p.info.id === 'hp') { 
+                        lives = Math.min(5, lives + 1); updateHUD(); 
+                    } else { 
+                        activeBulletId = p.info.id; renderBulletSelector(); 
+                    }
                     powerups.splice(i, 1);
                 }
                 if (p.y > 650) powerups.splice(i, 1);
@@ -269,8 +351,8 @@
 
         function startGame() {
             loadConfig().then(() => {
-                gameActive = true; score = 0; lives = 3; frameCount = 0;
-                bullets = []; enemies = []; powerups = []; boss = null;
+                gameActive = true; score = 0; lives = 3; frameCount = 0; hpPacksSpawned = 0;
+                bullets = []; enemies = []; powerups = []; boss = null; particles = [];
                 document.getElementById('start-screen').classList.add('hidden');
                 document.getElementById('game-over').classList.add('hidden');
                 document.getElementById('level-clear').classList.add('hidden');
