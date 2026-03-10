@@ -65,7 +65,7 @@
             ],
             "boss": {
                 "name": "末日掠夺者",
-                "hp": 800,
+                "hp": 400,
                 "size": 120,
                 "phases": [
                     { "hp_threshold": 1.0, "patterns": ["fan_spread", "homing_rain"] },
