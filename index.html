@@ -104,11 +104,13 @@
                 this.isHoming = false;
             }
             update() {
-                if (this.isHoming && !this.isEnemy === false) { // 仅敌人子弹追踪
+                if (this.isHoming && this.isEnemy) {
                     let dx = player.x - this.x, dy = player.y - this.y;
                     let targetAngle = Math.atan2(dy, dx) + Math.PI/2;
                     let diff = targetAngle - this.angle;
-                    while(diff > Math.PI) diff -= Math.PI*2; while(diff < -Math.PI) diff += Math.PI*2;
+                    // 使用更安全的角度归一化，防止死循环
+                    while(diff > Math.PI) diff -= Math.PI*2;
+                    while(diff < -Math.PI) diff += Math.PI*2;
                     this.angle += diff * 0.02;
                 }
                 this.x += Math.sin(this.angle) * this.speed;
@@ -148,7 +150,8 @@
                 if (this.y < this.targetY) this.y += 1;
                 else this.x += Math.sin(frameCount * 0.02) * 2;
 
-                const p = this.cfg.phases.find((ph, i) => this.hp <= this.maxHp * ph.hp_threshold) || this.cfg.phases[0];
+                // 修复逻辑漏洞：按血量阈值倒序查找当前阶段
+                const p = [...this.cfg.phases].reverse().find(ph => this.hp <= this.maxHp * ph.hp_threshold) || this.cfg.phases[0];
                 p.patterns.forEach(pid => this.firePattern(pid));
             }
             firePattern(pid) {
@@ -162,6 +165,13 @@
                     this.spiralAngle += 10;
                     if (frameCount % 5 === 0) {
                         for(let a=0; a<360; a+=90) enemyBullets.push(new Bullet(this.x, this.y, this.spiralAngle + a, "normal", 3, true));
+                    }
+                }
+                if (pid === "laser_grid" && frameCount % 100 === 0) {
+                    for(let i=0; i<3; i++) {
+                        let b = new Bullet(50 + i*150, -50, 180, "normal", 5, true);
+                        b.type = { color: "#ff00ff", width: 5, height: 800 };
+                        enemyBullets.push(b);
                     }
                 }
                 if (pid === "mega_pierce" && frameCount % 200 === 0) {
@@ -197,10 +207,7 @@
 
             // 玩家
             player.x += (player.targetX - player.x) * 0.2;
-            ctx.save(); ctx.translate(player.x, player.y);
-            ctx.fillStyle = (player.bulletType === "normal") ? "#00d2ff" : (player.bulletType === "spread" ? "#ffaa00" : "#00ffaa");
-            ctx.beginPath(); ctx.moveTo(0, -25); ctx.lineTo(-20, 15); ctx.lineTo(20, 15); ctx.closePath(); ctx.fill();
-            ctx.restore();
+            drawPlayer();
 
             // 射击
             if (frameCount % 10 === 0) {
@@ -244,8 +251,32 @@
             // 道具
             for(let i=powerups.length-1; i>=0; i--) {
                 const p = powerups[i]; p.y += 2;
-                ctx.fillStyle = p.info.color; ctx.beginPath(); ctx.arc(p.x, p.y, 15, 0, Math.PI*2); ctx.fill();
-                if(Math.abs(p.x-player.x)<30 && Math.abs(p.y-player.y)<30) { if(p.info.target==="life") { lives=Math.min(3, lives+1); updateLife(); } else { player.bulletType = p.info.target; setTimeout(()=>player.bulletType="normal", 8000); } powerups.splice(i, 1); }
+                ctx.save(); ctx.translate(p.x, p.y);
+                
+                // 绘制带发光边框的容器
+                ctx.fillStyle = p.info.color; ctx.shadowBlur = 15; ctx.shadowColor = p.info.color;
+                ctx.beginPath(); ctx.arc(0, 0, 18, 0, Math.PI*2); ctx.fill();
+                
+                // 绘制类型图案 (图标化)
+                ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.beginPath();
+                if (p.info.target === "spread") {
+                    // 扇形图标
+                    ctx.moveTo(-8, 5); ctx.lineTo(0, -8); ctx.lineTo(8, 5);
+                    ctx.moveTo(-5, 5); ctx.lineTo(0, -8); ctx.lineTo(5, 5);
+                } else if (p.info.target === "laser") {
+                    // 闪电/激光图标
+                    ctx.moveTo(0, -10); ctx.lineTo(-5, 0); ctx.lineTo(5, 0); ctx.lineTo(0, 10);
+                } else {
+                    // 爱心图标 (HP)
+                    ctx.moveTo(0, 5); ctx.bezierCurveTo(-10, -5, -10, -15, 0, -5); ctx.bezierCurveTo(10, -15, 10, -5, 0, 5);
+                }
+                ctx.stroke(); ctx.restore();
+
+                if(Math.abs(p.x-player.x)<30 && Math.abs(p.y-player.y)<30) { 
+                    if(p.info.target==="life") { lives=Math.min(3, lives+1); updateLife(); } 
+                    else { player.bulletType = p.info.target; setTimeout(()=>player.bulletType="normal", 8000); } 
+                    powerups.splice(i, 1); 
+                }
             }
 
             // 粒子
@@ -259,6 +290,53 @@
             if (lives <= 0) { gameActive = false; document.getElementById('game-over').classList.remove('hidden'); }
             document.getElementById('score').innerText = `得分: ${score}`;
             requestAnimationFrame(gameLoop);
+        }
+
+        function drawPlayer() {
+            ctx.save(); ctx.translate(player.x, player.y);
+            let color = "#00d2ff";
+            if (player.bulletType === "spread") color = "#ffaa00";
+            if (player.bulletType === "laser") color = "#00ffaa";
+            
+            ctx.shadowBlur = 25; ctx.shadowColor = color;
+            ctx.fillStyle = color;
+            
+            // 绘制主核心机身
+            ctx.beginPath();
+            ctx.moveTo(0, -35); ctx.lineTo(-15, 10); ctx.lineTo(15, 10);
+            ctx.closePath(); ctx.fill();
+
+            // 绘制侧翼机翼 (根据弹药类型变形)
+            ctx.beginPath();
+            if (player.bulletType === "spread") { 
+                // 宽大展开形态
+                ctx.moveTo(-15, 0); ctx.lineTo(-45, 25); ctx.lineTo(-15, 15);
+                ctx.moveTo(15, 0); ctx.lineTo(45, 25); ctx.lineTo(15, 15);
+            } else if (player.bulletType === "laser") {
+                // 尖锐聚焦形态
+                ctx.moveTo(-15, -10); ctx.lineTo(-25, 20); ctx.lineTo(-10, 10);
+                ctx.moveTo(15, -10); ctx.lineTo(25, 20); ctx.lineTo(10, 10);
+            } else {
+                // 默认平衡形态
+                ctx.moveTo(-15, 5); ctx.lineTo(-30, 20); ctx.lineTo(-15, 15);
+                ctx.moveTo(15, 5); ctx.lineTo(30, 20); ctx.lineTo(15, 15);
+            }
+            ctx.fill();
+
+            // 绘制机身金属细节
+            ctx.strokeStyle = "rgba(255,255,255,0.5)"; ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // 绘制驾驶舱 (带玻璃光感)
+            let cockpitGrad = ctx.createLinearGradient(0, -15, 0, 5);
+            cockpitGrad.addColorStop(0, "#fff"); cockpitGrad.addColorStop(1, "#666");
+            ctx.fillStyle = cockpitGrad;
+            ctx.beginPath(); ctx.ellipse(0, -5, 6, 12, 0, 0, Math.PI*2); ctx.fill();
+            
+            // 引擎喷火效果 (增加粒子感)
+            ctx.fillStyle = (frameCount % 4 < 2) ? "#ff4b2b" : "#ffaa00";
+            ctx.fillRect(-8, 15, 16, 12 + Math.random()*15);
+            ctx.restore();
         }
 
         function updateLife() { document.getElementById('life').innerText = `❤️x${lives}`; }
