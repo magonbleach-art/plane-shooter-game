@@ -149,6 +149,11 @@
             if (e.key === 'ArrowLeft' || e.key === 'a') player.targetX -= step;
             if (e.key === 'ArrowRight' || e.key === 'd') player.targetX += step;
             if (e.key === ' ' || e.key === 'Enter') triggerUltimate();
+            if (e.key === 'Escape') {
+                if (!gameActive) {
+                    location.reload(); // 在结束或结算界面按 Esc 返回主界面
+                }
+            }
         });
         document.getElementById('ult-btn').onclick = triggerUltimate;
 
