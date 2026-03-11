@@ -71,11 +71,23 @@
                     2. 收集掉落的<b>生肖灵珠</b>切换子弹形态<br>
                     3. 击败最终 Boss 解锁下一关及新子弹
                 </div>
-                <button id="start-btn">开启秘境</button>
+                <button id="show-select-btn">选择生肖开局</button>
+                <button id="start-btn" style="background: #4caf50; color: #fff;">直接开启秘境</button>
                 <div class="feedback-area">
                     <input type="text" id="feedback-input" class="feedback-input" placeholder="输入进化建议 (由 AI 专家评审)">
                     <button id="submit-feedback-btn">提交进化建议</button>
                 </div>
+            </div>
+        </div>
+
+        <div id="zodiac-select" class="overlay hidden">
+            <div class="overlay-content">
+                <h1>选择开局生肖</h1>
+                <div id="zodiac-list" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; width: 100%;">
+                    <!-- 动态生成已解锁的生肖按钮 -->
+                </div>
+                <button id="confirm-select-btn">确认并开始</button>
+                <button id="back-to-start-btn" style="background: #666; color: #fff;">返回</button>
             </div>
         </div>
 
@@ -107,13 +119,16 @@
         const ctx = canvas.getContext('2d');
         canvas.width = 400; canvas.height = 600;
 
-        let gameActive = false, score = 0, lives = 3, frameCount = 0;
+        let gameActive = false, score = 0, lives = 2, frameCount = 0; // 初始血量改为 2
         let currentLevelIdx = 0, activeBulletId = 'rat', bulletLevel = 1;
-        let player = { x: 200, y: 520, targetX: 200, width: 50, height: 50 };
+        let player = { x: 200, y: 520, targetX: 200, width: 50, height: 50, hasWingman: false }; // 增加侧翼状态
         let bullets = [], enemies = [], stars = [], particles = [], powerups = [], boss = null;
         let bossSpawnTime = 1800; 
         let hpPacksSpawned = 0;
         let screenShake = 0;
+        let unlockedZodiacs = ['rat']; // 初始解锁鼠
+        let currentLevelZodiacs = []; // 当前关卡掉落的 5 个随机生肖
+        let selectedStartWeapon = 'rat'; // 选中的开局武器
         
         // 觉醒系统变量
         let ultEnergy = 0;
@@ -227,6 +242,17 @@
         function drawPlayer() {
             ctx.save();
             ctx.translate(player.x, player.y);
+            
+            // 绘制侧翼机枪
+            if (player.hasWingman) {
+                ctx.fillStyle = "#aaa";
+                ctx.fillRect(-45, 10, 10, 20); // 左侧翼
+                ctx.fillRect(35, 10, 10, 20);  // 右侧翼
+                ctx.shadowBlur = 15; ctx.shadowColor = "#0ff";
+                ctx.fillStyle = "#0ff";
+                ctx.fillRect(-42, 5, 4, 5);
+                ctx.fillRect(38, 5, 4, 5);
+            }
             
             // 基础光晕 (随等级增强)
             const bCfg = gameConfig.zodiac_bullets.find(b => b.id === activeBulletId) || {color: '#ffd700'};
@@ -383,37 +409,87 @@
                     { id: 'dog', color: '#ffc107', label: '狗' },
                     { id: 'pig', color: '#e91e63', label: '猪' }
                 ];
-                this.info = forceType || types[Math.floor(Math.random() * types.length)];
+                
+                // 每关限 5 个随机生肖武器
+                if (forceType) {
+                    this.info = forceType;
+                } else if (Math.random() < 0.8 && currentLevelZodiacs.length > 0) {
+                    const zId = currentLevelZodiacs[Math.floor(Math.random() * currentLevelZodiacs.length)];
+                    this.info = types.find(t => t.id === zId);
+                } else {
+                    // 随机掉落 侧翼机枪 或 血包
+                    const special = Math.random() < 0.5 ? 
+                        { id: 'wingman', color: '#0ff', label: '翼' } :
+                        { id: 'hp', color: '#ff4b2b', label: '❤️' };
+                    this.info = special;
+                }
+                
                 this.x = x; this.y = y; this.speed = 2;
             }
             update() { this.y += this.speed; }
             draw() {
                 ctx.save(); ctx.fillStyle = this.info.color; ctx.shadowBlur = 15; ctx.shadowColor = this.info.color;
                 ctx.beginPath(); ctx.arc(this.x, this.y, 18, 0, Math.PI*2); ctx.fill();
-                ctx.fillStyle = "#fff"; ctx.font = "bold 14px Arial"; ctx.textAlign = "center";
+                
+                // 视觉优化：黑色背景圆 + 对应颜色文字 (避免全白看不清)
+                ctx.fillStyle = "rgba(0,0,0,0.6)";
+                ctx.beginPath(); ctx.arc(this.x, this.y, 12, 0, Math.PI*2); ctx.fill();
+                
+                ctx.fillStyle = this.info.color; ctx.font = "bold 14px Arial"; ctx.textAlign = "center";
                 ctx.fillText(this.info.label, this.x, this.y + 5); ctx.restore();
             }
         }
 
         class Enemy {
-            constructor() {
-                this.x = Math.random()*360 + 20; this.y = -30; this.speed = 2;
-                // 应用全局血量倍率
+            constructor(type = 'scout') {
+                this.x = Math.random()*360 + 20; this.y = -30;
+                this.type = type;
+                
+                // 怪物类型配置
+                const enemyTypes = {
+                    scout: { hp: 1, speed: 2, score: 10, shape: 'triangle', color: '#ff4b2b', canShoot: true },
+                    tank: { hp: 5, speed: 1, score: 30, shape: 'rect', color: '#8d6e63', canShoot: false },
+                    stinger: { hp: 2, speed: 3, score: 20, shape: 'diamond', color: '#f44336', canShoot: true }
+                };
+                
+                const cfg = enemyTypes[type] || enemyTypes.scout;
                 const hpMult = gameConfig.settings.ENEMY_HP_MULT || 1;
-                this.hp = (1 + (currentLevelIdx * 2)) * hpMult;
+                
+                this.hp = cfg.hp * hpMult * (1 + currentLevelIdx * 0.5);
+                this.maxHp = this.hp;
+                this.speed = cfg.speed;
+                this.score = cfg.score;
+                this.shape = cfg.shape;
+                this.color = cfg.color;
+                this.canShoot = cfg.canShoot;
             }
             update() { 
                 this.y += this.speed; 
-                if (frameCount % 120 === 0) {
-                    bullets.push(new Bullet(this.x, this.y, { color: "#ff4b2b" }, 90, true));
+                if (this.canShoot && frameCount % 120 === 0) {
+                    bullets.push(new Bullet(this.x, this.y, { color: this.color }, 90, true));
                 }
             }
             draw() {
                 ctx.save(); ctx.translate(this.x, this.y);
-                ctx.fillStyle = "#ff4b2b"; ctx.shadowBlur = 10; ctx.shadowColor = "#ff4b2b";
-                ctx.beginPath();
-                ctx.moveTo(0, 15); ctx.lineTo(-15, -15); ctx.lineTo(15, -15);
-                ctx.closePath(); ctx.fill(); ctx.restore();
+                ctx.fillStyle = this.color; ctx.shadowBlur = 10; ctx.shadowColor = this.color;
+                
+                if (this.shape === 'triangle') {
+                    ctx.beginPath(); ctx.moveTo(0, 15); ctx.lineTo(-15, -15); ctx.lineTo(15, -15); ctx.closePath();
+                } else if (this.shape === 'rect') {
+                    ctx.fillRect(-20, -20, 40, 40);
+                } else if (this.shape === 'diamond') {
+                    ctx.beginPath(); ctx.moveTo(0, -20); ctx.lineTo(15, 0); ctx.lineTo(0, 20); ctx.lineTo(-15, 0); ctx.closePath();
+                }
+                ctx.fill();
+                
+                // 绘制血条 (如果血量大于 1)
+                if (this.maxHp > 1) {
+                    ctx.fillStyle = "rgba(255,255,255,0.3)";
+                    ctx.fillRect(-20, -30, 40, 4);
+                    ctx.fillStyle = "#f00";
+                    ctx.fillRect(-20, -30, 40 * (this.hp / this.maxHp), 4);
+                }
+                ctx.restore();
             }
         }
 
@@ -504,14 +580,22 @@
             // 发射子弹
             if (frameCount % 12 === 0) {
                 const bCfg = gameConfig.zodiac_bullets.find(b => b.id === activeBulletId);
-                if (bCfg.type === "scatter_tiger") {
-                    let count = bCfg.scatter + (bulletLevel - 1) * 2;
-                    for(let i=0; i<count; i++) {
-                        let angle = -90 - (bCfg.angle_spread/2) + (i * bCfg.angle_spread / (count - 1));
-                        bullets.push(new Bullet(player.x, player.y - 20, bCfg, angle, false, bulletLevel));
+                const fire = (x, y) => {
+                    if (bCfg.type === "scatter_tiger") {
+                        let count = bCfg.scatter + (bulletLevel - 1) * 2;
+                        for(let i=0; i<count; i++) {
+                            let angle = -90 - (bCfg.angle_spread/2) + (i * bCfg.angle_spread / (count - 1));
+                            bullets.push(new Bullet(x, y - 20, bCfg, angle, false, bulletLevel));
+                        }
+                    } else {
+                        bullets.push(new Bullet(x, y - 20, bCfg, -90, false, bulletLevel));
                     }
-                } else {
-                    bullets.push(new Bullet(player.x, player.y - 20, bCfg, -90, false, bulletLevel));
+                };
+                
+                fire(player.x, player.y);
+                if (player.hasWingman) {
+                    fire(player.x - 40, player.y + 10);
+                    fire(player.x + 40, player.y + 10);
                 }
             }
 
@@ -521,7 +605,10 @@
                 if (b.isEnemy) {
                     if (Math.abs(b.x - player.x) < 25 && Math.abs(b.y - player.y) < 25) {
                         if (!isInvincible) {
-                            bullets.splice(i, 1); lives--; updateHUD();
+                            bullets.splice(i, 1); 
+                            lives--; 
+                            player.hasWingman = false; // 掉血失去侧翼
+                            updateHUD();
                             createExplosion(player.x, player.y, "#ff4b2b", 0.5);
                             if (lives <= 0) endGame();
                         } else {
@@ -577,12 +664,19 @@
             ctx.globalAlpha = 1;
 
             // 敌人逻辑
-            if (frameCount % 60 === 0 && !boss) enemies.push(new Enemy());
+            if (frameCount % 60 === 0 && !boss) {
+                const types = ['scout', 'tank', 'stinger'];
+                const type = types[Math.floor(Math.random() * types.length)];
+                enemies.push(new Enemy(type));
+            }
             for(let i = enemies.length - 1; i >= 0; i--) {
                 const e = enemies[i]; e.update(); e.draw();
                 if (Math.abs(e.x - player.x) < 35 && Math.abs(e.y - player.y) < 35) {
                     if (!isInvincible) {
-                        enemies.splice(i, 1); lives--; updateHUD();
+                        enemies.splice(i, 1); 
+                        lives--; 
+                        player.hasWingman = false; // 撞击失去侧翼
+                        updateHUD();
                         createExplosion(player.x, player.y, "#ff4b2b", 1);
                         if (lives <= 0) endGame();
                     } else {
@@ -601,6 +695,8 @@
                 if (Math.abs(p.x - player.x) < 40 && Math.abs(p.y - player.y) < 40) {
                     if (p.info.id === 'hp') { 
                         lives = Math.min(5, lives + 1); updateHUD(); 
+                    } else if (p.info.id === 'wingman') {
+                        player.hasWingman = true;
                     } else { 
                         if (activeBulletId === p.info.id) {
                             bulletLevel = Math.min(3, bulletLevel + 1); // 拾取相同类型升级
@@ -623,16 +719,30 @@
             document.getElementById('score').innerText = `得分: ${score}`;
             document.getElementById('life').innerText = `❤️x${lives}`;
             document.getElementById('level-name').innerText = `${gameConfig.constellation_levels[currentLevelIdx].constellation} (Lv.${bulletLevel})`;
-            
-            // 能量条 UI 更新已经在 updateUlt 中处理了
+        }
+
+        // 初始化每关随机生肖池
+        function initLevelZodiacs() {
+            const allZodiacs = Object.keys(ZODIAC_DESIGNS);
+            // 随机选 5 个 (包含当前已解锁的)
+            let pool = [...new Set([...unlockedZodiacs, ...allZodiacs])];
+            currentLevelZodiacs = [];
+            while(currentLevelZodiacs.length < 5 && pool.length > 0) {
+                let idx = Math.floor(Math.random() * pool.length);
+                currentLevelZodiacs.push(pool.splice(idx, 1)[0]);
+            }
         }
 
         function startGame() {
             loadConfig().then(() => {
-                gameActive = true; score = 0; lives = 3; frameCount = 0; hpPacksSpawned = 0;
+                gameActive = true; score = 0; lives = 2; frameCount = 0; hpPacksSpawned = 0;
                 bullets = []; enemies = []; powerups = []; boss = null; particles = [];
-                activeBulletId = 'rat'; bulletLevel = 1;
+                activeBulletId = selectedStartWeapon || 'rat'; bulletLevel = 1;
+                player.hasWingman = false;
+                initLevelZodiacs();
+                
                 document.getElementById('start-screen').classList.add('hidden');
+                document.getElementById('zodiac-select').classList.add('hidden');
                 document.getElementById('game-over').classList.add('hidden');
                 document.getElementById('level-clear').classList.add('hidden');
                 document.getElementById('boss-hp-bar').style.display = "none";
@@ -640,8 +750,49 @@
             });
         }
 
+        // UI 事件监听
+        document.getElementById('show-select-btn').onclick = () => {
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('zodiac-select').classList.remove('hidden');
+            const list = document.getElementById('zodiac-list');
+            list.innerHTML = '';
+            unlockedZodiacs.forEach(zId => {
+                const z = ZODIAC_DESIGNS[zId];
+                const btn = document.createElement('div');
+                btn.style.cssText = `
+                    background: rgba(255,255,255,0.1); border: 2px solid ${z.color}; 
+                    padding: 10px; border-radius: 10px; cursor: pointer; text-align: center;
+                    color: ${z.color}; font-weight: bold; transition: 0.3s;
+                `;
+                btn.innerText = z.name.split('·')[0];
+                if (selectedStartWeapon === zId) btn.style.background = z.color + "44";
+                btn.onclick = () => {
+                    selectedStartWeapon = zId;
+                    Array.from(list.children).forEach(c => c.style.background = 'rgba(255,255,255,0.1)');
+                    btn.style.background = z.color + "44";
+                };
+                list.appendChild(btn);
+            });
+        };
+
+        document.getElementById('confirm-select-btn').onclick = startGame;
+        document.getElementById('back-to-start-btn').onclick = () => {
+            document.getElementById('zodiac-select').classList.add('hidden');
+            document.getElementById('start-screen').classList.remove('hidden');
+        };
+
         function levelClear() {
             gameActive = false;
+            // 解锁下一个生肖 (如果有)
+            const allIds = Object.keys(ZODIAC_DESIGNS);
+            const currentIdx = allIds.indexOf(activeBulletId);
+            const nextId = allIds[currentIdx + 1] || allIds[0];
+            if (!unlockedZodiacs.includes(nextId)) {
+                unlockedZodiacs.push(nextId);
+                document.getElementById('unlock-msg').innerText = `解锁新生肖之力: ${ZODIAC_DESIGNS[nextId].name.split('·')[0]}`;
+            } else {
+                document.getElementById('unlock-msg').innerText = `宫殿净化成功!`;
+            }
             document.getElementById('level-clear').classList.remove('hidden');
         }
 
