@@ -72,6 +72,7 @@
                     3. 击败最终 Boss 解锁下一关及新子弹
                 </div>
                 <button id="show-select-btn">选择生肖开局</button>
+                <button id="show-settings-btn" style="background: #607d8b; color: #fff;">游戏设置 (难度/速度)</button>
                 <button id="start-btn" style="background: #4caf50; color: #fff;">直接开启秘境</button>
                 <div class="feedback-area">
                     <input type="text" id="feedback-input" class="feedback-input" placeholder="输入进化建议 (由 AI 专家评审)">
@@ -81,15 +82,43 @@
         </div>
 
         <div id="zodiac-select" class="overlay hidden">
-            <div class="overlay-content">
-                <h1>选择开局生肖</h1>
-                <div id="zodiac-list" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; width: 100%;">
-                    <!-- 动态生成已解锁的生肖按钮 -->
-                </div>
-                <button id="confirm-select-btn">确认并开始</button>
-                <button id="back-to-start-btn" style="background: #666; color: #fff;">返回</button>
-            </div>
-        </div>
+             <div class="overlay-content">
+                 <h1>选择开局生肖</h1>
+                 <div id="zodiac-list" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; width: 100%;">
+                     <!-- 动态生成已解锁的生肖按钮 -->
+                 </div>
+                 <button id="confirm-select-btn">确认并开始</button>
+                 <button id="back-to-start-btn" style="background: #666; color: #fff;">返回</button>
+             </div>
+         </div>
+ 
+         <div id="game-settings" class="overlay hidden">
+             <div class="overlay-content">
+                 <h1>游戏配置</h1>
+                 
+                 <div class="setting-group" style="margin-bottom: 20px; width: 100%;">
+                     <h3 style="color: #ffd700; margin-bottom: 10px;">敌方血量 (难度)</h3>
+                     <div id="difficulty-options" style="display: flex; gap: 10px; justify-content: center;">
+                         <button class="setting-btn" data-type="diff" data-val="0.5" style="flex:1; height: 40px; font-size: 0.9rem;">简单 (x0.5)</button>
+                         <button class="setting-btn active" data-type="diff" data-val="1.0" style="flex:1; height: 40px; font-size: 0.9rem; background: #ffd700;">普通 (x1.0)</button>
+                         <button class="setting-btn" data-type="diff" data-val="2.0" style="flex:1; height: 40px; font-size: 0.9rem;">困难 (x2.0)</button>
+                     </div>
+                 </div>
+
+                 <div class="setting-group" style="margin-bottom: 30px; width: 100%;">
+                     <h3 style="color: #ffd700; margin-bottom: 10px;">游戏速度 (1-5 档)</h3>
+                     <div id="speed-options" style="display: flex; gap: 8px; justify-content: center;">
+                         <button class="setting-btn" data-type="speed" data-val="0.6" style="width: 45px; height: 45px;">1</button>
+                         <button class="setting-btn" data-type="speed" data-val="0.8" style="width: 45px; height: 45px;">2</button>
+                         <button class="setting-btn active" data-type="speed" data-val="1.0" style="width: 45px; height: 45px; background: #ffd700;">3</button>
+                         <button class="setting-btn" data-type="speed" data-val="1.2" style="width: 45px; height: 45px;">4</button>
+                         <button class="setting-btn" data-type="speed" data-val="1.5" style="width: 45px; height: 45px;">5</button>
+                     </div>
+                 </div>
+
+                 <button id="save-settings-btn">保存并返回</button>
+             </div>
+         </div>
 
         <div id="game-over" class="overlay hidden">
             <div class="overlay-content">
@@ -129,6 +158,8 @@
         let unlockedZodiacs = ['rat']; // 初始解锁鼠
         let currentLevelZodiacs = []; // 当前关卡掉落的 5 个随机生肖
         let selectedStartWeapon = 'rat'; // 选中的开局武器
+        let difficultyMult = 1.0; // 难度系数
+        let gameSpeedMult = 1.0; // 速度系数
         
         // 觉醒系统变量
         let ultEnergy = 0;
@@ -308,7 +339,7 @@
                 this.isEnemy = isEnemy;
                 this.level = level;
                 this.angle = angle * Math.PI / 180;
-                this.speed = (isEnemy ? 4 : (gameConfig.settings.BULLET_SPEED || 12)) * (cfg.speed_mult || 1);
+                this.speed = (isEnemy ? 4 : (gameConfig.settings.BULLET_SPEED || 12)) * (cfg.speed_mult || 1) * gameSpeedMult;
                 this.isHoming = cfg.homing || (cfg.type === "homing_dog");
                 this.damage = (cfg.damage || 1) * (isEnemy ? 1 : level);
                 this.bounces = cfg.bounces || 0;
@@ -455,9 +486,9 @@
                 const cfg = enemyTypes[type] || enemyTypes.scout;
                 const hpMult = gameConfig.settings.ENEMY_HP_MULT || 1;
                 
-                this.hp = cfg.hp * hpMult * (1 + currentLevelIdx * 0.5);
+                this.hp = cfg.hp * hpMult * (1 + currentLevelIdx * 0.5) * difficultyMult;
                 this.maxHp = this.hp;
-                this.speed = cfg.speed;
+                this.speed = cfg.speed * gameSpeedMult;
                 this.score = cfg.score;
                 this.shape = cfg.shape;
                 this.color = cfg.color;
@@ -751,7 +782,33 @@
         }
 
         // UI 事件监听
-        document.getElementById('show-select-btn').onclick = () => {
+         document.getElementById('show-settings-btn').onclick = () => {
+             document.getElementById('start-screen').classList.add('hidden');
+             document.getElementById('game-settings').classList.remove('hidden');
+         };
+
+         document.querySelectorAll('.setting-btn').forEach(btn => {
+             btn.onclick = () => {
+                 const type = btn.dataset.type;
+                 const val = parseFloat(btn.dataset.val);
+                 
+                 // 视觉切换
+                 document.querySelectorAll(`.setting-btn[data-type="${type}"]`).forEach(b => {
+                     b.style.background = 'rgba(255,255,255,0.1)';
+                 });
+                 btn.style.background = '#ffd700';
+                 
+                 if (type === 'diff') difficultyMult = val;
+                 if (type === 'speed') gameSpeedMult = val;
+             };
+         });
+
+         document.getElementById('save-settings-btn').onclick = () => {
+             document.getElementById('game-settings').classList.add('hidden');
+             document.getElementById('start-screen').classList.remove('hidden');
+         };
+
+         document.getElementById('show-select-btn').onclick = () => {
             document.getElementById('start-screen').classList.add('hidden');
             document.getElementById('zodiac-select').classList.remove('hidden');
             const list = document.getElementById('zodiac-list');
