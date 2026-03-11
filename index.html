@@ -772,7 +772,7 @@
                 voiceBtn.classList.remove('recording');
                 
                 if (event.error === 'service-not-allowed') {
-                    alert("❌ 语音服务未开启 (service-not-allowed)\n\n修复方法：\n1. 请在 iPhone【设置】-【通用】-【键盘】中，确保【启用听写】开关已打开。\n2. 确保 iPhone 未处于【低电量模式】。");
+                    alert("❌ 苹果系统语音服务拦截\n\n您的 iPhone 似乎禁用了网页端的直接录音。别担心，您依然可以用语音：\n\n1. 点击下方的【输入框】。\n2. 弹出键盘后，点击键盘右下角的【麦克风】图标。\n3. 直接说话，文字会自动填入！");
                 } else if (event.error === 'network') {
                     alert("⚠️ 网络连接超时\n请切换 5G 或换个 Wi-Fi 试试。");
                 }
