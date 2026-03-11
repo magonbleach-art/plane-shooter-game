@@ -721,41 +721,76 @@
             const recognition = new SpeechRecognition();
             
             recognition.lang = 'zh-CN';
-            recognition.continuous = false;
-            recognition.interimResults = false;
+            recognition.continuous = true; // 开启持续监听模式，防止秒关
+            recognition.interimResults = true; // 开启实时结果显示，增强交互感
 
             let isRecording = false;
+            let silenceTimer = null; // 手动控制静默超时
 
             voiceBtn.onclick = (e) => {
                 e.preventDefault();
                 if (isRecording) {
-                    recognition.stop();
+                    stopRecording();
                 } else {
-                    try {
-                        feedbackInput.value = '';
-                        // 在开始前请求权限的特殊处理
-                        feedbackInput.placeholder = "正在申请麦克风权限...";
-                        recognition.start();
-                    } catch (err) {
-                        console.error("语音识别启动失败:", err);
-                        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-                            alert("❌ 权限被拒绝！\n请在 iPhone 的【设置】-【隐私】-【麦克风】中允许 Safari 访问，并确保网页地址栏左侧的“大小”图标中未禁用麦克风。");
-                        } else {
-                            feedbackInput.placeholder = "启动失败: " + err.message;
-                        }
-                    }
+                    startRecording();
                 }
             };
+
+            function startRecording() {
+                try {
+                    feedbackInput.value = '';
+                    feedbackInput.placeholder = "正在申请麦克风权限...";
+                    recognition.start();
+                } catch (err) {
+                    console.error("语音识别启动失败:", err);
+                    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                        alert("❌ 权限被拒绝！\n请在 iPhone 的【设置】-【隐私】-【麦克风】中允许 Safari 访问，并确保网页地址栏左侧的“大小”图标中未禁用麦克风。");
+                    } else {
+                        feedbackInput.placeholder = "启动失败: " + err.message;
+                    }
+                }
+            }
+
+            function stopRecording() {
+                recognition.stop();
+                isRecording = false;
+                voiceBtn.classList.remove('recording');
+                if (silenceTimer) clearTimeout(silenceTimer);
+            }
 
             recognition.onstart = () => {
                 isRecording = true;
                 voiceBtn.classList.add('recording');
-                feedbackInput.placeholder = "正在聆听您的指令...";
+                feedbackInput.placeholder = "正在聆听... (请说话)";
+                // 设置 5 秒静默超时：如果 5 秒内没检测到任何声音，自动停止
+                resetSilenceTimer();
             };
 
+            function resetSilenceTimer() {
+                if (silenceTimer) clearTimeout(silenceTimer);
+                silenceTimer = setTimeout(() => {
+                    if (isRecording) {
+                        console.log("检测到长时间静默，自动停止录音");
+                        stopRecording();
+                    }
+                }, 5000); // 5秒静默检测
+            }
+
             recognition.onresult = (event) => {
-                const text = event.results[0][0].transcript;
-                feedbackInput.value = text;
+                resetSilenceTimer(); // 只要有声音输入，就重置计时器
+                let finalTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript;
+                    } else {
+                        // 实时预览识别内容
+                        feedbackInput.placeholder = "识别中: " + event.results[i][0].transcript;
+                    }
+                }
+                if (finalTranscript) {
+                    feedbackInput.value = finalTranscript;
+                    feedbackInput.placeholder = "输入进化建议 (支持语音)";
+                }
             };
 
             recognition.onerror = (event) => {
