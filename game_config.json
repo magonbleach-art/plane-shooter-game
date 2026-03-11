@@ -187,28 +187,22 @@
             "bg_color": "#2c3e50",
             "hp_packs_count": 2,
             "waves": [
-                {
-                    "time": 2,
-                    "enemies": [
-                        "scout"
-                    ],
-                    "count": 5
-                },
-                {
-                    "time": 15,
-                    "enemies": [
-                        "interceptor"
-                    ],
-                    "count": 8
-                }
+                { "time": 2, "enemies": ["scout"], "count": 5 },
+                { "time": 15, "enemies": ["interceptor"], "count": 8 }
             ],
-            "boss": {
-                "name": "白羊座守护者",
-                "hp": 310,
-                "patterns": [
-                    "fan_spread"
-                ]
-            }
+            "boss": { "name": "白羊座守护者", "hp": 310, "patterns": ["fan_spread"] }
+        },
+        {
+            "id": 2,
+            "constellation": "金牛宫",
+            "unlock_bullet": "ox",
+            "bg_color": "#3e2723",
+            "hp_packs_count": 2,
+            "waves": [
+                { "time": 2, "enemies": ["heavy"], "count": 6 },
+                { "time": 15, "enemies": ["rammer"], "count": 10 }
+            ],
+            "boss": { "name": "金牛座领主", "hp": 600, "patterns": ["charge", "stomp"] }
         }
     ]
 }
