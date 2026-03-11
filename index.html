@@ -740,11 +740,10 @@
             async function startRecording() {
                 // 环境预检测：判断是否在 iOS 的非 Safari 环境 (如微信/企业微信)
                 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-                const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
                 const isWeChat = /MicroMessenger/i.test(navigator.userAgent);
                 
                 if (isIOS && isWeChat) {
-                    alert("⚠️ 微信/企业微信环境禁用了语音识别。\n请点击右上角 [...]，选择【在 Safari 中打开】即可正常语音！");
+                    alert("⚠️ 微信/企业微信不支持语音识别。\n请点击右上角 [...]，选择【在 Safari 中打开】。");
                     return;
                 }
 
@@ -752,19 +751,20 @@
                     feedbackInput.value = '';
                     feedbackInput.placeholder = "正在激活麦克风...";
                     
-                    // 权限预热：在启动识别前尝试获取麦克风流 (iOS 兼容性神技)
-                    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                        stream.getTracks().forEach(track => track.stop()); // 仅用于触发系统授权，随后关闭
-                    }
+                    // 重要：先停止之前的识别，确保状态干净
+                    try { recognition.stop(); } catch(e) {}
 
+                    // 启动识别
                     recognition.start();
                 } catch (err) {
                     console.error("语音识别启动失败:", err);
-                    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-                        alert("❌ 权限被拒绝！\n请检查：\n1. 手机【设置】-【隐私】-【麦克风】是否允许 Safari。\n2. 确保页面顶部地址栏左侧没有显示麦克风禁用图标。");
+                    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError' || err.message.includes('denied')) {
+                        alert("❌ 权限被拒绝！\n请检查：\n1. 手机【设置】-【隐私】-【麦克风】是否允许 Safari。\n2. 网页顶部地址栏左侧麦克风图标是否已开启。");
+                    } else if (err.name === 'InvalidStateError') {
+                        // 如果状态忙，稍后再试
+                        setTimeout(() => recognition.start(), 500);
                     } else {
-                        feedbackInput.placeholder = "启动失败: " + err.message;
+                        feedbackInput.placeholder = "启动失败: " + (err.message || err.name);
                     }
                 }
             }
