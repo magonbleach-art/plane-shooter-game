@@ -790,7 +790,7 @@
                         console.log("检测到长时间静默，自动停止录音");
                         stopRecording();
                     }
-                }, 5000); // 5秒静默检测
+                }, 10000); // 延长至 10 秒静默检测
             }
 
             recognition.onresult = (event) => {
@@ -800,8 +800,8 @@
                     if (event.results[i].isFinal) {
                         finalTranscript += event.results[i][0].transcript;
                     } else {
-                        // 实时预览识别内容
-                        feedbackInput.placeholder = "识别中: " + event.results[i][0].transcript;
+                        // 实时预览识别内容，并提示正在听
+                        feedbackInput.placeholder = "🎤 正在听: " + event.results[i][0].transcript;
                     }
                 }
                 if (finalTranscript) {
@@ -818,10 +818,14 @@
                 const errors = {
                     'not-allowed': '需授权麦克风权限',
                     'service-not-allowed': '苹果语音服务未开启',
-                    'network': '网络异常 (需翻墙或等待)',
+                    'network': '网络异常 (建议换个Wi-Fi或流量试下)',
                     'no-speech': '没听清，请大声点',
                     'aborted': '识别已中断'
                 };
+                
+                if (event.error === 'network') {
+                    alert("⚠️ 语音识别遇到网络错误 [network]\n原因：手机自带的语音服务连接超时。\n建议：\n1. 尝试切换 4G/5G 或不同的 Wi-Fi。\n2. 检查手机是否开启了“加速器”导致连接中断。\n3. 直接使用文字输入。");
+                }
                 
                 const errorMsg = errors[event.error] || `失败(${event.error})`;
                 feedbackInput.placeholder = errorMsg;
