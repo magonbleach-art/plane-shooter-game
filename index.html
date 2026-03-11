@@ -381,13 +381,64 @@
                     }
                 }
 
-                // 鼠·天罗网弹: 拦截敌弹逻辑
-                if (this.cfg.type === "interceptor") {
+                // 鼠·天罗网弹: 拦截敌弹逻辑 (通用拦截)
+                if (this.cfg.id === 'rat') {
                     for(let j = bullets.length - 1; j >= 0; j--) {
                         let eb = bullets[j];
                         if (eb.isEnemy && Math.hypot(eb.x - this.x, eb.y - this.y) < 40) {
                             bullets.splice(j, 1);
                             createExplosion(eb.x, eb.y, "#fff", 0.2);
+                        }
+                    }
+                }
+
+                // 虎/马: 清除白羊大招或其他弹幕
+                if (this.cfg.id === 'tiger' || this.cfg.id === 'horse') {
+                    for(let j = bullets.length - 1; j >= 0; j--) {
+                        let eb = bullets[j];
+                        if (eb.isEnemy && Math.hypot(eb.x - this.x, eb.y - this.y) < 30) {
+                            bullets.splice(j, 1);
+                        }
+                    }
+                }
+
+                // 兔: 摧毁金牛重力弹
+                if (this.cfg.id === 'rabbit') {
+                    for(let j = bullets.length - 1; j >= 0; j--) {
+                        let eb = bullets[j];
+                        if (eb.isEnemy && eb.cfg.speed_mult < 0.5 && Math.hypot(eb.x - this.x, eb.y - this.y) < 30) {
+                            bullets.splice(j, 1);
+                        }
+                    }
+                }
+
+                // 狗: 摧毁双子/处女小弹
+                if (this.cfg.id === 'dog') {
+                    for(let j = bullets.length - 1; j >= 0; j--) {
+                        let eb = bullets[j];
+                        if (eb.isEnemy && Math.hypot(eb.x - this.x, eb.y - this.y) < 30) {
+                            bullets.splice(j, 1);
+                        }
+                    }
+                }
+
+                // 龙: 贯穿清除 (如巨蟹大招)
+                if (this.cfg.id === 'dragon') {
+                    for(let j = bullets.length - 1; j >= 0; j--) {
+                        let eb = bullets[j];
+                        // 简化：激光路径上的敌弹都消失
+                        if (eb.isEnemy && Math.abs(eb.x - this.x) < 20) {
+                            bullets.splice(j, 1);
+                        }
+                    }
+                }
+
+                // 猴: 反弹并清除 (如射手流星/摩羯石弹)
+                if (this.cfg.id === 'monkey') {
+                    for(let j = bullets.length - 1; j >= 0; j--) {
+                        let eb = bullets[j];
+                        if (eb.isEnemy && Math.hypot(eb.x - this.x, eb.y - this.y) < 30) {
+                            bullets.splice(j, 1);
                         }
                     }
                 }
@@ -526,24 +577,148 @@
 
         class Boss {
             constructor(cfg) {
-                this.cfg = cfg; this.hp = cfg.hp; this.maxHp = cfg.hp;
+                this.cfg = cfg; 
+                this.hp = cfg.hp * (difficultyMult || 1); 
+                this.maxHp = this.hp;
                 this.x = 200; this.y = -100; this.targetY = 120;
+                this.skillTimer = 0;
+                this.isPhase2 = false;
             }
             update() {
-                if (this.y < this.targetY) this.y += 1;
-                else this.x += Math.sin(frameCount * 0.02) * 2;
+                if (this.y < this.targetY) {
+                    this.y += 1;
+                    return;
+                }
                 
-                if (frameCount % 60 === 0) {
-                    for(let i=-2; i<=2; i++) {
-                        bullets.push(new Bullet(this.x + i*30, this.y + 40, { color: "#ff4b2b" }, 90 + i*20, true));
+                this.x += Math.sin(frameCount * 0.02) * 2;
+                this.skillTimer++;
+
+                // 检查是否进入二阶段 (血量 <= 30%)
+                if (!this.isPhase2 && (this.hp / this.maxHp) <= 0.3) {
+                    this.isPhase2 = true;
+                    this.skillTimer = 0; // 重置计时器触发大招
+                }
+
+                if (this.isPhase2) {
+                    this.executeBigSkill();
+                } else {
+                    this.executeSmallSkill();
+                }
+            }
+
+            executeSmallSkill() {
+                const interval = 120 / gameSpeedMult;
+                if (this.skillTimer % Math.floor(interval) === 0) {
+                    const skill = this.cfg.small_skill;
+                    switch(skill) {
+                        case 'straight_bullet': // 白羊: 直线单发
+                            bullets.push(new Bullet(this.x, this.y + 40, { color: "#ff4b2b", type: "standard" }, 90, true));
+                            break;
+                        case 'gravity_bullet': // 金牛: 慢速重力弹
+                            bullets.push(new Bullet(this.x, this.y + 40, { color: "#8d6e63", speed_mult: 0.3 }, 90, true));
+                            break;
+                        case 'cross_bullets': // 双子: 左右交叉弹
+                            bullets.push(new Bullet(this.x - 20, this.y + 40, { color: "#ffeb3b" }, 110, true));
+                            bullets.push(new Bullet(this.x + 20, this.y + 40, { color: "#ffeb3b" }, 70, true));
+                            break;
+                        case 'wave_push': // 巨蟹: 横向推浪 (不扣血)
+                            // 逻辑在碰撞检测中处理
+                            bullets.push(new Bullet(this.x, this.y + 40, { color: "#00bcd4", type: "wave" }, 90, true));
+                            break;
+                        case 'fan_scatter': // 狮子: 扇形散弹
+                            for(let i=-2; i<=2; i++) bullets.push(new Bullet(this.x, this.y + 40, { color: "#ff9800" }, 90 + i*20, true));
+                            break;
+                        case 'homing_seed': // 处女: 跟踪小弹
+                            bullets.push(new Bullet(this.x, this.y + 40, { color: "#9c27b0", homing: true, homing_speed: 0.05 }, 90, true));
+                            break;
+                        case 'balance_shot': // 天秤: 左右交替
+                            let side = Math.sin(frameCount * 0.1) > 0 ? -30 : 30;
+                            bullets.push(new Bullet(this.x + side, this.y + 40, { color: "#ffc107" }, 90, true));
+                            break;
+                        case 'poison_dart': // 天蝎: 毒弹直线
+                            bullets.push(new Bullet(this.x, this.y + 40, { color: "#4caf50", type: "poison" }, 90, true));
+                            break;
+                        case 'meteor_arrow': // 射手: 流星斜向
+                            bullets.push(new Bullet(this.x, this.y + 40, { color: "#ff5722" }, 60 + Math.random()*60, true));
+                            break;
+                        case 'bounce_rock': // 摩羯: 反弹石弹
+                            bullets.push(new Bullet(this.x, this.y + 40, { color: "#795548", bounces: 2 }, 80 + Math.random()*20, true));
+                            break;
+                        case 'tornado_wind': // 水瓶: 龙卷位移
+                            bullets.push(new Bullet(this.x, this.y + 40, { color: "#2196f3", type: "wind" }, 90, true));
+                            break;
+                        case 'ghost_bubble': // 双鱼: 隐形弹
+                            bullets.push(new Bullet(this.x, this.y + 40, { color: "rgba(255,255,255,0.2)", type: "ghost" }, 90, true));
+                            break;
                     }
                 }
             }
+
+            executeBigSkill() {
+                const interval = 180 / gameSpeedMult;
+                if (this.skillTimer % Math.floor(interval) === 0) {
+                    const skill = this.cfg.big_skill;
+                    switch(skill) {
+                        case 'parallel_rows': // 白羊: 三列平行
+                            [-60, 0, 60].forEach(ox => bullets.push(new Bullet(this.x + ox, this.y + 40, { color: "#ff4b2b" }, 90, true)));
+                            break;
+                        case 'falling_barrage': // 金牛: 全屏落弹
+                            for(let i=0; i<5; i++) bullets.push(new Bullet(Math.random()*400, 0, { color: "#8d6e63" }, 90, true));
+                            break;
+                        case 'dual_lasers': // 双子: 双向激光
+                            bullets.push(new Bullet(this.x - 50, this.y, { color: "#ffeb3b", type: "boss_laser" }, 90, true));
+                            bullets.push(new Bullet(this.x + 50, this.y, { color: "#ffeb3b", type: "boss_laser" }, 90, true));
+                            break;
+                        case 'arc_shield': // 巨蟹: 弧形包围
+                            for(let i=0; i<10; i++) bullets.push(new Bullet(this.x, this.y, { color: "#00bcd4" }, 45 + i*10, true));
+                            break;
+                        case 'center_explosion': // 狮子: 中央爆破
+                            createExplosion(200, 300, "#ff9800", 3);
+                            // 伤害由碰撞逻辑处理
+                            break;
+                        case 'cross_laser': // 处女: 十字激光
+                            bullets.push(new Bullet(this.x, 0, { color: "#9c27b0", type: "boss_laser_v" }, 90, true));
+                            bullets.push(new Bullet(0, this.y, { color: "#9c27b0", type: "boss_laser_h" }, 0, true));
+                            break;
+                        case 'double_beams': // 天秤: 双束激光
+                            bullets.push(new Bullet(this.x - 30, this.y, { color: "#ffc107", type: "boss_laser" }, 90, true));
+                            bullets.push(new Bullet(this.x + 30, this.y, { color: "#ffc107", type: "boss_laser" }, 90, true));
+                            break;
+                        case 'blackhole_pull': // 天蝎: 黑洞牵引
+                            player.targetX = this.x; // 强制拉人
+                            break;
+                        case 'star_lock': // 射手: 星象锁定
+                            bullets.push(new Bullet(this.x, this.y, { color: "#ff5722", homing: true, speed_mult: 0.5 }, 90, true));
+                            break;
+                        case 'screen_rubble': // 摩羯: 全屏碎石
+                            for(let i=0; i<8; i++) bullets.push(new Bullet(Math.random()*400, -20, { color: "#795548" }, 90, true));
+                            break;
+                        case 'ice_beams': // 水瓶: 2条横向
+                            bullets.push(new Bullet(0, 200, { color: "#2196f3", type: "boss_laser_h" }, 0, true));
+                            bullets.push(new Bullet(0, 400, { color: "#2196f3", type: "boss_laser_h" }, 0, true));
+                            break;
+                        case 'ring_expansion': // 双鱼: 环形扩散
+                            for(let i=0; i<12; i++) bullets.push(new Bullet(this.x, this.y, { color: "#e91e63" }, i*30, true));
+                            break;
+                    }
+                }
+            }
+
             draw() {
                 ctx.save(); ctx.translate(this.x, this.y);
-                ctx.fillStyle = "#333"; ctx.shadowBlur = 40; ctx.shadowColor = "#f00";
-                ctx.beginPath(); ctx.moveTo(0, 60); ctx.lineTo(-60, 0); ctx.lineTo(60, 0); ctx.closePath(); ctx.fill();
-                ctx.fillStyle = "#f00"; ctx.beginPath(); ctx.arc(0, 0, 20, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = this.isPhase2 ? "#f00" : "#333"; 
+                ctx.shadowBlur = this.isPhase2 ? 50 : 20; 
+                ctx.shadowColor = this.isPhase2 ? "#f00" : "#ffd700";
+                
+                // 绘制不同形状代表不同星座BOSS (简化处理，用颜色和装饰区分)
+                ctx.beginPath();
+                ctx.moveTo(0, 40); ctx.lineTo(-40, -20); ctx.lineTo(40, -20);
+                ctx.closePath(); ctx.fill();
+                
+                // 核心点
+                ctx.fillStyle = this.isPhase2 ? "#fff" : "#ff0";
+                ctx.beginPath(); ctx.arc(0, 0, 15, 0, Math.PI*2); ctx.fill();
+                
                 ctx.restore();
             }
         }
@@ -635,6 +810,15 @@
                 const b = bullets[i]; b.update(); b.draw();
                 if (b.isEnemy) {
                     if (Math.abs(b.x - player.x) < 25 && Math.abs(b.y - player.y) < 25) {
+                        // 特殊位移效果 (巨蟹推浪, 水瓶龙卷)
+                        if (b.cfg.type === "wave" || b.cfg.type === "wind") {
+                            if (activeBulletId !== 'goat' && !isInvincible) {
+                                player.targetX += (b.x < player.x ? 50 : -50); // 位移
+                            }
+                            bullets.splice(i, 1);
+                            return;
+                        }
+
                         if (!isInvincible) {
                             bullets.splice(i, 1); 
                             lives--; 
@@ -764,11 +948,17 @@
             }
         }
 
-        function startGame() {
+        function startGame(isNewGame = true) {
             loadConfig().then(() => {
-                gameActive = true; score = 0; lives = 2; frameCount = 0; hpPacksSpawned = 0;
+                gameActive = true;
+                if (isNewGame) {
+                    score = 0; 
+                    currentLevelIdx = 0; 
+                    activeBulletId = selectedStartWeapon || 'rat'; 
+                    bulletLevel = 1;
+                }
+                lives = 2; frameCount = 0; hpPacksSpawned = 0;
                 bullets = []; enemies = []; powerups = []; boss = null; particles = [];
-                activeBulletId = selectedStartWeapon || 'rat'; bulletLevel = 1;
                 player.hasWingman = false;
                 initLevelZodiacs();
                 
@@ -782,33 +972,30 @@
         }
 
         // UI 事件监听
-         document.getElementById('show-settings-btn').onclick = () => {
-             document.getElementById('start-screen').classList.add('hidden');
-             document.getElementById('game-settings').classList.remove('hidden');
-         };
+        document.getElementById('show-settings-btn').onclick = () => {
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('game-settings').classList.remove('hidden');
+        };
 
-         document.querySelectorAll('.setting-btn').forEach(btn => {
-             btn.onclick = () => {
-                 const type = btn.dataset.type;
-                 const val = parseFloat(btn.dataset.val);
-                 
-                 // 视觉切换
-                 document.querySelectorAll(`.setting-btn[data-type="${type}"]`).forEach(b => {
-                     b.style.background = 'rgba(255,255,255,0.1)';
-                 });
-                 btn.style.background = '#ffd700';
-                 
-                 if (type === 'diff') difficultyMult = val;
-                 if (type === 'speed') gameSpeedMult = val;
-             };
-         });
+        document.querySelectorAll('.setting-btn').forEach(btn => {
+            btn.onclick = () => {
+                const type = btn.dataset.type;
+                const val = parseFloat(btn.dataset.val);
+                document.querySelectorAll(`.setting-btn[data-type="${type}"]`).forEach(b => {
+                    b.style.background = 'rgba(255,255,255,0.1)';
+                });
+                btn.style.background = '#ffd700';
+                if (type === 'diff') difficultyMult = val;
+                if (type === 'speed') gameSpeedMult = val;
+            };
+        });
 
-         document.getElementById('save-settings-btn').onclick = () => {
-             document.getElementById('game-settings').classList.add('hidden');
-             document.getElementById('start-screen').classList.remove('hidden');
-         };
+        document.getElementById('save-settings-btn').onclick = () => {
+            document.getElementById('game-settings').classList.add('hidden');
+            document.getElementById('start-screen').classList.remove('hidden');
+        };
 
-         document.getElementById('show-select-btn').onclick = () => {
+        document.getElementById('show-select-btn').onclick = () => {
             document.getElementById('start-screen').classList.add('hidden');
             document.getElementById('zodiac-select').classList.remove('hidden');
             const list = document.getElementById('zodiac-list');
@@ -832,7 +1019,6 @@
             });
         };
 
-        document.getElementById('confirm-select-btn').onclick = startGame;
         document.getElementById('back-to-start-btn').onclick = () => {
             document.getElementById('zodiac-select').classList.add('hidden');
             document.getElementById('start-screen').classList.remove('hidden');
@@ -858,12 +1044,14 @@
             document.getElementById('game-over').classList.remove('hidden');
         }
 
-        document.getElementById('start-btn').onclick = startGame;
-        document.getElementById('restart-btn').onclick = startGame;
+        document.getElementById('start-btn').onclick = () => startGame(true);
+        document.getElementById('restart-btn').onclick = () => startGame(true); // 死亡后重新开始
+        document.getElementById('confirm-select-btn').onclick = () => startGame(true);
+        
         document.getElementById('next-level-btn').onclick = () => {
             currentLevelIdx++;
             if (currentLevelIdx < gameConfig.constellation_levels.length) {
-                startGame(); // 启动下一关
+                startGame(false); // 启动下一关，不重置总得分和已选武器 (除非玩家想换)
             } else {
                 alert("恭喜！您已净化所有宫殿！");
                 location.reload();
