@@ -17,13 +17,26 @@
         }
         canvas { display: block; width: 400px; height: 600px; cursor: crosshair; }
         .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; padding: 0; box-sizing: border-box; backdrop-filter: blur(10px); }
-        .overlay-content { width: 85%; display: flex; flex-direction: column; align-items: center; text-align: center; }
+        .overlay-content { width: 90%; display: flex; flex-direction: column; align-items: center; text-align: center; max-height: 95%; overflow-y: auto; padding: 10px 0; }
+        /* 隐藏滚动条但保留功能 */
+        .overlay-content::-webkit-scrollbar { width: 0; background: transparent; }
+        
         .hidden { display: none !important; }
-        h1 { color: #ffd700; font-size: 2.2rem; margin: 0 0 15px 0; text-align: center; text-shadow: 0 0 20px rgba(255, 215, 0, 0.5); font-weight: 800; letter-spacing: 2px; }
-        .tutorial { color: #aaa; font-size: 0.85rem; line-height: 1.6; text-align: center; margin-bottom: 25px; background: rgba(255,255,255,0.03); padding: 20px; border-radius: 15px; border: 1px solid rgba(255,215,0,0.1); width: 100%; box-sizing: border-box; }
-        .tutorial b { color: #ffd700; font-size: 1rem; display: block; margin-bottom: 8px; }
-        button { width: 100%; max-width: 280px; height: 50px; margin: 8px 0; background: linear-gradient(135deg, #ffd700, #b8860b); border: none; border-radius: 25px; color: #000; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3); }
-        button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255, 215, 0, 0.5); }
+        h1 { color: #ffd700; font-size: 1.8rem; margin: 0 0 10px 0; text-align: center; text-shadow: 0 0 20px rgba(255, 215, 0, 0.5); font-weight: 800; letter-spacing: 1px; }
+        .tutorial { color: #aaa; font-size: 0.8rem; line-height: 1.4; text-align: center; margin-bottom: 15px; background: rgba(255,255,255,0.03); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,215,0,0.1); width: 100%; box-sizing: border-box; }
+        .tutorial b { color: #ffd700; font-size: 0.9rem; display: block; margin-bottom: 5px; }
+        
+        .btn-group { width: 100%; max-width: 280px; display: flex; flex-direction: column; gap: 8px; }
+        button { width: 100%; height: 44px; margin: 0; background: linear-gradient(135deg, #ffd700, #b8860b); border: none; border-radius: 22px; color: #000; font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.2); }
+        button:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4); }
+        
+        #show-settings-btn { background: #444; color: #ffd700; border: 1px solid #ffd700; }
+        #show-select-btn { background: #222; color: #fff; border: 1px solid #444; }
+        #start-btn { background: linear-gradient(135deg, #4caf50, #2e7d32); color: #fff; height: 50px; font-size: 1.1rem; margin-top: 5px; }
+
+        .feedback-area { width: 100%; max-width: 280px; margin-top: 20px; display: flex; flex-direction: column; gap: 8px; padding-top: 15px; border-top: 1px solid rgba(255,215,0,0.1); }
+        .feedback-input { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,215,0,0.2); border-radius: 10px; color: #fff; padding: 10px; font-size: 0.85rem; outline: none; transition: 0.3s; box-sizing: border-box; }
+        #submit-feedback-btn { background: #ffd700; color: #000; font-size: 0.85rem; height: 36px; border-radius: 18px; box-shadow: none; }
         #hud { position: absolute; top: 15px; left: 15px; right: 15px; display: flex; justify-content: space-between; font-size: 1rem; pointer-events: none; z-index: 50; color: #ffd700; font-weight: bold; text-shadow: 0 0 5px #000; }
         #boss-info { position: absolute; top: 50px; left: 60px; right: 60px; text-align: center; z-index: 50; }
         #boss-countdown { font-size: 0.8rem; color: #aaa; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
@@ -38,10 +51,6 @@
         #ult-btn.ready { background: rgba(255,215,0,0.8); color: #000; box-shadow: 0 0 30px #ffd700; animation: pulse 1s infinite; display: flex; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
         #ult-info { font-size: 0.7rem; color: #ffd700; text-transform: uppercase; letter-spacing: 1px; text-shadow: 0 0 5px #000; }
-        .feedback-area { width: 100%; margin-top: 25px; display: flex; flex-direction: column; gap: 12px; align-items: center; }
-        .feedback-input { width: 100%; max-width: 280px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,215,0,0.3); border-radius: 12px; color: #fff; padding: 12px 15px; font-size: 0.95rem; outline: none; transition: 0.3s; box-sizing: border-box; text-align: center; }
-        .feedback-input:focus { border-color: #ffd700; background: rgba(255,255,255,0.1); box-shadow: 0 0 10px rgba(255,215,0,0.2); }
-        #submit-feedback-btn { background: rgba(255,255,255,0.1); color: #ffd700; border: 1px solid #ffd700; font-size: 0.9rem; height: 40px; margin-top: 0; }
     </style>
 </head>
 <body>
