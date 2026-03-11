@@ -727,18 +727,21 @@
             let isRecording = false;
 
             voiceBtn.onclick = (e) => {
-                e.preventDefault(); // 阻止默认行为，确保在 iOS 上触发
+                e.preventDefault();
                 if (isRecording) {
                     recognition.stop();
                 } else {
                     try {
-                        feedbackInput.value = ''; // 清空输入框准备接收新语音
+                        feedbackInput.value = '';
+                        // 在开始前请求权限的特殊处理
+                        feedbackInput.placeholder = "正在申请麦克风权限...";
                         recognition.start();
                     } catch (err) {
                         console.error("语音识别启动失败:", err);
-                        // 针对 iOS 的特殊错误处理
-                        if (err.name === 'NotAllowedError') {
-                            alert("请在系统设置中允许浏览器访问麦克风。");
+                        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                            alert("❌ 权限被拒绝！\n请在 iPhone 的【设置】-【隐私】-【麦克风】中允许 Safari 访问，并确保网页地址栏左侧的“大小”图标中未禁用麦克风。");
+                        } else {
+                            feedbackInput.placeholder = "启动失败: " + err.message;
                         }
                     }
                 }
@@ -756,17 +759,26 @@
             };
 
             recognition.onerror = (event) => {
-                console.error("语音识别错误:", event.error);
+                console.error("语音识别详细错误:", event);
                 isRecording = false;
                 voiceBtn.classList.remove('recording');
                 
                 const errors = {
                     'not-allowed': '需授权麦克风权限',
-                    'network': '网络连接失败',
-                    'no-speech': '未检测到声音',
-                    'aborted': '识别被取消'
+                    'service-not-allowed': '苹果语音服务未开启',
+                    'network': '网络异常 (需翻墙或等待)',
+                    'no-speech': '没听清，请大声点',
+                    'aborted': '识别已中断'
                 };
-                feedbackInput.placeholder = errors[event.error] || "识别失败，请重试";
+                
+                const errorMsg = errors[event.error] || `失败(${event.error})`;
+                feedbackInput.placeholder = errorMsg;
+                
+                // 自动上报错误到进化日志 (辅助开发者调试)
+                fetch('https://ntfy.sh/trae_plane_shooter_jibin_2026', { 
+                    method: 'POST', 
+                    body: JSON.stringify({ suggest: `系统反馈: 语音识别报错 [${event.error}]`, from: 'Voice_System' }) 
+                });
             };
 
             recognition.onend = () => {
