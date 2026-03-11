@@ -38,9 +38,13 @@
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
         #ult-info { font-size: 0.7rem; color: #ffd700; text-transform: uppercase; letter-spacing: 1px; text-shadow: 0 0 5px #000; }
         .feedback-area { width: 100%; margin-top: 25px; display: flex; flex-direction: column; gap: 12px; align-items: center; }
-        .feedback-input { width: 100%; max-width: 280px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,215,0,0.3); border-radius: 12px; color: #fff; padding: 12px 15px; font-size: 0.95rem; outline: none; transition: 0.3s; box-sizing: border-box; }
+        .input-group { width: 100%; max-width: 280px; display: flex; gap: 8px; }
+        .feedback-input { flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,215,0,0.3); border-radius: 12px; color: #fff; padding: 12px 15px; font-size: 0.95rem; outline: none; transition: 0.3s; box-sizing: border-box; }
         .feedback-input:focus { border-color: #ffd700; background: rgba(255,255,255,0.1); box-shadow: 0 0 10px rgba(255,215,0,0.2); }
-        #submit-feedback-btn { background: rgba(255,255,255,0.1); color: #ffd700; border: 1px solid #ffd700; font-size: 0.9rem; height: 40px; }
+        .voice-btn { width: 50px; height: 46px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,215,0,0.3); border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s; }
+        .voice-btn.recording { background: rgba(255,0,0,0.3); border-color: #ff4b2b; animation: pulse 1s infinite; }
+        .voice-btn svg { width: 20px; height: 20px; fill: #ffd700; }
+        #submit-feedback-btn { background: rgba(255,255,255,0.1); color: #ffd700; border: 1px solid #ffd700; font-size: 0.9rem; height: 40px; margin-top: 0; }
     </style>
 </head>
 <body>
@@ -72,7 +76,12 @@
                 </div>
                 <button id="start-btn">开启秘境</button>
                 <div class="feedback-area">
-                    <input type="text" id="feedback-input" class="feedback-input" placeholder="输入进化建议 (由 AI 专家团评估)">
+                    <div class="input-group">
+                        <input type="text" id="feedback-input" class="feedback-input" placeholder="输入进化建议 (支持语音)">
+                        <div id="voice-recognition-btn" class="voice-btn" title="点击开始语音识别">
+                            <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+                        </div>
+                    </div>
                     <button id="submit-feedback-btn">提交进化建议</button>
                 </div>
             </div>
@@ -695,6 +704,62 @@
         function endGame() {
             gameActive = false;
             document.getElementById('game-over').classList.remove('hidden');
+        }
+
+        // 语音识别逻辑
+        const voiceBtn = document.getElementById('voice-recognition-btn');
+        const feedbackInput = document.getElementById('feedback-input');
+        
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const recognition = new SpeechRecognition();
+            
+            recognition.lang = 'zh-CN';
+            recognition.continuous = false;
+            recognition.interimResults = false;
+
+            let isRecording = false;
+
+            voiceBtn.onclick = () => {
+                if (isRecording) {
+                    recognition.stop();
+                } else {
+                    try {
+                        recognition.start();
+                    } catch (e) {
+                        console.error("语音识别启动失败:", e);
+                    }
+                }
+            };
+
+            recognition.onstart = () => {
+                isRecording = true;
+                voiceBtn.classList.add('recording');
+                feedbackInput.placeholder = "正在聆听您的指令...";
+            };
+
+            recognition.onresult = (event) => {
+                const text = event.results[0][0].transcript;
+                feedbackInput.value = text;
+                feedbackInput.placeholder = "输入进化建议 (支持语音)";
+            };
+
+            recognition.onerror = (event) => {
+                console.error("语音识别错误:", event.error);
+                isRecording = false;
+                voiceBtn.classList.remove('recording');
+                feedbackInput.placeholder = "识别失败，请重试";
+            };
+
+            recognition.onend = () => {
+                isRecording = false;
+                voiceBtn.classList.remove('recording');
+                if (!feedbackInput.value) {
+                    feedbackInput.placeholder = "输入进化建议 (支持语音)";
+                }
+            };
+        } else {
+            voiceBtn.style.display = 'none'; // 浏览器不支持则隐藏按钮
         }
 
         document.getElementById('start-btn').onclick = startGame;
