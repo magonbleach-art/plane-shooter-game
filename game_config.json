@@ -1,9 +1,9 @@
 {
     "game_title": "生肖射手：十二星座秘境",
-    "version": "5.2.535",
+    "version": "6.0.0",
     "settings": {
         "PLAYER_SPEED": 6,
-        "INITIAL_LIVES": 3,
+        "INITIAL_LIVES": 2,
         "MAX_LIVES": 5,
         "BULLET_SPEED": 12,
         "ACTIVE_ZODIAC_BULLET": "rat",
@@ -188,25 +188,157 @@
             "id": 1,
             "constellation": "白羊宫",
             "unlock_bullet": "rat",
-            "bg_color": "#2c3e50",
-            "hp_packs_count": 2,
-            "waves": [
-                { "time": 2, "enemies": ["scout"], "count": 5 },
-                { "time": 15, "enemies": ["interceptor"], "count": 8 }
-            ],
-            "boss": { "name": "白羊座守护者", "hp": 310, "patterns": ["fan_spread"] }
+            "boss": {
+                "name": "白羊 BOSS",
+                "hp": 500,
+                "small_skill": "straight_bullet",
+                "big_skill": "parallel_rows",
+                "counter_bullet": "rat",
+                "big_counter": ["tiger", "horse"]
+            }
         },
         {
             "id": 2,
             "constellation": "金牛宫",
             "unlock_bullet": "ox",
-            "bg_color": "#3e2723",
-            "hp_packs_count": 2,
-            "waves": [
-                { "time": 2, "enemies": ["heavy"], "count": 6 },
-                { "time": 15, "enemies": ["rammer"], "count": 10 }
-            ],
-            "boss": { "name": "金牛座领主", "hp": 600, "patterns": ["charge", "stomp"] }
+            "boss": {
+                "name": "金牛 BOSS",
+                "hp": 500,
+                "small_skill": "gravity_bullet",
+                "big_skill": "falling_barrage",
+                "counter_bullet": "rabbit",
+                "big_counter": "rat"
+            }
+        },
+        {
+            "id": 3,
+            "constellation": "双子宫",
+            "unlock_bullet": "tiger",
+            "boss": {
+                "name": "双子 BOSS",
+                "hp": 500,
+                "small_skill": "cross_bullets",
+                "big_skill": "dual_lasers",
+                "counter_bullet": "dog",
+                "big_counter": "dodge"
+            }
+        },
+        {
+            "id": 4,
+            "constellation": "巨蟹宫",
+            "unlock_bullet": "rabbit",
+            "boss": {
+                "name": "巨蟹 BOSS",
+                "hp": 500,
+                "small_skill": "wave_push",
+                "big_skill": "arc_shield",
+                "counter_bullet": "goat",
+                "big_counter": "dragon"
+            }
+        },
+        {
+            "id": 5,
+            "constellation": "狮子宫",
+            "unlock_bullet": "dragon",
+            "boss": {
+                "name": "狮子 BOSS",
+                "hp": 500,
+                "small_skill": "fan_scatter",
+                "big_skill": "center_explosion",
+                "counter_bullet": "tiger",
+                "big_counter": "dodge_edge"
+            }
+        },
+        {
+            "id": 6,
+            "constellation": "处女宫",
+            "unlock_bullet": "snake",
+            "boss": {
+                "name": "处女 BOSS",
+                "hp": 500,
+                "small_skill": "homing_seed",
+                "big_skill": "cross_laser",
+                "counter_bullet": "dog",
+                "big_counter": "dodge"
+            }
+        },
+        {
+            "id": 7,
+            "constellation": "天秤宫",
+            "unlock_bullet": "horse",
+            "boss": {
+                "name": "天秤 BOSS",
+                "hp": 500,
+                "small_skill": "balance_shot",
+                "big_skill": "double_beams",
+                "counter_bullet": "rat",
+                "big_counter": "dodge"
+            }
+        },
+        {
+            "id": 8,
+            "constellation": "天蝎宫",
+            "unlock_bullet": "goat",
+            "boss": {
+                "name": "天蝎 BOSS",
+                "hp": 500,
+                "small_skill": "poison_dart",
+                "big_skill": "blackhole_pull",
+                "counter_bullet": "snake",
+                "big_counter": "goat"
+            }
+        },
+        {
+            "id": 9,
+            "constellation": "射手宫",
+            "unlock_bullet": "monkey",
+            "boss": {
+                "name": "射手 BOSS",
+                "hp": 500,
+                "small_skill": "meteor_arrow",
+                "big_skill": "star_lock",
+                "counter_bullet": "monkey",
+                "big_counter": "rat"
+            }
+        },
+        {
+            "id": 10,
+            "constellation": "摩羯宫",
+            "unlock_bullet": "rooster",
+            "boss": {
+                "name": "摩羯 BOSS",
+                "hp": 500,
+                "small_skill": "bounce_rock",
+                "big_skill": "screen_rubble",
+                "counter_bullet": "monkey",
+                "big_counter": "dodge"
+            }
+        },
+        {
+            "id": 11,
+            "constellation": "水瓶宫",
+            "unlock_bullet": "dog",
+            "boss": {
+                "name": "水瓶 BOSS",
+                "hp": 500,
+                "small_skill": "tornado_wind",
+                "big_skill": "ice_beams",
+                "counter_bullet": "goat",
+                "big_counter": "dodge"
+            }
+        },
+        {
+            "id": 12,
+            "constellation": "双鱼宫",
+            "unlock_bullet": "pig",
+            "boss": {
+                "name": "双鱼 BOSS",
+                "hp": 500,
+                "small_skill": "ghost_bubble",
+                "big_skill": "ring_expansion",
+                "counter_bullet": "dragon",
+                "big_counter": "dodge"
+            }
         }
     ]
 }
