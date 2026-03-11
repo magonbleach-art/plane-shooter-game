@@ -83,7 +83,9 @@ const ZODIAC_DESIGNS = {
             name: "灵兔幻影",
             desc: "制造 3 个持续 10 秒的幻影分身，同步玩家所有操作",
             trigger: (gameState) => {
-                // 逻辑由 index.html 实现
+                gameState.isInvincible(true);
+                // 幻影逻辑通过 gameState 暴露接口
+                console.log("灵兔幻影激活");
             }
         }
     },
@@ -174,7 +176,8 @@ const ZODIAC_DESIGNS = {
             name: "分身乱舞",
             desc: "召唤 72 变，全屏充满随机弹射的子弹，持续 5 秒",
             trigger: (gameState) => {
-                // 逻辑由 index.html 实现
+                gameState.screenShake(10);
+                console.log("分身乱舞激活");
             }
         }
     },
@@ -212,7 +215,8 @@ const ZODIAC_DESIGNS = {
             name: "群犬逐日",
             desc: "发射 12 枚具有“斩杀”效果的超级追踪弹（秒杀 30% 血量以下的敌人）",
             trigger: (gameState) => {
-                // 逻辑由 index.html 实现
+                gameState.screenFlash(15);
+                console.log("群犬逐日激活");
             }
         }
     },
