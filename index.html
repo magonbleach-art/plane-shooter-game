@@ -715,10 +715,11 @@
         const voiceBtn = document.getElementById('voice-recognition-btn');
         const feedbackInput = document.getElementById('feedback-input');
         
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        // 使用 window 级作用域变量，确保 startRecording 等函数能稳定访问
+        window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         
-        if (SpeechRecognition) {
-            const recognition = new SpeechRecognition();
+        if (window.SpeechRecognition) {
+            const recognition = new window.SpeechRecognition();
             
             recognition.lang = 'zh-CN';
             recognition.continuous = true; // 开启持续监听模式，防止秒关
