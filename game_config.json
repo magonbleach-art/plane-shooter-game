@@ -12,51 +12,63 @@
     "zodiac_bullets": [
         { 
             "id": "rat", "name": "鼠·天罗网弹", "color": "#e0e0e0", "type": "interceptor",
-            "description": "拦截敌弹，缠绕伤害", "damage": 0.5, "speed_mult": 0.7, "width": 40, "height": 30
+            "description": "拦截敌弹，缠绕伤害", "damage": 0.5, "speed_mult": 0.7, "width": 40, "height": 30,
+            "ultimate": { "name": "万鼠噬心", "desc": "召唤鼠群拦截全屏子弹并啃噬敌机" }
         },
         { 
             "id": "ox", "name": "牛·破甲重弹", "color": "#8d6e63", "type": "heavy_pierce",
-            "description": "高伤破防，硬直击退", "damage": 5, "speed_mult": 0.5, "knockback": 20, "pierce": true
+            "description": "高伤破防，硬直击退", "damage": 5, "speed_mult": 0.5, "knockback": 20, "pierce": true,
+            "ultimate": { "name": "蛮牛冲撞", "desc": "三头巨牛横扫战场，摧毁一切阻碍" }
         },
         { 
             "id": "tiger", "name": "虎·狂啸散弹", "color": "#ff9800", "type": "scatter_tiger",
-            "description": "扇形扩散，近战霸主", "damage": 1.2, "scatter": 7, "angle_spread": 60
+            "description": "扇形扩散，近战霸主", "damage": 1.2, "scatter": 7, "angle_spread": 60,
+            "ultimate": { "name": "虎啸山河", "desc": "释放全屏冲击波，震退并重创敌军" }
         },
         { 
             "id": "rabbit", "name": "兔·跃动跳弹", "color": "#f06292", "type": "bounce_rabbit",
-            "description": "边缘反弹，穿梭敌群", "damage": 1.5, "bounces": 4, "speed_mult": 1.2
+            "description": "边缘反弹，穿梭敌群", "damage": 1.5, "bounces": 4, "speed_mult": 1.2,
+            "ultimate": { "name": "灵兔幻影", "desc": "机体进入虚无状态，高速碰撞造成多段伤害" }
         },
         { 
             "id": "dragon", "name": "龙·贯日激光", "color": "#ffd700", "type": "laser_dragon",
-            "description": "全屏贯穿，瞬发瞬中", "damage": 0.8, "is_continuous": true
+            "description": "全屏贯穿，瞬发瞬中", "damage": 0.8, "is_continuous": true,
+            "ultimate": { "name": "九龙吐息", "desc": "全屏扇形扫射圣光激光，持续毁灭敌人" }
         },
         { 
             "id": "snake", "name": "蛇·曲行毒弹", "color": "#4caf50", "type": "snake_poison",
-            "description": "S形蜿蜒，持续毒伤", "damage": 1, "poison_dot": 0.5, "poison_dur": 180
+            "description": "S形蜿蜒，持续毒伤", "damage": 1, "poison_dot": 0.5, "poison_dur": 180,
+            "ultimate": { "name": "万毒归宗", "desc": "全屏毒雾弥漫，敌机受到致命持续伤害" }
         },
         { 
             "id": "horse", "name": "马·疾驰穿甲弹", "color": "#2196f3", "type": "swift_pierce",
-            "description": "极速穿刺，远距精准", "damage": 2, "speed_mult": 2.5, "pierce": true
+            "description": "极速穿刺，远距精准", "damage": 2, "speed_mult": 2.5, "pierce": true,
+            "ultimate": { "name": "八骏神行", "desc": "进入时空缓流，机体化作电光穿透全屏" }
         },
         { 
             "id": "goat", "name": "羊·圣光护弹", "color": "#ffffff", "type": "holy_support",
-            "description": "命中回血，攻防兼备", "damage": 0.5, "heal": 0.1, "shield_prob": 0.2
+            "description": "命中回血，攻防兼备", "damage": 0.5, "heal": 0.1, "shield_prob": 0.2,
+            "ultimate": { "name": "神羊祈福", "desc": "瞬间恢复灵力，并获得长时间神圣护盾" }
         },
         { 
             "id": "monkey", "name": "猴·顽劣反弹弹", "color": "#ffeb3b", "type": "random_bounce",
-            "description": "无规律反弹，全屏乱战", "damage": 1.2, "bounces": 6, "random_angle": true
+            "description": "无规律反弹，全屏乱战", "damage": 1.2, "bounces": 6, "random_angle": true,
+            "ultimate": { "name": "分身乱舞", "desc": "召唤四个分身，全方位同步射击" }
         },
         { 
             "id": "rooster", "name": "鸡·鸣啼眩弹", "color": "#f44336", "type": "stun_rooster",
-            "description": "金光眩晕，控制核心", "damage": 0.3, "stun_dur": 120
+            "description": "金光眩晕，控制核心", "damage": 0.3, "stun_dur": 120,
+            "ultimate": { "name": "金鸡报晓", "desc": "释放万丈金光，全屏敌机陷入永久眩晕" }
         },
         { 
             "id": "dog", "name": "狗·忠魂追踪弹", "color": "#ffc107", "type": "homing_dog",
-            "description": "灵活绕障，自动锁敌", "damage": 1.5, "homing_speed": 0.2
+            "description": "灵活绕障，自动锁敌", "damage": 1.5, "homing_speed": 0.2,
+            "ultimate": { "name": "群犬逐日", "desc": "发射十二枚究极追踪弹，精准打击弱点" }
         },
         { 
             "id": "pig", "name": "猪·暴食爆破弹", "color": "#e91e63", "type": "nuke_pig",
-            "description": "范围爆破，碎片飞溅", "damage": 3, "aoe": 80, "fragments": 5
+            "description": "范围爆破，碎片飞溅", "damage": 3, "aoe": 80, "fragments": 5,
+            "ultimate": { "name": "饕餮之怒", "desc": "引发一场吞噬星空的终极核爆" }
         }
     ],
     "constellation_levels": [
