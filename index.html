@@ -736,15 +736,32 @@
                 }
             };
 
-            function startRecording() {
+            async function startRecording() {
+                // 环境预检测：判断是否在 iOS 的非 Safari 环境 (如微信/企业微信)
+                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+                const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+                const isWeChat = /MicroMessenger/i.test(navigator.userAgent);
+                
+                if (isIOS && isWeChat) {
+                    alert("⚠️ 微信/企业微信环境禁用了语音识别。\n请点击右上角 [...]，选择【在 Safari 中打开】即可正常语音！");
+                    return;
+                }
+
                 try {
                     feedbackInput.value = '';
-                    feedbackInput.placeholder = "正在申请麦克风权限...";
+                    feedbackInput.placeholder = "正在激活麦克风...";
+                    
+                    // 权限预热：在启动识别前尝试获取麦克风流 (iOS 兼容性神技)
+                    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                        stream.getTracks().forEach(track => track.stop()); // 仅用于触发系统授权，随后关闭
+                    }
+
                     recognition.start();
                 } catch (err) {
                     console.error("语音识别启动失败:", err);
                     if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-                        alert("❌ 权限被拒绝！\n请在 iPhone 的【设置】-【隐私】-【麦克风】中允许 Safari 访问，并确保网页地址栏左侧的“大小”图标中未禁用麦克风。");
+                        alert("❌ 权限被拒绝！\n请检查：\n1. 手机【设置】-【隐私】-【麦克风】是否允许 Safari。\n2. 确保页面顶部地址栏左侧没有显示麦克风禁用图标。");
                     } else {
                         feedbackInput.placeholder = "启动失败: " + err.message;
                     }
