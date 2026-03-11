@@ -19,6 +19,8 @@
             "description": "拦截敌弹，缠绕伤害",
             "damage": 0.5,
             "speed_mult": 0.7,
+            "homing": true,
+            "homing_speed": 0.15,
             "width": 40,
             "height": 30,
             "ultimate": {
@@ -36,6 +38,8 @@
             "speed_mult": 0.5,
             "knockback": 20,
             "pierce": true,
+            "homing": true,
+            "homing_speed": 0.1,
             "ultimate": {
                 "name": "蛮牛冲撞",
                 "desc": "三头巨牛横扫战场，摧毁一切阻碍"
