@@ -1,26 +1,63 @@
 {
     "game_title": "生肖射手：十二星座秘境",
-    "version": "4.5.0",
+    "version": "5.0.0",
     "settings": {
         "PLAYER_SPEED": 6,
         "INITIAL_LIVES": 3,
         "MAX_LIVES": 5,
         "BULLET_SPEED": 12,
-        "ACTIVE_ZODIAC_BULLET": "rat"
+        "ACTIVE_ZODIAC_BULLET": "rat",
+        "ENEMY_HP_MULT": 0.9
     },
     "zodiac_bullets": [
-        { "id": "rat", "name": "鼠", "description": "高速、穿透", "color": "#e0e0e0", "damage": 1, "pierce": true, "speed_mult": 1.5, "type": "pierce" },
-        { "id": "ox", "name": "牛", "description": "高伤、击退", "color": "#8d6e63", "damage": 3, "knockback": 15, "type": "heavy" },
-        { "id": "tiger", "name": "虎", "description": "暴击、连击", "color": "#ff9800", "crit_rate": 0.4, "type": "crit" },
-        { "id": "rabbit", "name": "兔", "description": "折射、弹跳", "color": "#f06292", "bounces": 3, "type": "bounce" },
-        { "id": "dragon", "name": "龙", "description": "追踪、爆炸", "color": "#4caf50", "homing": true, "aoe": 60, "type": "explosive" },
-        { "id": "snake", "name": "蛇", "description": "持续毒伤", "color": "#ba68c8", "poison_dot": 0.3, "type": "poison" },
-        { "id": "horse", "name": "马", "description": "激光、贯穿", "color": "#2196f3", "range": 1000, "type": "laser" },
-        { "id": "goat", "name": "羊", "description": "护盾、治疗", "color": "#ffffff", "shield": true, "type": "support" },
-        { "id": "monkey", "name": "猴", "description": "反弹、散弹", "color": "#ffeb3b", "scatter": 5, "type": "scatter" },
-        { "id": "rooster", "name": "鸡", "description": "眩晕、控制", "color": "#f44336", "stun_dur": 1.5, "type": "stun" },
-        { "id": "dog", "name": "狗", "description": "追踪、护卫", "color": "#ffc107", "guard_count": 1, "type": "homing" },
-        { "id": "pig", "name": "猪", "description": "高爆发、范围自爆", "color": "#e91e63", "explosive": true, "type": "nuke" }
+        { 
+            "id": "rat", "name": "鼠·天罗网弹", "color": "#e0e0e0", "type": "interceptor",
+            "description": "拦截敌弹，缠绕伤害", "damage": 0.5, "speed_mult": 0.7, "width": 40, "height": 30
+        },
+        { 
+            "id": "ox", "name": "牛·破甲重弹", "color": "#8d6e63", "type": "heavy_pierce",
+            "description": "高伤破防，硬直击退", "damage": 5, "speed_mult": 0.5, "knockback": 20, "pierce": true
+        },
+        { 
+            "id": "tiger", "name": "虎·狂啸散弹", "color": "#ff9800", "type": "scatter_tiger",
+            "description": "扇形扩散，近战霸主", "damage": 1.2, "scatter": 7, "angle_spread": 60
+        },
+        { 
+            "id": "rabbit", "name": "兔·跃动跳弹", "color": "#f06292", "type": "bounce_rabbit",
+            "description": "边缘反弹，穿梭敌群", "damage": 1.5, "bounces": 4, "speed_mult": 1.2
+        },
+        { 
+            "id": "dragon", "name": "龙·贯日激光", "color": "#ffd700", "type": "laser_dragon",
+            "description": "全屏贯穿，瞬发瞬中", "damage": 0.8, "is_continuous": true
+        },
+        { 
+            "id": "snake", "name": "蛇·曲行毒弹", "color": "#4caf50", "type": "snake_poison",
+            "description": "S形蜿蜒，持续毒伤", "damage": 1, "poison_dot": 0.5, "poison_dur": 180
+        },
+        { 
+            "id": "horse", "name": "马·疾驰穿甲弹", "color": "#2196f3", "type": "swift_pierce",
+            "description": "极速穿刺，远距精准", "damage": 2, "speed_mult": 2.5, "pierce": true
+        },
+        { 
+            "id": "goat", "name": "羊·圣光护弹", "color": "#ffffff", "type": "holy_support",
+            "description": "命中回血，攻防兼备", "damage": 0.5, "heal": 0.1, "shield_prob": 0.2
+        },
+        { 
+            "id": "monkey", "name": "猴·顽劣反弹弹", "color": "#ffeb3b", "type": "random_bounce",
+            "description": "无规律反弹，全屏乱战", "damage": 1.2, "bounces": 6, "random_angle": true
+        },
+        { 
+            "id": "rooster", "name": "鸡·鸣啼眩弹", "color": "#f44336", "type": "stun_rooster",
+            "description": "金光眩晕，控制核心", "damage": 0.3, "stun_dur": 120
+        },
+        { 
+            "id": "dog", "name": "狗·忠魂追踪弹", "color": "#ffc107", "type": "homing_dog",
+            "description": "灵活绕障，自动锁敌", "damage": 1.5, "homing_speed": 0.2
+        },
+        { 
+            "id": "pig", "name": "猪·暴食爆破弹", "color": "#e91e63", "type": "nuke_pig",
+            "description": "范围爆破，碎片飞溅", "damage": 3, "aoe": 80, "fragments": 5
+        }
     ],
     "constellation_levels": [
         {
@@ -33,7 +70,7 @@
                 { "time": 2, "enemies": ["scout"], "count": 5 },
                 { "time": 15, "enemies": ["interceptor"], "count": 8 }
             ],
-            "boss": { "name": "白羊座守护者", "hp": 400, "patterns": ["fan_spread"] }
+            "boss": { "name": "白羊座守护者", "hp": 360, "patterns": ["fan_spread"] }
         }
     ]
 }
