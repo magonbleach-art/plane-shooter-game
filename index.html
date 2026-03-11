@@ -152,79 +152,26 @@
         function triggerUltimate() {
             if (ultEnergy < 100 || ultActive || !gameActive) return;
             
-            const bCfg = gameConfig.zodiac_bullets.find(b => b.id === activeBulletId);
-            if (!bCfg) return;
-            
+            const design = ZODIAC_DESIGNS[activeBulletId];
+            if (!design) return;
+
             ultEnergy = 0;
             ultActive = true;
-            ultTimer = 300; // 5秒 (60fps * 5)
+            ultTimer = 300; // 5秒
             screenFlash = 20;
-            screenShake = 30;
             
-            // 全屏大招逻辑
-            switch(activeBulletId) {
-                case 'rat': // 万鼠噬心: 大量拦截子弹并攻击
-                    for(let i=0; i<30; i++) {
-                        setTimeout(() => {
-                            let b = new Bullet(player.x, player.y, bCfg, Math.random()*360, false, 2);
-                            b.isHoming = true; b.speed = 15;
-                            bullets.push(b);
-                        }, i * 50);
-                    }
-                    break;
-                case 'ox': // 蛮牛冲撞: 三路巨型冲击
-                    [-80, 0, 80].forEach(offset => {
-                        let b = new Bullet(player.x + offset, 650, bCfg, -90, false, 10);
-                        b.speed = 8; b.pierce = true;
-                        bullets.push(b);
-                    });
-                    break;
-                case 'tiger': // 虎啸山河: 全屏震荡波
-                    createExplosion(player.x, player.y, "#ff9800", 10);
-                    enemies.concat(boss ? [boss] : []).forEach(e => {
-                        e.hp -= 20 * bulletLevel;
-                        e.y -= 100; // 震退
-                    });
-                    break;
-                case 'dragon': // 九龙吐息: 全屏扫射激光
-                    ultTimer = 180; // 激光大招稍短
-                    break;
-                case 'snake': // 万毒归宗: 全屏毒雾
-                    ultTimer = 480; // 毒雾持续久
-                    break;
-                case 'rabbit': // 灵兔幻影: 无敌冲撞
-                    isInvincible = true;
-                    break;
-                case 'horse': // 八骏神行: 时空缓流 (通过减慢敌人速度实现)
-                    enemies.forEach(e => e.speed = 0.5);
-                    if(boss) boss.speed = 0.5;
-                    break;
-                case 'goat': // 神羊祈福: 回血+护盾
-                    lives = Math.min(5, lives + 2);
-                    isInvincible = true;
-                    updateHUD();
-                    break;
-                case 'monkey': // 分身乱舞
-                    // 逻辑在 gameLoop 中实现
-                    break;
-                case 'rooster': // 金鸡报晓: 全屏眩晕
-                    enemies.forEach(e => { e.hp -= 5; e.speed = 0; });
-                    break;
-                case 'dog': // 群犬逐日: 12枚究极追踪
-                    for(let i=0; i<12; i++) {
-                        let b = new Bullet(player.x, player.y, bCfg, i * 30, false, 5);
-                        b.isHoming = true; b.speed = 10;
-                        bullets.push(b);
-                    }
-                    break;
-                case 'pig': // 饕餮之怒: 终极核爆
-                    createExplosion(200, 300, "#e91e63", 20);
-                    enemies.concat(boss ? [boss] : []).forEach(e => e.hp -= 50);
-                    break;
+            // 动态调用 zodiac_designs.js 中的大招触发逻辑
+            if (design.ultimate && design.ultimate.trigger) {
+                design.ultimate.trigger({
+                    player, bullets, enemies, boss, 
+                    screenShake: (s) => screenShake = s,
+                    screenFlash: (s) => screenFlash = s,
+                    lives: (l) => lives = l,
+                    isInvincible: (v) => isInvincible = v
+                });
             }
-            
-            // 更新 UI
-            document.getElementById('ult-info').innerText = bCfg.ultimate.name;
+
+            document.getElementById('ult-info').innerText = design.ultimate.name + " 觉醒!";
             document.getElementById('ult-btn').classList.remove('ready');
         }
 
@@ -390,31 +337,31 @@
             }
             draw() {
                 ctx.save(); ctx.translate(this.x, this.y);
-                ctx.fillStyle = this.isEnemy ? "#ff4b2b" : (this.cfg.color || "#ffd700");
-                ctx.shadowBlur = 10 + (this.isEnemy ? 0 : this.level * 5);
-                ctx.shadowColor = ctx.fillStyle;
                 
-                if (this.cfg.type === "laser_dragon") {
-                    let w = 8 + (this.level * 8);
-                    ctx.globalAlpha = 0.6 + Math.random() * 0.4;
-                    ctx.fillRect(-w/2, -600, w, 600);
-                } else if (this.cfg.type === "interceptor") {
-                    ctx.strokeStyle = this.cfg.color;
-                    ctx.lineWidth = 2;
-                    ctx.beginPath();
-                    for(let i=0; i<6; i++) {
-                        ctx.moveTo(0,0);
-                        ctx.lineTo(Math.cos(i*Math.PI/3)*20, Math.sin(i*Math.PI/3)*20);
-                    }
-                    ctx.stroke();
+                // 动态调用 zodiac_designs.js 中的攻击特效
+                const design = ZODIAC_DESIGNS[this.cfg.id];
+                if (!this.isEnemy && design && design.attack_effect) {
+                    ctx.shadowBlur = 10 + this.level * 5;
+                    ctx.shadowColor = design.color;
+                    design.attack_effect(ctx, this);
                 } else {
-                    ctx.rotate(this.angle + Math.PI/2);
-                    ctx.beginPath(); 
-                    let sw = 3 + (this.isEnemy ? 0 : this.level);
-                    let sh = 8 + (this.isEnemy ? 0 : this.level * 2);
-                    if (this.cfg.type === "nuke_pig") { sw *= 3; sh *= 2; }
-                    ctx.ellipse(0, 0, sw, sh, 0, 0, Math.PI*2);
-                    ctx.fill();
+                    // 默认敌弹或通用渲染
+                    ctx.fillStyle = this.isEnemy ? "#ff4b2b" : (this.cfg.color || "#ffd700");
+                    ctx.shadowBlur = 10 + (this.isEnemy ? 0 : this.level * 5);
+                    ctx.shadowColor = ctx.fillStyle;
+                    
+                    if (this.cfg.type === "laser_dragon") {
+                        let w = 8 + (this.level * 8);
+                        ctx.globalAlpha = 0.6 + Math.random() * 0.4;
+                        ctx.fillRect(-w/2, -600, w, 600);
+                    } else {
+                        ctx.rotate(this.angle + Math.PI/2);
+                        ctx.beginPath(); 
+                        let sw = 3 + (this.isEnemy ? 0 : this.level);
+                        let sh = 8 + (this.isEnemy ? 0 : this.level * 2);
+                        ctx.ellipse(0, 0, sw, sh, 0, 0, Math.PI*2);
+                        ctx.fill();
+                    }
                 }
                 ctx.restore();
             }
