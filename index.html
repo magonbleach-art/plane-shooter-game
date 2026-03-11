@@ -5,25 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>生肖射手：十二星座秘境</title>
     <style>
-        body { margin: 0; padding: 0; background: #000; color: #fff; font-family: 'Segoe UI', sans-serif; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        #game-container { position: relative; width: 400px; height: 600px; background: #050505; box-shadow: 0 0 50px rgba(255, 255, 255, 0.1); border: 2px solid rgba(255, 255, 255, 0.1); overflow: hidden; }
-        canvas { display: block; }
-        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; padding: 20px; box-sizing: border-box; backdrop-filter: blur(10px); }
+        body { margin: 0; padding: 0; background: #000; color: #fff; font-family: 'Segoe UI', sans-serif; overflow: hidden; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        #game-container { position: relative; width: 400px; height: 600px; background: #050505; box-shadow: 0 0 50px rgba(255, 255, 255, 0.1); border: 2px solid rgba(255, 255, 255, 0.1); overflow: hidden; display: flex; flex-direction: column; }
+        /* PC 端缩放适配 */
+        @media (min-height: 700px) and (min-width: 500px) {
+            #game-container { transform: scale(1.1); }
+        }
+        @media (max-height: 600px) {
+            #game-container { transform: scale(0.8); }
+        }
+        canvas { display: block; width: 400px; height: 600px; cursor: crosshair; }
+        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; padding: 0; box-sizing: border-box; backdrop-filter: blur(10px); }
+        .overlay-content { width: 85%; display: flex; flex-direction: column; align-items: center; text-align: center; }
         .hidden { display: none !important; }
-        h1 { color: #ffd700; font-size: 2rem; margin-bottom: 10px; text-align: center; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
-        .tutorial { color: #aaa; font-size: 0.8rem; line-height: 1.5; text-align: center; margin-bottom: 20px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; }
-        .tutorial b { color: #ffd700; }
-        button { width: 80%; height: 45px; margin: 5px 0; background: linear-gradient(135deg, #ffd700, #b8860b); border: none; border-radius: 25px; color: #000; font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        #hud { position: absolute; top: 10px; left: 10px; right: 10px; display: flex; justify-content: space-between; font-size: 0.9rem; pointer-events: none; z-index: 50; color: #ffd700; }
-        #boss-info { position: absolute; top: 40px; left: 50px; right: 50px; text-align: center; z-index: 50; }
-        #boss-countdown { font-size: 0.8rem; color: #aaa; margin-bottom: 5px; }
-        #boss-hp-bar { height: 6px; background: rgba(255,0,0,0.2); border: 1px solid #f00; display: none; }
-        #boss-hp-fill { width: 100%; height: 100%; background: #f00; transition: width 0.2s; box-shadow: 0 0 10px #f00; }
-        #bullet-selector { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 50; }
-        .bullet-icon { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #444; display: flex; justify-content: center; align-items: center; background: rgba(0,0,0,0.5); cursor: pointer; font-weight: bold; transition: 0.2s; }
-        .bullet-icon.active { border-color: #ffd700; box-shadow: 0 0 15px #ffd700; transform: scale(1.1); }
-        .feedback-area { width: 100%; margin-top: 15px; display: flex; flex-direction: column; gap: 10px; align-items: center; }
-        .feedback-input { width: 80%; background: rgba(255,255,255,0.1); border: 1px solid #ffd700; border-radius: 5px; color: #fff; padding: 10px; font-size: 0.9rem; outline: none; }
+        h1 { color: #ffd700; font-size: 2.2rem; margin: 0 0 15px 0; text-align: center; text-shadow: 0 0 20px rgba(255, 215, 0, 0.5); font-weight: 800; letter-spacing: 2px; }
+        .tutorial { color: #aaa; font-size: 0.85rem; line-height: 1.6; text-align: center; margin-bottom: 25px; background: rgba(255,255,255,0.03); padding: 20px; border-radius: 15px; border: 1px solid rgba(255,215,0,0.1); width: 100%; box-sizing: border-box; }
+        .tutorial b { color: #ffd700; font-size: 1rem; display: block; margin-bottom: 8px; }
+        button { width: 100%; max-width: 280px; height: 50px; margin: 8px 0; background: linear-gradient(135deg, #ffd700, #b8860b); border: none; border-radius: 25px; color: #000; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3); }
+        button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255, 215, 0, 0.5); }
+        #hud { position: absolute; top: 15px; left: 15px; right: 15px; display: flex; justify-content: space-between; font-size: 1rem; pointer-events: none; z-index: 50; color: #ffd700; font-weight: bold; text-shadow: 0 0 5px #000; }
+        #boss-info { position: absolute; top: 50px; left: 60px; right: 60px; text-align: center; z-index: 50; }
+        #boss-countdown { font-size: 0.8rem; color: #aaa; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+        #boss-hp-bar { height: 8px; background: rgba(255,0,0,0.1); border: 1px solid rgba(255,0,0,0.5); border-radius: 4px; display: none; overflow: hidden; }
+        #boss-hp-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #ff4b2b, #ff0000); transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 0 15px #f00; }
+        .feedback-area { width: 100%; margin-top: 25px; display: flex; flex-direction: column; gap: 12px; align-items: center; }
+        .feedback-input { width: 100%; max-width: 280px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,215,0,0.3); border-radius: 12px; color: #fff; padding: 12px 15px; font-size: 0.95rem; outline: none; transition: 0.3s; box-sizing: border-box; }
+        .feedback-input:focus { border-color: #ffd700; background: rgba(255,255,255,0.1); box-shadow: 0 0 10px rgba(255,215,0,0.2); }
+        #submit-feedback-btn { background: rgba(255,255,255,0.1); color: #ffd700; border: 1px solid #ffd700; font-size: 0.9rem; height: 40px; }
     </style>
 </head>
 <body>
@@ -38,32 +46,38 @@
             <div id="boss-hp-bar"><div id="boss-hp-fill"></div></div>
         </div>
         <canvas id="gameCanvas"></canvas>
-        <div id="bullet-selector"></div>
 
         <div id="start-screen" class="overlay">
-            <h1>生肖射手<br>十二星座秘境</h1>
-            <div class="tutorial">
-                <b>秘境法则</b><br>
-                1. 挑战<b>十二星座</b>关卡，解锁<b>十二生肖</b>子弹<br>
-                2. <b>鼠子弹 (白羊宫解锁)</b>: 高速、穿透<br>
-                3. 点击底部图标切换子弹机制
-            </div>
-            <button id="start-btn">开启秘境</button>
-            <div class="feedback-area">
-                <input type="text" id="feedback-input" class="feedback-input" placeholder="输入进化建议 (如: 增加子弹特效)">
-                <button id="submit-feedback-btn" style="background: #222; color: #ffd700; border: 1px solid #ffd700; font-size: 0.8rem;">提交给 AI 专家团</button>
+            <div class="overlay-content">
+                <h1>生肖射手<br>十二星座秘境</h1>
+                <div class="tutorial">
+                    <b>秘境法则</b>
+                    1. 挑战<b>十二星座</b>宫殿，净化黑暗之力<br>
+                    2. 收集掉落的<b>生肖灵珠</b>切换子弹形态<br>
+                    3. 击败最终 Boss 解锁下一关及新子弹
+                </div>
+                <button id="start-btn">开启秘境</button>
+                <div class="feedback-area">
+                    <input type="text" id="feedback-input" class="feedback-input" placeholder="输入进化建议 (由 AI 专家团评估)">
+                    <button id="submit-feedback-btn">提交进化建议</button>
+                </div>
             </div>
         </div>
 
         <div id="game-over" class="overlay hidden">
-            <h1 style="color: #ff4b2b;">灵力枯竭</h1>
-            <button id="restart-btn">再次挑战</button>
+            <div class="overlay-content">
+                <h1 style="color: #ff4b2b;">灵力枯竭</h1>
+                <p style="color: #aaa; margin-bottom: 20px;">你的意志已消散在星空之中...</p>
+                <button id="restart-btn">再次挑战</button>
+            </div>
         </div>
 
         <div id="level-clear" class="overlay hidden">
-            <h1 style="color: #00ff00;">宫殿净化成功!</h1>
-            <p id="unlock-msg">解锁新子弹: 鼠</p>
-            <button id="next-level-btn">进入下一宫</button>
+            <div class="overlay-content">
+                <h1 style="color: #00ff00;">宫殿净化成功!</h1>
+                <p id="unlock-msg" style="color: #ffd700; font-size: 1.2rem; margin-bottom: 25px;">解锁新生肖之力: 鼠</p>
+                <button id="next-level-btn">进入下一宫</button>
+            </div>
         </div>
     </div>
 
@@ -72,7 +86,6 @@
         async function loadConfig() {
             const res = await fetch('game_config.json?t=' + Date.now());
             gameConfig = await res.json();
-            renderBulletSelector();
         }
 
         const canvas = document.getElementById('gameCanvas');
@@ -80,42 +93,100 @@
         canvas.width = 400; canvas.height = 600;
 
         let gameActive = false, score = 0, lives = 3, frameCount = 0;
-        let currentLevelIdx = 0, activeBulletId = 'rat';
-        let player = { x: 200, y: 520, targetX: 200 };
+        let currentLevelIdx = 0, activeBulletId = 'rat', bulletLevel = 1;
+        let player = { x: 200, y: 520, targetX: 200, width: 50, height: 50 };
         let bullets = [], enemies = [], stars = [], particles = [], powerups = [], boss = null;
         let bossSpawnTime = 1800; 
         let hpPacksSpawned = 0;
+        let screenShake = 0;
 
         for(let i=0; i<50; i++) stars.push({ x: Math.random()*400, y: Math.random()*600, s: Math.random()*2+1 });
 
-        window.addEventListener('mousemove', e => player.targetX = e.clientX - canvas.getBoundingClientRect().left);
-        window.addEventListener('touchmove', e => { player.targetX = e.touches[0].clientX - canvas.getBoundingClientRect().left; e.preventDefault(); }, {passive:false});
+        // 双端适配的输入监听
+        const getCanvasX = (clientX) => {
+            const rect = canvas.getBoundingClientRect();
+            return (clientX - rect.left) * (canvas.width / rect.width);
+        };
+        window.addEventListener('mousemove', e => player.targetX = getCanvasX(e.clientX));
+        window.addEventListener('touchmove', e => { 
+            player.targetX = getCanvasX(e.touches[0].clientX); 
+            e.preventDefault(); 
+        }, {passive:false});
 
-        function renderBulletSelector() {
-            const container = document.getElementById('bullet-selector');
-            container.innerHTML = '';
-            // 目前白羊宫默认解锁鼠，后续根据关卡动态增加
-            const unlocked = ['rat', 'ox', 'monkey', 'rabbit', 'dragon', 'horse']; 
-            gameConfig.zodiac_bullets.filter(b => unlocked.includes(b.id)).forEach(b => {
-                const div = document.createElement('div');
-                div.className = `bullet-icon ${activeBulletId === b.id ? 'active' : ''}`;
-                div.innerText = b.name;
-                div.onclick = () => { activeBulletId = b.id; renderBulletSelector(); };
-                container.appendChild(div);
-            });
+        // PC 键盘支持
+        window.addEventListener('keydown', e => {
+            const step = 20;
+            if (e.key === 'ArrowLeft' || e.key === 'a') player.targetX -= step;
+            if (e.key === 'ArrowRight' || e.key === 'd') player.targetX += step;
+        });
+
+        function drawPlayer() {
+            ctx.save();
+            ctx.translate(player.x, player.y);
+            
+            // 基础光晕 (随等级增强)
+            const bCfg = gameConfig.zodiac_bullets.find(b => b.id === activeBulletId) || {color: '#ffd700'};
+            ctx.shadowBlur = 10 + bulletLevel * 10;
+            ctx.shadowColor = bCfg.color;
+            
+            // 绘制等级指示器 (小星点)
+            for(let i=0; i<bulletLevel; i++) {
+                ctx.fillStyle = "#fff";
+                ctx.beginPath();
+                ctx.arc(-15 + i*15, 25, 3, 0, Math.PI*2);
+                ctx.fill();
+            }
+
+            // 根据不同子弹类型变形
+            if (activeBulletId === 'rat') { // 鼠：网状防御
+                ctx.strokeStyle = "#e0e0e0"; ctx.lineWidth = 2;
+                ctx.beginPath(); for(let i=0; i<8; i++) { ctx.moveTo(0,0); ctx.lineTo(Math.cos(i*Math.PI/4)*25, Math.sin(i*Math.PI/4)*25); }
+                ctx.stroke();
+            } else if (activeBulletId === 'ox') { // 牛：重装
+                ctx.fillStyle = "#8d6e63"; ctx.fillRect(-20, -20, 40, 40); ctx.fillRect(-10, -30, 20, 10);
+            } else if (activeBulletId === 'tiger') { // 虎：霸气
+                ctx.fillStyle = "#ff9800"; ctx.beginPath(); ctx.moveTo(0, -30); ctx.lineTo(-25, 20); ctx.lineTo(25, 20); ctx.closePath(); ctx.fill();
+                ctx.fillStyle = "#000"; ctx.fillRect(-15, -5, 30, 2);
+            } else if (activeBulletId === 'dragon') { // 龙：金光
+                ctx.fillStyle = "#ffd700"; ctx.beginPath(); ctx.arc(0, 0, 20, 0, Math.PI*2); ctx.fill();
+                ctx.shadowBlur = 30; ctx.shadowColor = "#ffd700";
+            } else if (activeBulletId === 'horse') { // 马：流线
+                ctx.fillStyle = "#2196f3"; ctx.beginPath(); ctx.moveTo(0, -35); ctx.lineTo(-15, 15); ctx.lineTo(15, 15); ctx.closePath(); ctx.fill();
+            } else { // 其他默认形态
+                ctx.fillStyle = bCfg.color; ctx.beginPath(); ctx.moveTo(0, -30); ctx.lineTo(-25, 15); ctx.lineTo(25, 15); ctx.closePath(); ctx.fill();
+            }
+            
+            // 引擎喷火
+            if (gameActive) {
+                ctx.fillStyle = "#f44336";
+                ctx.beginPath();
+                ctx.moveTo(-10, 15); ctx.lineTo(0, 15 + Math.random()*20); ctx.lineTo(10, 15);
+                ctx.fill();
+            }
+            ctx.restore();
         }
 
         class Bullet {
-            constructor(x, y, cfg, angle = 0, isEnemy = false) {
+            constructor(x, y, cfg, angle = -90, isEnemy = false, level = 1) {
                 this.x = x; this.y = y; this.cfg = cfg;
                 this.isEnemy = isEnemy;
+                this.level = level;
                 this.angle = angle * Math.PI / 180;
-                this.speed = (isEnemy ? 4 : gameConfig.settings.BULLET_SPEED) * (cfg.speed_mult || 1);
+                this.speed = (isEnemy ? 4 : (gameConfig.settings.BULLET_SPEED || 12)) * (cfg.speed_mult || 1);
+                this.isHoming = cfg.homing || (cfg.type === "homing_dog");
+                this.damage = (cfg.damage || 1) * (isEnemy ? 1 : level);
                 this.bounces = cfg.bounces || 0;
-                this.isHoming = cfg.homing || false;
-                this.pierce = cfg.pierce || false;
+                this.poison_dot = cfg.poison_dot || 0;
+                this.stun_dur = cfg.stun_dur || 0;
+                this.history = []; // 用于 S 形弹道
             }
             update() {
+                // 蛇·曲行毒弹: S形弹道
+                if (this.cfg.type === "snake_poison") {
+                    this.angle += Math.sin(frameCount * 0.2) * 0.1;
+                }
+                
+                // 狗·忠魂追踪弹 / 龙·贯日激光 (追踪部分)
                 if (this.isHoming && !this.isEnemy) {
                     let target = null, minDist = 1000;
                     enemies.concat(boss ? [boss] : []).forEach(e => {
@@ -124,28 +195,63 @@
                     });
                     if (target) {
                         let targetAngle = Math.atan2(target.y - this.y, target.x - this.x);
-                        this.angle += (targetAngle - this.angle) * 0.1;
+                        let diff = targetAngle - this.angle;
+                        while (diff < -Math.PI) diff += Math.PI * 2;
+                        while (diff > Math.PI) diff -= Math.PI * 2;
+                        this.angle += diff * (this.cfg.homing_speed || 0.15);
                     }
                 }
                 
-                this.x += Math.cos(this.angle) * this.speed * (this.isEnemy ? 1 : 0); // 敌人子弹逻辑暂存
-                this.y += this.isEnemy ? this.speed : -this.speed;
+                this.x += Math.cos(this.angle) * this.speed;
+                this.y += Math.sin(this.angle) * this.speed;
                 
-                if (this.cfg.type === "bounce") {
-                    if (this.x < 0 || this.x > 400) { this.angle = Math.PI - this.angle; this.bounces--; }
+                // 反弹逻辑 (兔 / 猴)
+                if (this.bounces > 0) {
+                    if (this.x < 0 || this.x > 400) {
+                        this.angle = Math.PI - this.angle;
+                        this.bounces--;
+                        if (this.cfg.random_angle) this.angle += (Math.random() - 0.5) * 1;
+                    }
+                }
+
+                // 鼠·天罗网弹: 拦截敌弹逻辑
+                if (this.cfg.type === "interceptor") {
+                    for(let j = bullets.length - 1; j >= 0; j--) {
+                        let eb = bullets[j];
+                        if (eb.isEnemy && Math.hypot(eb.x - this.x, eb.y - this.y) < 40) {
+                            bullets.splice(j, 1);
+                            createExplosion(eb.x, eb.y, "#fff", 0.2);
+                        }
+                    }
                 }
             }
             draw() {
                 ctx.save(); ctx.translate(this.x, this.y);
-                ctx.fillStyle = this.isEnemy ? "#ff4b2b" : this.cfg.color;
-                ctx.shadowBlur = 15; ctx.shadowColor = ctx.fillStyle;
+                ctx.fillStyle = this.isEnemy ? "#ff4b2b" : (this.cfg.color || "#ffd700");
+                ctx.shadowBlur = 10 + (this.isEnemy ? 0 : this.level * 5);
+                ctx.shadowColor = ctx.fillStyle;
                 
-                if (this.cfg.type === "laser") {
-                    ctx.fillRect(-4, -600, 8, 600);
-                } else if (this.cfg.type === "explosive") {
-                    ctx.beginPath(); ctx.arc(0, 0, 6, 0, Math.PI*2); ctx.fill();
+                if (this.cfg.type === "laser_dragon") {
+                    let w = 8 + (this.level * 8);
+                    ctx.globalAlpha = 0.6 + Math.random() * 0.4;
+                    ctx.fillRect(-w/2, -600, w, 600);
+                } else if (this.cfg.type === "interceptor") {
+                    ctx.strokeStyle = this.cfg.color;
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    for(let i=0; i<6; i++) {
+                        ctx.moveTo(0,0);
+                        ctx.lineTo(Math.cos(i*Math.PI/3)*20, Math.sin(i*Math.PI/3)*20);
+                    }
+                    ctx.stroke();
                 } else {
-                    ctx.beginPath(); ctx.arc(0, 0, 4, 0, Math.PI*2); ctx.fill();
+                    ctx.rotate(this.angle + Math.PI/2);
+                    ctx.beginPath(); 
+                    let sw = 3 + (this.isEnemy ? 0 : this.level);
+                    let sh = 8 + (this.isEnemy ? 0 : this.level * 2);
+                    if (this.cfg.type === "nuke_pig") { sw *= 3; sh *= 2; }
+                    ctx.ellipse(0, 0, sw, sh, 0, 0, Math.PI*2);
+                    ctx.fill();
                 }
                 ctx.restore();
             }
@@ -154,13 +260,18 @@
         class PowerUp {
             constructor(x, y, forceType = null) {
                 const types = [
-                    { id: 'hp', color: '#ff4b2b', label: '❤️' },
                     { id: 'rat', color: '#e0e0e0', label: '鼠' },
                     { id: 'ox', color: '#8d6e63', label: '牛' },
-                    { id: 'monkey', color: '#ffeb3b', label: '猴' },
+                    { id: 'tiger', color: '#ff9800', label: '虎' },
                     { id: 'rabbit', color: '#f06292', label: '兔' },
-                    { id: 'dragon', color: '#4caf50', label: '龙' },
-                    { id: 'horse', color: '#2196f3', label: '马' }
+                    { id: 'dragon', color: '#ffd700', label: '龙' },
+                    { id: 'snake', color: '#4caf50', label: '蛇' },
+                    { id: 'horse', color: '#2196f3', label: '马' },
+                    { id: 'goat', color: '#ffffff', label: '羊' },
+                    { id: 'monkey', color: '#ffeb3b', label: '猴' },
+                    { id: 'rooster', color: '#f44336', label: '鸡' },
+                    { id: 'dog', color: '#ffc107', label: '狗' },
+                    { id: 'pig', color: '#e91e63', label: '猪' }
                 ];
                 this.info = forceType || types[Math.floor(Math.random() * types.length)];
                 this.x = x; this.y = y; this.speed = 2;
@@ -177,15 +288,21 @@
         class Enemy {
             constructor() {
                 this.x = Math.random()*360 + 20; this.y = -30; this.speed = 2;
-                this.hp = 1;
+                // 应用全局血量倍率
+                const hpMult = gameConfig.settings.ENEMY_HP_MULT || 1;
+                this.hp = (1 + (currentLevelIdx * 2)) * hpMult;
             }
             update() { 
                 this.y += this.speed; 
-                if (frameCount % 120 === 0) bullets.push(new Bullet(this.x, this.y, { color: "#ff4b2b" }, 90, true));
+                if (frameCount % 120 === 0) {
+                    bullets.push(new Bullet(this.x, this.y, { color: "#ff4b2b" }, 90, true));
+                }
             }
             draw() {
-                ctx.save(); ctx.fillStyle = "#ff4b2b"; ctx.beginPath();
-                ctx.moveTo(this.x, this.y + 15); ctx.lineTo(this.x - 15, this.y - 15); ctx.lineTo(this.x + 15, this.y - 15);
+                ctx.save(); ctx.translate(this.x, this.y);
+                ctx.fillStyle = "#ff4b2b"; ctx.shadowBlur = 10; ctx.shadowColor = "#ff4b2b";
+                ctx.beginPath();
+                ctx.moveTo(0, 15); ctx.lineTo(-15, -15); ctx.lineTo(15, -15);
                 ctx.closePath(); ctx.fill(); ctx.restore();
             }
         }
@@ -200,7 +317,9 @@
                 else this.x += Math.sin(frameCount * 0.02) * 2;
                 
                 if (frameCount % 60 === 0) {
-                    for(let i=-2; i<=2; i++) bullets.push(new Bullet(this.x + i*30, this.y + 40, { color: "#ff4b2b" }, 90 + i*15, true));
+                    for(let i=-2; i<=2; i++) {
+                        bullets.push(new Bullet(this.x + i*30, this.y + 40, { color: "#ff4b2b" }, 90 + i*20, true));
+                    }
                 }
             }
             draw() {
@@ -216,10 +335,19 @@
             for(let i=0; i<20*size; i++) particles.push({ 
                 x, y, vx: (Math.random()-0.5)*12*size, vy: (Math.random()-0.5)*12*size, life: 1, color 
             });
+            screenShake = 10 * size;
         }
 
         function gameLoop() {
             if (!gameActive) return;
+            
+            ctx.save();
+            if (screenShake > 0) {
+                ctx.translate((Math.random()-0.5)*screenShake, (Math.random()-0.5)*screenShake);
+                screenShake *= 0.9;
+                if (screenShake < 0.5) screenShake = 0;
+            }
+            
             ctx.clearRect(0, 0, 400, 600); frameCount++;
 
             // 背景
@@ -228,11 +356,10 @@
 
             // 玩家
             player.x += (player.targetX - player.x) * 0.2;
-            ctx.fillStyle = "#ffd700"; ctx.beginPath();
-            ctx.moveTo(player.x, player.y - 30); ctx.lineTo(player.x - 25, player.y + 15); ctx.lineTo(player.x + 25, player.y + 15);
-            ctx.closePath(); ctx.fill();
+            player.x = Math.max(30, Math.min(370, player.x));
+            drawPlayer();
 
-            // 关卡血包投放
+            // 道具投放 (血包)
             if (hpPacksSpawned < 2) {
                 if (frameCount === 600 || frameCount === 1500) {
                     powerups.push(new PowerUp(Math.random()*300+50, -20, { id: 'hp', color: '#ff4b2b', label: '❤️' }));
@@ -259,13 +386,14 @@
             // 发射子弹
             if (frameCount % 12 === 0) {
                 const bCfg = gameConfig.zodiac_bullets.find(b => b.id === activeBulletId);
-                if (bCfg.type === "scatter") {
-                    for(let i=0; i<bCfg.scatter; i++) {
-                        let angle = -20 + (i * 40 / (bCfg.scatter - 1));
-                        bullets.push(new Bullet(player.x, player.y - 20, bCfg, angle));
+                if (bCfg.type === "scatter_tiger") {
+                    let count = bCfg.scatter + (bulletLevel - 1) * 2;
+                    for(let i=0; i<count; i++) {
+                        let angle = -90 - (bCfg.angle_spread/2) + (i * bCfg.angle_spread / (count - 1));
+                        bullets.push(new Bullet(player.x, player.y - 20, bCfg, angle, false, bulletLevel));
                     }
                 } else {
-                    bullets.push(new Bullet(player.x, player.y - 20, bCfg));
+                    bullets.push(new Bullet(player.x, player.y - 20, bCfg, -90, false, bulletLevel));
                 }
             }
 
@@ -273,29 +401,37 @@
             for(let i = bullets.length - 1; i >= 0; i--) {
                 const b = bullets[i]; b.update(); b.draw();
                 if (b.isEnemy) {
-                    if (Math.abs(b.x - player.x) < 20 && Math.abs(b.y - player.y) < 20) {
+                    if (Math.abs(b.x - player.x) < 25 && Math.abs(b.y - player.y) < 25) {
                         bullets.splice(i, 1); lives--; updateHUD();
+                        createExplosion(player.x, player.y, "#ff4b2b", 0.5);
                         if (lives <= 0) endGame();
                     }
                 } else {
                     enemies.forEach((e, ei) => {
                         if (Math.abs(b.x - e.x) < 25 && Math.abs(b.y - e.y) < 25) {
-                            e.hp--; 
-                            if (b.cfg.type === "explosive") {
+                            e.hp -= b.damage; 
+                            
+                            // 鸡·鸣啼眩弹: 眩晕逻辑
+                            if (b.cfg.type === "stun_rooster") { e.speed = 0.5; setTimeout(() => e.speed = 2, b.cfg.stun_dur * 16); }
+                            
+                            // 猪·暴食爆破弹: 爆炸逻辑
+                            if (b.cfg.type === "nuke_pig") {
                                 createExplosion(e.x, e.y, b.cfg.color, 2);
-                                enemies.forEach((e2, e2i) => {
-                                    if (Math.hypot(e2.x - e.x, e2.y - e.y) < b.cfg.aoe) e2.hp = 0;
+                                enemies.forEach((e2) => {
+                                    if (Math.hypot(e2.x - e.x, e2.y - e.y) < b.cfg.aoe) e2.hp -= b.damage;
                                 });
                             }
+                            
                             if (e.hp <= 0) {
                                 enemies.splice(ei, 1); score += 10; updateHUD();
-                                if (Math.random() < 0.15) powerups.push(new PowerUp(e.x, e.y));
+                                createExplosion(e.x, e.y, "#ff4b2b", 0.3);
+                                if (Math.random() < 0.25) powerups.push(new PowerUp(e.x, e.y));
                             }
-                            if (!b.cfg.pierce && b.cfg.type !== "laser") bullets.splice(i, 1);
+                            if (!b.cfg.pierce && b.cfg.type !== "laser_dragon" && b.cfg.type !== "interceptor") bullets.splice(i, 1);
                         }
                     });
                     if (boss && Math.abs(b.x - boss.x) < 60 && Math.abs(b.y - boss.y) < 40) {
-                        boss.hp -= b.cfg.damage; 
+                        boss.hp -= b.damage; 
                         if (b.cfg.type === "explosive") createExplosion(b.x, b.y, b.cfg.color, 1.5);
                         if (!b.cfg.pierce && b.cfg.type !== "laser") bullets.splice(i, 1);
                         if (boss.hp <= 0) {
@@ -305,7 +441,7 @@
                         }
                     }
                 }
-                if (b && (b.y < -50 || b.y > 650 || b.x < -50 || b.x > 450)) bullets.splice(i, 1);
+                if (b && (b.y < -100 || b.y > 700 || b.x < -100 || b.x > 500)) bullets.splice(i, 1);
             }
 
             // 粒子
@@ -320,8 +456,9 @@
             if (frameCount % 60 === 0 && !boss) enemies.push(new Enemy());
             for(let i = enemies.length - 1; i >= 0; i--) {
                 const e = enemies[i]; e.update(); e.draw();
-                if (Math.abs(e.x - player.x) < 30 && Math.abs(e.y - player.y) < 30) {
+                if (Math.abs(e.x - player.x) < 35 && Math.abs(e.y - player.y) < 35) {
                     enemies.splice(i, 1); lives--; updateHUD();
+                    createExplosion(player.x, player.y, "#ff4b2b", 1);
                     if (lives <= 0) endGame();
                 }
                 if (e.y > 650) enemies.splice(i, 1);
@@ -330,29 +467,38 @@
             // 道具逻辑
             for(let i = powerups.length - 1; i >= 0; i--) {
                 const p = powerups[i]; p.update(); p.draw();
-                if (Math.abs(p.x - player.x) < 35 && Math.abs(p.y - player.y) < 35) {
+                if (Math.abs(p.x - player.x) < 40 && Math.abs(p.y - player.y) < 40) {
                     if (p.info.id === 'hp') { 
                         lives = Math.min(5, lives + 1); updateHUD(); 
                     } else { 
-                        activeBulletId = p.info.id; renderBulletSelector(); 
+                        if (activeBulletId === p.info.id) {
+                            bulletLevel = Math.min(3, bulletLevel + 1); // 拾取相同类型升级
+                        } else {
+                            activeBulletId = p.info.id;
+                            bulletLevel = 1; // 拾取不同类型重置等级
+                        }
                     }
+                    createExplosion(p.x, p.y, p.info.color, 0.5);
                     powerups.splice(i, 1);
                 }
                 if (p.y > 650) powerups.splice(i, 1);
             }
-
+            
+            ctx.restore();
             requestAnimationFrame(gameLoop);
         }
 
         function updateHUD() {
             document.getElementById('score').innerText = `得分: ${score}`;
             document.getElementById('life').innerText = `❤️x${lives}`;
+            document.getElementById('level-name').innerText = `${gameConfig.constellation_levels[currentLevelIdx].constellation} (Lv.${bulletLevel})`;
         }
 
         function startGame() {
             loadConfig().then(() => {
                 gameActive = true; score = 0; lives = 3; frameCount = 0; hpPacksSpawned = 0;
                 bullets = []; enemies = []; powerups = []; boss = null; particles = [];
+                activeBulletId = 'rat'; bulletLevel = 1;
                 document.getElementById('start-screen').classList.add('hidden');
                 document.getElementById('game-over').classList.add('hidden');
                 document.getElementById('level-clear').classList.add('hidden');
@@ -377,8 +523,25 @@
         document.getElementById('submit-feedback-btn').onclick = async () => {
             const val = document.getElementById('feedback-input').value;
             if(!val) return;
-            await fetch('https://ntfy.sh/trae_plane_shooter_jibin_2026', { method: 'POST', body: JSON.stringify({ suggest: val }) });
-            alert("建议已提交给 AI 专家团！");
+            const btn = document.getElementById('submit-feedback-btn');
+            btn.innerText = "🚀 正在发送至 AI 专家团...";
+            btn.disabled = true;
+            
+            try {
+                // 核心链路：将建议同步到 ntfy，触发 Trae 监听
+                await fetch('https://ntfy.sh/trae_plane_shooter_jibin_2026', { 
+                    method: 'POST', 
+                    body: JSON.stringify({ suggest: val, from: 'Game_UI' }) 
+                });
+                
+                alert("✨ 建议已同步至 Trae 指挥中心！\n请关注企业微信群，AI 专家团正在进行评审...");
+                document.getElementById('feedback-input').value = '';
+            } catch(e) {
+                alert("❌ 同步失败，请检查网络。");
+            } finally {
+                btn.innerText = "提交进化建议";
+                btn.disabled = false;
+            }
         };
     </script>
 </body>
