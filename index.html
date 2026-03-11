@@ -711,146 +711,87 @@
             document.getElementById('game-over').classList.remove('hidden');
         }
 
-        // 语音识别逻辑 (针对 iPhone/Safari 优化)
+        // 语音识别逻辑 (针对 iPhone/Safari 深度优化)
         const voiceBtn = document.getElementById('voice-recognition-btn');
         const feedbackInput = document.getElementById('feedback-input');
         
-        // 使用 window 级作用域变量，确保 startRecording 等函数能稳定访问
         window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         
         if (window.SpeechRecognition) {
             const recognition = new window.SpeechRecognition();
-            
             recognition.lang = 'zh-CN';
-            recognition.continuous = true; // 开启持续监听模式，防止秒关
-            recognition.interimResults = true; // 开启实时结果显示，增强交互感
+            recognition.continuous = true;
+            recognition.interimResults = true;
 
             let isRecording = false;
-            let silenceTimer = null; // 手动控制静默超时
 
-            voiceBtn.onclick = (e) => {
+            // 核心修复：直接在同步点击事件中启动，不使用任何 async/await
+            voiceBtn.onclick = function(e) {
                 e.preventDefault();
-                if (isRecording) {
-                    stopRecording();
-                } else {
-                    startRecording();
-                }
-            };
-
-            async function startRecording() {
-                // 环境预检测：判断是否在 iOS 的非 Safari 环境 (如微信/企业微信)
-                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-                const isWeChat = /MicroMessenger/i.test(navigator.userAgent);
                 
-                if (isIOS && isWeChat) {
-                    alert("⚠️ 微信/企业微信不支持语音识别。\n请点击右上角 [...]，选择【在 Safari 中打开】。");
-                    return;
-                }
-
-                try {
-                    feedbackInput.value = '';
-                    feedbackInput.placeholder = "正在激活麦克风...";
-                    
-                    // 重要：先停止之前的识别，确保状态干净
-                    try { recognition.stop(); } catch(e) {}
-
-                    // 启动识别
-                    recognition.start();
-                } catch (err) {
-                    console.error("语音识别启动失败:", err);
-                    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError' || err.message.includes('denied')) {
-                        alert("❌ 权限被拒绝！\n请检查：\n1. 手机【设置】-【隐私】-【麦克风】是否允许 Safari。\n2. 网页顶部地址栏左侧麦克风图标是否已开启。");
-                    } else if (err.name === 'InvalidStateError') {
-                        // 如果状态忙，稍后再试
-                        setTimeout(() => recognition.start(), 500);
-                    } else {
-                        feedbackInput.placeholder = "启动失败: " + (err.message || err.name);
+                if (isRecording) {
+                    recognition.stop();
+                    isRecording = false;
+                    voiceBtn.classList.remove('recording');
+                    feedbackInput.placeholder = "输入进化建议 (支持语音)";
+                } else {
+                    try {
+                        feedbackInput.value = '';
+                        feedbackInput.placeholder = "🎙️ 正在申请麦克风...";
+                        
+                        // 直接启动识别，iOS 要求必须在点击事件的第一行执行同步操作
+                        recognition.start();
+                        
+                        isRecording = true;
+                        voiceBtn.classList.add('recording');
+                    } catch (err) {
+                        console.error("启动识别失败:", err);
+                        if (err.name === 'NotAllowedError') {
+                            alert("❌ 权限被拒绝！\n请检查 iPhone 设置 > 隐私 > 麦克风 > 允许 Safari。");
+                        } else {
+                            feedbackInput.placeholder = "启动失败: " + err.name;
+                        }
                     }
                 }
-            }
-
-            function stopRecording() {
-                recognition.stop();
-                isRecording = false;
-                voiceBtn.classList.remove('recording');
-                if (silenceTimer) clearTimeout(silenceTimer);
-            }
-
-            recognition.onstart = () => {
-                isRecording = true;
-                voiceBtn.classList.add('recording');
-                feedbackInput.placeholder = "正在聆听... (请说话)";
-                // 设置 5 秒静默超时：如果 5 秒内没检测到任何声音，自动停止
-                resetSilenceTimer();
             };
 
-            function resetSilenceTimer() {
-                if (silenceTimer) clearTimeout(silenceTimer);
-                silenceTimer = setTimeout(() => {
-                    if (isRecording) {
-                        console.log("检测到长时间静默，自动停止录音");
-                        stopRecording();
-                    }
-                }, 10000); // 延长至 10 秒静默检测
-            }
+            recognition.onstart = function() {
+                feedbackInput.placeholder = "正在聆听中...";
+            };
 
-            recognition.onresult = (event) => {
-                resetSilenceTimer(); // 只要有声音输入，就重置计时器
-                let finalTranscript = '';
+            recognition.onresult = function(event) {
+                let current = '';
                 for (let i = event.resultIndex; i < event.results.length; ++i) {
                     if (event.results[i].isFinal) {
-                        finalTranscript += event.results[i][0].transcript;
+                        current += event.results[i][0].transcript;
                     } else {
-                        // 实时预览识别内容，并提示正在听
-                        feedbackInput.placeholder = "🎤 正在听: " + event.results[i][0].transcript;
+                        feedbackInput.placeholder = "🎤: " + event.results[i][0].transcript;
                     }
                 }
-                if (finalTranscript) {
-                    feedbackInput.value = finalTranscript;
-                    feedbackInput.placeholder = "输入进化建议 (支持语音)";
+                if (current) {
+                    feedbackInput.value = current;
                 }
             };
 
-            recognition.onerror = (event) => {
-                console.error("语音识别详细错误:", event);
+            recognition.onerror = function(event) {
+                console.error("识别报错:", event.error);
                 isRecording = false;
                 voiceBtn.classList.remove('recording');
-                
-                const errors = {
-                    'not-allowed': '需授权麦克风权限',
-                    'service-not-allowed': '苹果语音服务未开启',
-                    'network': '网络异常 (建议换个Wi-Fi或流量试下)',
-                    'no-speech': '没听清，请大声点',
-                    'aborted': '识别已中断'
-                };
                 
                 if (event.error === 'network') {
-                    alert("⚠️ 语音识别遇到网络错误 [network]\n原因：手机自带的语音服务连接超时。\n建议：\n1. 尝试切换 4G/5G 或不同的 Wi-Fi。\n2. 检查手机是否开启了“加速器”导致连接中断。\n3. 直接使用文字输入。");
+                    alert("⚠️ 网络连接超时 [network]\n建议切换 5G 流量或更换 Wi-Fi 试试。");
                 }
-                
-                const errorMsg = errors[event.error] || `失败(${event.error})`;
-                feedbackInput.placeholder = errorMsg;
-                
-                // 自动上报错误到进化日志 (辅助开发者调试)
-                fetch('https://ntfy.sh/trae_plane_shooter_jibin_2026', { 
-                    method: 'POST', 
-                    body: JSON.stringify({ suggest: `系统反馈: 语音识别报错 [${event.error}]`, from: 'Voice_System' }) 
-                });
+                feedbackInput.placeholder = "失败: " + event.error;
             };
 
-            recognition.onend = () => {
+            recognition.onend = function() {
                 isRecording = false;
                 voiceBtn.classList.remove('recording');
-                if (!feedbackInput.value) {
-                    feedbackInput.placeholder = "输入进化建议 (支持语音)";
-                }
             };
         } else {
-            // 如果是 iPhone 但不支持 Web Speech (可能是微信内置浏览器)
-            voiceBtn.onclick = () => {
-                alert("当前环境不支持原生语音识别。建议：\n1. 点击右上角选择 '在 Safari 中打开'\n2. 直接输入文字指令");
+            voiceBtn.onclick = function() {
+                alert("当前环境不支持语音识别。\n请点击右上角 [...]，选择【在 Safari 中打开】。");
             };
-            // 保持按钮可见，但给出提示
             voiceBtn.style.opacity = '0.5';
         }
 
