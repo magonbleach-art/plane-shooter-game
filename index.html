@@ -28,6 +28,15 @@
         #boss-countdown { font-size: 0.8rem; color: #aaa; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
         #boss-hp-bar { height: 8px; background: rgba(255,0,0,0.1); border: 1px solid rgba(255,0,0,0.5); border-radius: 4px; display: none; overflow: hidden; }
         #boss-hp-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #ff4b2b, #ff0000); transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 0 15px #f00; }
+        
+        /* 大招能量条 */
+        #ult-container { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: 200px; text-align: center; z-index: 50; }
+        #ult-bar { height: 10px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,215,0,0.3); border-radius: 5px; overflow: hidden; margin-bottom: 5px; }
+        #ult-fill { width: 0%; height: 100%; background: linear-gradient(90deg, #ffd700, #ff8c00); transition: width 0.1s; box-shadow: 0 0 10px #ffd700; }
+        #ult-btn { width: 100px; height: 100px; border-radius: 50%; background: rgba(255,215,0,0.2); border: 2px solid #ffd700; color: #ffd700; font-weight: bold; font-size: 1.2rem; cursor: pointer; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); box-shadow: 0 0 20px rgba(255,215,0,0.3); position: absolute; bottom: 80px; right: 20px; transition: 0.3s; z-index: 100; }
+        #ult-btn.ready { background: rgba(255,215,0,0.8); color: #000; box-shadow: 0 0 30px #ffd700; animation: pulse 1s infinite; display: flex; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        #ult-info { font-size: 0.7rem; color: #ffd700; text-transform: uppercase; letter-spacing: 1px; text-shadow: 0 0 5px #000; }
         .feedback-area { width: 100%; margin-top: 25px; display: flex; flex-direction: column; gap: 12px; align-items: center; }
         .feedback-input { width: 100%; max-width: 280px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,215,0,0.3); border-radius: 12px; color: #fff; padding: 12px 15px; font-size: 0.95rem; outline: none; transition: 0.3s; box-sizing: border-box; }
         .feedback-input:focus { border-color: #ffd700; background: rgba(255,255,255,0.1); box-shadow: 0 0 10px rgba(255,215,0,0.2); }
@@ -45,6 +54,11 @@
             <div id="boss-countdown">Boss 降临倒计时: 30s</div>
             <div id="boss-hp-bar"><div id="boss-hp-fill"></div></div>
         </div>
+        <div id="ult-container">
+            <div id="ult-bar"><div id="ult-fill"></div></div>
+            <div id="ult-info">觉醒能量</div>
+        </div>
+        <div id="ult-btn">觉醒</div>
         <canvas id="gameCanvas"></canvas>
 
         <div id="start-screen" class="overlay">
@@ -99,6 +113,13 @@
         let bossSpawnTime = 1800; 
         let hpPacksSpawned = 0;
         let screenShake = 0;
+        
+        // 觉醒系统变量
+        let ultEnergy = 0;
+        let ultActive = false;
+        let ultTimer = 0;
+        let isInvincible = false;
+        let screenFlash = 0;
 
         for(let i=0; i<50; i++) stars.push({ x: Math.random()*400, y: Math.random()*600, s: Math.random()*2+1 });
 
@@ -118,7 +139,137 @@
             const step = 20;
             if (e.key === 'ArrowLeft' || e.key === 'a') player.targetX -= step;
             if (e.key === 'ArrowRight' || e.key === 'd') player.targetX += step;
+            if (e.key === ' ' || e.key === 'Enter') triggerUltimate();
         });
+        document.getElementById('ult-btn').onclick = triggerUltimate;
+
+        function triggerUltimate() {
+            if (ultEnergy < 100 || ultActive || !gameActive) return;
+            
+            const bCfg = gameConfig.zodiac_bullets.find(b => b.id === activeBulletId);
+            if (!bCfg) return;
+            
+            ultEnergy = 0;
+            ultActive = true;
+            ultTimer = 300; // 5秒 (60fps * 5)
+            screenFlash = 20;
+            screenShake = 30;
+            
+            // 全屏大招逻辑
+            switch(activeBulletId) {
+                case 'rat': // 万鼠噬心: 大量拦截子弹并攻击
+                    for(let i=0; i<30; i++) {
+                        setTimeout(() => {
+                            let b = new Bullet(player.x, player.y, bCfg, Math.random()*360, false, 2);
+                            b.isHoming = true; b.speed = 15;
+                            bullets.push(b);
+                        }, i * 50);
+                    }
+                    break;
+                case 'ox': // 蛮牛冲撞: 三路巨型冲击
+                    [-80, 0, 80].forEach(offset => {
+                        let b = new Bullet(player.x + offset, 650, bCfg, -90, false, 10);
+                        b.speed = 8; b.pierce = true;
+                        bullets.push(b);
+                    });
+                    break;
+                case 'tiger': // 虎啸山河: 全屏震荡波
+                    createExplosion(player.x, player.y, "#ff9800", 10);
+                    enemies.concat(boss ? [boss] : []).forEach(e => {
+                        e.hp -= 20 * bulletLevel;
+                        e.y -= 100; // 震退
+                    });
+                    break;
+                case 'dragon': // 九龙吐息: 全屏扫射激光
+                    ultTimer = 180; // 激光大招稍短
+                    break;
+                case 'snake': // 万毒归宗: 全屏毒雾
+                    ultTimer = 480; // 毒雾持续久
+                    break;
+                case 'rabbit': // 灵兔幻影: 无敌冲撞
+                    isInvincible = true;
+                    break;
+                case 'horse': // 八骏神行: 时空缓流 (通过减慢敌人速度实现)
+                    enemies.forEach(e => e.speed = 0.5);
+                    if(boss) boss.speed = 0.5;
+                    break;
+                case 'goat': // 神羊祈福: 回血+护盾
+                    lives = Math.min(5, lives + 2);
+                    isInvincible = true;
+                    updateHUD();
+                    break;
+                case 'monkey': // 分身乱舞
+                    // 逻辑在 gameLoop 中实现
+                    break;
+                case 'rooster': // 金鸡报晓: 全屏眩晕
+                    enemies.forEach(e => { e.hp -= 5; e.speed = 0; });
+                    break;
+                case 'dog': // 群犬逐日: 12枚究极追踪
+                    for(let i=0; i<12; i++) {
+                        let b = new Bullet(player.x, player.y, bCfg, i * 30, false, 5);
+                        b.isHoming = true; b.speed = 10;
+                        bullets.push(b);
+                    }
+                    break;
+                case 'pig': // 饕餮之怒: 终极核爆
+                    createExplosion(200, 300, "#e91e63", 20);
+                    enemies.concat(boss ? [boss] : []).forEach(e => e.hp -= 50);
+                    break;
+            }
+            
+            // 更新 UI
+            document.getElementById('ult-info').innerText = bCfg.ultimate.name;
+            document.getElementById('ult-btn').classList.remove('ready');
+        }
+
+        function updateUlt() {
+            if (!ultActive) {
+                if (ultEnergy < 100) {
+                    ultEnergy += 0.05 + (bulletLevel * 0.02); // 随等级充能加快
+                    if (ultEnergy >= 100) {
+                        ultEnergy = 100;
+                        document.getElementById('ult-btn').classList.add('ready');
+                        document.getElementById('ult-info').innerText = "觉醒就绪 (Space)";
+                    }
+                }
+            } else {
+                ultTimer--;
+                
+                // 持续性大招逻辑
+                if (activeBulletId === 'dragon' && ultTimer % 5 === 0) {
+                    // 龙大招：扫射激光
+                    const bCfg = gameConfig.zodiac_bullets.find(b => b.id === 'dragon');
+                    for(let i=0; i<3; i++) {
+                        let angle = -90 + Math.sin(frameCount * 0.1 + i) * 60;
+                        bullets.push(new Bullet(player.x, player.y, bCfg, angle, false, 3));
+                    }
+                }
+                
+                if (activeBulletId === 'snake' && ultTimer % 30 === 0) {
+                    // 蛇大招：全屏毒雾视觉+伤害
+                    createExplosion(Math.random()*400, Math.random()*600, "#4caf50", 2);
+                    enemies.concat(boss ? [boss] : []).forEach(e => e.hp -= 1);
+                }
+
+                if (activeBulletId === 'monkey' && ultTimer % 15 === 0) {
+                    // 猴大招：分身同步射击
+                    const bCfg = gameConfig.zodiac_bullets.find(b => b.id === 'monkey');
+                    [[-60, 20], [60, 20], [-120, 50], [120, 50]].forEach(pos => {
+                        bullets.push(new Bullet(player.x + pos[0], player.y + pos[1], bCfg, -90, false, 1));
+                    });
+                }
+
+                if (ultTimer <= 0) {
+                    ultActive = false;
+                    isInvincible = false;
+                    document.getElementById('ult-info').innerText = "能量充盈中...";
+                    // 恢复速度
+                    enemies.forEach(e => e.speed = 2);
+                    if(boss) boss.speed = 1;
+                }
+            }
+            document.getElementById('ult-fill').style.width = ultEnergy + "%";
+        }
 
         function drawPlayer() {
             ctx.save();
@@ -126,8 +277,14 @@
             
             // 基础光晕 (随等级增强)
             const bCfg = gameConfig.zodiac_bullets.find(b => b.id === activeBulletId) || {color: '#ffd700'};
-            ctx.shadowBlur = 10 + bulletLevel * 10;
+            ctx.shadowBlur = 10 + bulletLevel * 10 + (ultActive ? 30 : 0);
             ctx.shadowColor = bCfg.color;
+            
+            if (ultActive) {
+                // 觉醒状态下的额外视觉
+                ctx.strokeStyle = "#fff"; ctx.lineWidth = 3;
+                ctx.beginPath(); ctx.arc(0, 0, 35 + Math.sin(frameCount*0.2)*5, 0, Math.PI*2); ctx.stroke();
+            }
             
             // 绘制等级指示器 (小星点)
             for(let i=0; i<bulletLevel; i++) {
@@ -349,6 +506,14 @@
             }
             
             ctx.clearRect(0, 0, 400, 600); frameCount++;
+            updateUlt();
+
+            // 觉醒全屏闪光效果
+            if (screenFlash > 0) {
+                ctx.fillStyle = `rgba(255, 255, 255, ${screenFlash/20})`;
+                ctx.fillRect(0, 0, 400, 600);
+                screenFlash--;
+            }
 
             // 背景
             ctx.fillStyle = '#fff';
@@ -402,9 +567,15 @@
                 const b = bullets[i]; b.update(); b.draw();
                 if (b.isEnemy) {
                     if (Math.abs(b.x - player.x) < 25 && Math.abs(b.y - player.y) < 25) {
-                        bullets.splice(i, 1); lives--; updateHUD();
-                        createExplosion(player.x, player.y, "#ff4b2b", 0.5);
-                        if (lives <= 0) endGame();
+                        if (!isInvincible) {
+                            bullets.splice(i, 1); lives--; updateHUD();
+                            createExplosion(player.x, player.y, "#ff4b2b", 0.5);
+                            if (lives <= 0) endGame();
+                        } else {
+                            // 无敌时拦截子弹
+                            bullets.splice(i, 1);
+                            createExplosion(b.x, b.y, "#fff", 0.1);
+                        }
                     }
                 } else {
                     enemies.forEach((e, ei) => {
@@ -457,9 +628,16 @@
             for(let i = enemies.length - 1; i >= 0; i--) {
                 const e = enemies[i]; e.update(); e.draw();
                 if (Math.abs(e.x - player.x) < 35 && Math.abs(e.y - player.y) < 35) {
-                    enemies.splice(i, 1); lives--; updateHUD();
-                    createExplosion(player.x, player.y, "#ff4b2b", 1);
-                    if (lives <= 0) endGame();
+                    if (!isInvincible) {
+                        enemies.splice(i, 1); lives--; updateHUD();
+                        createExplosion(player.x, player.y, "#ff4b2b", 1);
+                        if (lives <= 0) endGame();
+                    } else {
+                        // 无敌冲撞
+                        e.hp -= 10;
+                        createExplosion(e.x, e.y, "#fff", 0.5);
+                        if (e.hp <= 0) { enemies.splice(i, 1); score += 10; updateHUD(); }
+                    }
                 }
                 if (e.y > 650) enemies.splice(i, 1);
             }
@@ -492,6 +670,8 @@
             document.getElementById('score').innerText = `得分: ${score}`;
             document.getElementById('life').innerText = `❤️x${lives}`;
             document.getElementById('level-name').innerText = `${gameConfig.constellation_levels[currentLevelIdx].constellation} (Lv.${bulletLevel})`;
+            
+            // 能量条 UI 更新已经在 updateUlt 中处理了
         }
 
         function startGame() {
