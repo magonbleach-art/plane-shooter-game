@@ -720,30 +720,25 @@
         if (window.SpeechRecognition) {
             const recognition = new window.SpeechRecognition();
             recognition.lang = 'zh-CN';
-            recognition.continuous = true;
-            recognition.interimResults = true;
+            
+            // 针对 iOS 的 service-not-allowed 优化：
+            // iOS Safari 在某些版本下对 continuous: true 非常排斥，改为保守模式
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            recognition.continuous = !isIOS; 
+            recognition.interimResults = !isIOS;
 
             let isRecording = false;
 
-            // 核心修复：直接在同步点击事件中启动，不使用任何 async/await
             voiceBtn.onclick = function(e) {
                 e.preventDefault();
                 
                 if (isRecording) {
                     recognition.stop();
-                    isRecording = false;
-                    voiceBtn.classList.remove('recording');
-                    feedbackInput.placeholder = "输入进化建议 (支持语音)";
                 } else {
                     try {
                         feedbackInput.value = '';
                         feedbackInput.placeholder = "🎙️ 正在申请麦克风...";
-                        
-                        // 直接启动识别，iOS 要求必须在点击事件的第一行执行同步操作
                         recognition.start();
-                        
-                        isRecording = true;
-                        voiceBtn.classList.add('recording');
                     } catch (err) {
                         console.error("启动识别失败:", err);
                         if (err.name === 'NotAllowedError') {
@@ -756,17 +751,15 @@
             };
 
             recognition.onstart = function() {
-                feedbackInput.placeholder = "正在聆听中...";
+                isRecording = true;
+                voiceBtn.classList.add('recording');
+                feedbackInput.placeholder = isIOS ? "正在听，说完请稍等..." : "正在聆听中...";
             };
 
             recognition.onresult = function(event) {
                 let current = '';
                 for (let i = event.resultIndex; i < event.results.length; ++i) {
-                    if (event.results[i].isFinal) {
-                        current += event.results[i][0].transcript;
-                    } else {
-                        feedbackInput.placeholder = "🎤: " + event.results[i][0].transcript;
-                    }
+                    current += event.results[i][0].transcript;
                 }
                 if (current) {
                     feedbackInput.value = current;
@@ -778,8 +771,10 @@
                 isRecording = false;
                 voiceBtn.classList.remove('recording');
                 
-                if (event.error === 'network') {
-                    alert("⚠️ 网络连接超时 [network]\n建议切换 5G 流量或更换 Wi-Fi 试试。");
+                if (event.error === 'service-not-allowed') {
+                    alert("❌ 语音服务未开启 (service-not-allowed)\n\n修复方法：\n1. 请在 iPhone【设置】-【通用】-【键盘】中，确保【启用听写】开关已打开。\n2. 确保 iPhone 未处于【低电量模式】。");
+                } else if (event.error === 'network') {
+                    alert("⚠️ 网络连接超时\n请切换 5G 或换个 Wi-Fi 试试。");
                 }
                 feedbackInput.placeholder = "失败: " + event.error;
             };
@@ -787,6 +782,9 @@
             recognition.onend = function() {
                 isRecording = false;
                 voiceBtn.classList.remove('recording');
+                if (!feedbackInput.value) {
+                    feedbackInput.placeholder = "输入进化建议 (支持语音)";
+                }
             };
         } else {
             voiceBtn.onclick = function() {
