@@ -771,12 +771,25 @@
                 isRecording = false;
                 voiceBtn.classList.remove('recording');
                 
+                let errorTitle = "语音启动失败";
+                let errorGuide = "";
+
                 if (event.error === 'service-not-allowed') {
-                    alert("❌ 苹果系统语音服务拦截\n\n您的 iPhone 似乎禁用了网页端的直接录音。别担心，您依然可以用语音：\n\n1. 点击下方的【输入框】。\n2. 弹出键盘后，点击键盘右下角的【麦克风】图标。\n3. 直接说话，文字会自动填入！");
+                    errorTitle = "❌ 系统拦截";
+                    errorGuide = "iPhone 禁用了网页录音。请点击输入框，使用【键盘自带的麦克风】图标。";
                 } else if (event.error === 'network') {
-                    alert("⚠️ 网络连接超时\n请切换 5G 或换个 Wi-Fi 试试。");
+                    errorTitle = "⚠️ 网络连接超时";
+                    errorGuide = "浏览器语音服务被防火墙拦截。\n\n【Windows 方案】：点击输入框，按键盘 Win + H 键即可语音。\n【iPhone 方案】：点击输入框，使用键盘右下角的麦克风。";
+                } else if (event.error === 'not-allowed') {
+                    errorTitle = "❌ 麦克风未授权";
+                    errorGuide = "请在浏览器设置中允许此页面访问麦克风。";
+                } else {
+                    errorTitle = `识别失败 (${event.error})`;
+                    errorGuide = "建议直接输入文字指令。";
                 }
-                feedbackInput.placeholder = "失败: " + event.error;
+
+                alert(`${errorTitle}\n\n${errorGuide}`);
+                feedbackInput.placeholder = "建议使用系统键盘语音输入";
             };
 
             recognition.onend = function() {
