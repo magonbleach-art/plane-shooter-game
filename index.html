@@ -704,7 +704,15 @@
 
         document.getElementById('start-btn').onclick = startGame;
         document.getElementById('restart-btn').onclick = startGame;
-        document.getElementById('next-level-btn').onclick = () => location.reload();
+        document.getElementById('next-level-btn').onclick = () => {
+            currentLevelIdx++;
+            if (currentLevelIdx < gameConfig.constellation_levels.length) {
+                startGame(); // 启动下一关
+            } else {
+                alert("恭喜！您已净化所有宫殿！");
+                location.reload();
+            }
+        };
         document.getElementById('submit-feedback-btn').onclick = async () => {
             const val = document.getElementById('feedback-input').value;
             if(!val) return;
