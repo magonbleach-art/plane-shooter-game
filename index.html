@@ -625,15 +625,18 @@
         class Boss {
             constructor(cfg) {
                 this.cfg = cfg; 
-                // 动态 Boss HP：随关卡深度增加，但幅度放缓 (从固定倍率改为指数增长)
+                // 动态 Boss HP：随关卡深度增加，但幅度放缓
                 const baseHp = cfg.hp || 500;
                 this.hp = baseHp * (1 + currentLevelIdx * 0.4) * (difficultyMult || 1); 
                 this.maxHp = this.hp;
                 this.x = 200; this.y = -100; this.targetY = 120;
                 this.skillTimer = 0;
                 this.isPhase2 = false;
+                this.hitFlash = 0; // 受击闪白计时器
             }
             update() {
+                if (this.hitFlash > 0) this.hitFlash--; // 递减闪白
+                
                 if (this.y < this.targetY) {
                     this.y += 1;
                     return;
@@ -755,6 +758,12 @@
 
             draw() {
                 ctx.save(); ctx.translate(this.x, this.y);
+                
+                // 受击闪白反馈
+                if (this.hitFlash > 0) {
+                    ctx.filter = `brightness(${1 + this.hitFlash * 0.1})`;
+                }
+
                 ctx.fillStyle = this.isPhase2 ? "#f00" : "#333"; 
                 ctx.shadowBlur = this.isPhase2 ? 50 : 20; 
                 ctx.shadowColor = this.isPhase2 ? "#f00" : "#ffd700";
@@ -951,6 +960,20 @@
                             player.hasWingman = false; // 掉血失去侧翼
                             updateHUD();
                             createExplosion(player.x, player.y, "#ff4b2b", 0.5);
+                            
+                            // 触发灵力冲击波 (清空周围子弹)
+                            isInvincible = true;
+                            setTimeout(() => isInvincible = false, 2000); // 2秒无敌
+                            
+                            for(let j = bullets.length - 1; j >= 0; j--) {
+                                let dist = Math.hypot(bullets[j].x - player.x, bullets[j].y - player.y);
+                                if (bullets[j].isEnemy && dist < 250) {
+                                    createExplosion(bullets[j].x, bullets[j].y, bullets[j].cfg.color, 0.2);
+                                    bullets.splice(j, 1);
+                                }
+                            }
+                            logQA("🛡️ 触发灵力冲击波：紧急清空周围弹幕");
+                            
                             if (lives <= 0) endGame();
                         } else {
                             // 无敌时拦截子弹
@@ -984,6 +1007,7 @@
                     });
                     if (boss && Math.abs(b.x - boss.x) < 60 && Math.abs(b.y - boss.y) < 40) {
                         boss.hp -= b.damage; 
+                        boss.hitFlash = 10; // 触发受击闪白
                         if (b.cfg.type === "explosive") createExplosion(b.x, b.y, b.cfg.color, 1.5);
                         if (!b.cfg.pierce && b.cfg.type !== "laser") bullets.splice(i, 1);
                         if (boss.hp <= 0) {
