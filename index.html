@@ -11,19 +11,21 @@
         
         /* UI 容器化规范 */
         .ui-panel { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 20px; padding: 25px 0; }
-        .ui-section { width: 100%; max-width: 340px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,215,0,0.1); border-radius: 20px; padding: 18px; box-sizing: border-box; }
-        .ui-title { color: #ffd700; font-size: 0.95rem; margin-bottom: 15px; font-weight: bold; text-transform: uppercase; letter-spacing: 1.5px; display: flex; align-items: center; gap: 10px; opacity: 0.9; }
+        .ui-section { width: 100%; max-width: 340px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,215,0,0.1); border-radius: 20px; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; align-items: stretch; }
+        .ui-title { color: #ffd700; font-size: 0.95rem; margin-bottom: 18px; font-weight: bold; text-transform: uppercase; letter-spacing: 1.5px; display: flex; align-items: center; gap: 10px; opacity: 0.9; }
         .ui-title::before { content: ''; width: 4px; height: 16px; background: #ffd700; border-radius: 2px; }
 
         /* 等宽网格按钮 */
         .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; }
         .grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; width: 100%; }
+        .flex-col { display: flex; flex-direction: column; gap: 10px; width: 100%; }
         
         .setting-btn { 
             width: 100% !important; height: 44px !important; margin: 0 !important;
             background: rgba(255,255,255,0.05); border: 1px solid rgba(255,215,0,0.2);
             color: #fff; border-radius: 12px; font-size: 0.85rem; font-weight: 500;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex; align-items: center; justify-content: center;
         }
         .setting-btn.active { 
             background: linear-gradient(135deg, #ffd700, #b8860b); color: #000; 
@@ -180,10 +182,10 @@
 
                  <div class="ui-section">
                      <div class="ui-title">实验室</div>
-                     <div style="display:flex; flex-direction:column; gap:10px;">
-                        <button id="ai-toggle-btn" style="background: #222; color: #ffd700; border: 1px solid #ffd700; height: 36px; font-size:0.8rem;">开启 AI 自动驾驶</button>
-                        <button onclick="bossSpawnTime=10" style="background: #222; color: #ff4b2b; border: 1px solid #ff4b2b; height: 36px; font-size:0.8rem;">👿 立即召唤 Boss (调试)</button>
-                        <button id="run-cabinet-test-btn" style="background: linear-gradient(135deg, #2196f3, #1976d2); color: #fff; height: 36px; border: none; font-size:0.8rem;">🚀 启动内阁 5 轮测试</button>
+                     <div class="flex-col">
+                        <button id="ai-toggle-btn" class="setting-btn">开启 AI 自动驾驶</button>
+                        <button onclick="bossSpawnTime=10" class="setting-btn" style="color: #ff4b2b; border-color: #ff4b2b;">👿 立即召唤 Boss (调试)</button>
+                        <button id="run-cabinet-test-btn" class="setting-btn" style="background: linear-gradient(135deg, #2196f3, #1976d2); color: #fff; border: none;">🚀 启动内阁 5 轮测试</button>
                      </div>
                  </div>
 
@@ -723,8 +725,16 @@
                 this.isPhase2 = false;
                 this.hitFlash = 0;
                 
+                // 加载星座图标 (3A 升级)
+                const levelName = gameConfig.constellation_levels[currentLevelIdx].constellation;
+                const design = CONSTELLATION_DESIGNS[levelName];
+                if (design && design.icon) {
+                    this.img = new Image();
+                    this.img.src = design.icon;
+                }
+
                 // 增强移动 AI
-                this.moveState = 'sweep'; // sweep, dash, eight, center
+                this.moveState = 'sweep'; 
                 this.moveTimer = 0;
                 this.targetX = 200;
                 this.moveSpeed = 2;
@@ -961,29 +971,32 @@
                 }
             }
 
-            // 1. 避弹逻辑 (核心增强：场力避让算法)
-            let dangerousBullets = bullets.filter(b => b.isEnemy && b.y < player.y + 100 && b.y > player.y - 250);
+            // 1. 避弹逻辑 (核心增强：动态场力预测)
+            let dangerousBullets = bullets.filter(b => b.isEnemy && b.y < player.y + 120 && b.y > player.y - 300);
             if (dangerousBullets.length > 0) {
                 let avoidX = 0;
                 let avoidY = 0;
                 dangerousBullets.forEach(b => {
-                    let dx = player.x - b.x;
-                    let dy = player.y - b.y;
+                    // 预测位置 (10帧后)
+                    let predX = b.x + Math.cos(b.angle) * b.speed * 10;
+                    let predY = b.y + Math.sin(b.angle) * b.speed * 10;
+                    
+                    let dx = player.x - predX;
+                    let dy = player.y - predY;
                     let dist = Math.sqrt(dx*dx + dy*dy);
-                    if (dist < 150) {
-                        let force = (200 / dist);
+                    if (dist < 180) { // 扩大感知范围
+                        let force = (250 / dist);
                         avoidX += (dx / dist) * force;
-                        avoidY += (dy / dist) * force * 0.5; // Y轴避让权重稍小，保持进攻位置
+                        avoidY += (dy / dist) * force * 0.6; 
                     }
                 });
                 
-                if (Math.abs(avoidX) > 0.5 || Math.abs(avoidY) > 0.5) {
-                    player.targetX += avoidX * 12;
-                    player.y += avoidY * 5;
+                if (Math.abs(avoidX) > 0.3 || Math.abs(avoidY) > 0.3) {
+                    player.targetX += avoidX * 15;
+                    player.y += avoidY * 8;
                     
-                    // 物理限制
-                    player.targetX = Math.max(25, Math.min(375, player.targetX));
-                    player.y = Math.max(450, Math.min(550, player.y)); // 限制在底部活动
+                    player.targetX = Math.max(30, Math.min(370, player.targetX));
+                    player.y = Math.max(450, Math.min(550, player.y)); 
                     return;
                 }
             }
