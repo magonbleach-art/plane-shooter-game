@@ -1020,7 +1020,16 @@
             document.getElementById('score').innerText = `得分: ${score}`;
             document.getElementById('life').innerText = `❤️x${lives}`;
             const levelData = gameConfig.constellation_levels[currentLevelIdx];
-            document.getElementById('level-name').innerText = `第 ${currentLevelIdx + 1} 关: ${levelData ? levelData.constellation : '未知'} (Lv.${bulletLevel})`;
+            const bCfg = gameConfig.zodiac_bullets.find(b => b.id === activeBulletId);
+            
+            let bulletInfo = "";
+            if (bCfg) {
+                bulletInfo = `<br><span style="font-size: 0.7rem; color: ${bCfg.color}; opacity: 0.9;">
+                    形态: ${bCfg.name.split('·')[1]} | 威力: ${(bCfg.damage * bulletLevel).toFixed(1)}
+                </span>`;
+            }
+
+            document.getElementById('level-name').innerHTML = `第 ${currentLevelIdx + 1} 关: ${levelData ? levelData.constellation : '未知'} (Lv.${bulletLevel})${bulletInfo}`;
         }
 
         // 初始化每关随机生肖池
