@@ -653,30 +653,57 @@
         class Boss {
             constructor(cfg) {
                 this.cfg = cfg; 
-                // 动态 Boss HP：随关卡深度增加，但幅度放缓
                 const baseHp = cfg.hp || 500;
                 this.hp = baseHp * (1 + currentLevelIdx * 0.4) * (difficultyMult || 1); 
                 this.maxHp = this.hp;
                 this.x = 200; this.y = -100; this.targetY = 120;
                 this.skillTimer = 0;
                 this.isPhase2 = false;
-                this.hitFlash = 0; // 受击闪白计时器
+                this.hitFlash = 0;
+                
+                // 增强移动 AI
+                this.moveState = 'sweep'; // sweep, dash, eight, center
+                this.moveTimer = 0;
+                this.targetX = 200;
+                this.moveSpeed = 2;
             }
             update() {
-                if (this.hitFlash > 0) this.hitFlash--; // 递减闪白
+                if (this.hitFlash > 0) this.hitFlash--; 
                 
                 if (this.y < this.targetY) {
                     this.y += 1;
                     return;
                 }
                 
-                this.x += Math.sin(frameCount * 0.02) * 2;
-                this.skillTimer++;
+                // 复杂的移动 AI 逻辑
+                this.moveTimer++;
+                switch(this.moveState) {
+                    case 'sweep': // 全屏横扫
+                        this.x += this.moveSpeed;
+                        if (this.x > 350) this.moveSpeed = -2;
+                        if (this.x < 50) this.moveSpeed = 2;
+                        if (this.moveTimer > 500) { this.moveState = 'eight'; this.moveTimer = 0; }
+                        break;
+                    case 'eight': // 8 字形巡航
+                        this.x = 200 + Math.sin(frameCount * 0.02) * 150;
+                        this.y = this.targetY + Math.sin(frameCount * 0.04) * 40;
+                        if (this.moveTimer > 600) { this.moveState = 'dash'; this.moveTimer = 0; }
+                        break;
+                    case 'dash': // 随机冲刺
+                        if (this.moveTimer % 100 === 0) this.targetX = Math.random() * 300 + 50;
+                        this.x += (this.targetX - this.x) * 0.05;
+                        if (this.moveTimer > 400) { this.moveState = 'sweep'; this.moveTimer = 0; }
+                        break;
+                }
 
+                this.skillTimer++;
+                
                 // 检查是否进入二阶段 (血量 <= 30%)
                 if (!this.isPhase2 && (this.hp / this.maxHp) <= 0.3) {
                     this.isPhase2 = true;
-                    this.skillTimer = 0; // 重置计时器触发大招
+                    this.skillTimer = 0; 
+                    screenShake = 20; // 转阶段大震屏
+                    logQA("🔥 Boss 进入狂暴阶段！全屏弹幕预警");
                 }
 
                 if (this.isPhase2) {
@@ -687,49 +714,42 @@
             }
 
             executeSmallSkill() {
-                const interval = 120 / gameSpeedMult;
+                const interval = 100 / gameSpeedMult; 
                 if (this.skillTimer % Math.floor(interval) === 0) {
                     const skill = this.cfg.small_skill;
                     switch(skill) {
-                        case 'straight_bullet': // 白羊: 直线单发
-                            bullets.push(new Bullet(this.x, this.y + 40, { color: "#ff4b2b", type: "standard" }, 90, true));
+                        case 'spiral_spread': // 螺旋扩散 (主流爽点1)
+                            for(let i=0; i<3; i++) {
+                                let angle = (frameCount * 0.1 + i * 120) % 360;
+                                bullets.push(new Bullet(this.x, this.y + 40, { color: "#ff4b2b", speed: 3 }, angle, true));
+                            }
                             break;
-                        case 'gravity_bullet': // 金牛: 慢速重力弹
-                            bullets.push(new Bullet(this.x, this.y + 40, { color: "#8d6e63", speed_mult: 0.3 }, 90, true));
+                        case 'targeted_burst': // 追踪散射 (主流爽点2)
+                            let toPlayer = Math.atan2(player.y - this.y, player.x - this.x) * 180 / Math.PI;
+                            for(let i=-1; i<=1; i++) {
+                                bullets.push(new Bullet(this.x, this.y + 40, { color: "#ffeb3b", speed: 4.5 }, toPlayer + i*15, true));
+                            }
                             break;
-                        case 'cross_bullets': // 双子: 左右交叉弹
-                            bullets.push(new Bullet(this.x - 20, this.y + 40, { color: "#ffeb3b" }, 110, true));
-                            bullets.push(new Bullet(this.x + 20, this.y + 40, { color: "#ffeb3b" }, 70, true));
+                        case 'cross_bullets': // 交叉弹
+                            bullets.push(new Bullet(this.x - 20, this.y + 40, { color: "#03a9f4" }, 110, true));
+                            bullets.push(new Bullet(this.x + 20, this.y + 40, { color: "#03a9f4" }, 70, true));
                             break;
-                        case 'wave_push': // 巨蟹: 横向推浪 (不扣血)
-                            // 逻辑在碰撞检测中处理
-                            bullets.push(new Bullet(this.x, this.y + 40, { color: "#00bcd4", type: "wave" }, 90, true));
+                        case 'wave_barrage': // 波浪弹幕 (主流爽点4)
+                            for(let i=-3; i<=3; i++) {
+                                let ox = i * 40;
+                                let delay = Math.abs(i) * 5;
+                                setTimeout(() => {
+                                    if (gameActive && boss) bullets.push(new Bullet(this.x + ox, this.y + 40, { color: "#00bcd4", speed: 3 }, 90, true));
+                                }, delay * 16);
+                            }
                             break;
-                        case 'fan_scatter': // 狮子: 扇形散弹
-                            for(let i=-2; i<=2; i++) bullets.push(new Bullet(this.x, this.y + 40, { color: "#ff9800" }, 90 + i*20, true));
+                        case 'homing_clusters': // 追踪集群
+                            for(let i=0; i<2; i++) {
+                                bullets.push(new Bullet(this.x + (i?30:-30), this.y, { color: "#9c27b0", homing: true, homing_speed: 0.04, speed: 2 }, 90, true));
+                            }
                             break;
-                        case 'homing_seed': // 处女: 跟踪小弹
-                            bullets.push(new Bullet(this.x, this.y + 40, { color: "#9c27b0", homing: true, homing_speed: 0.05 }, 90, true));
-                            break;
-                        case 'balance_shot': // 天秤: 左右交替
-                            let side = Math.sin(frameCount * 0.1) > 0 ? -30 : 30;
-                            bullets.push(new Bullet(this.x + side, this.y + 40, { color: "#ffc107" }, 90, true));
-                            break;
-                        case 'poison_dart': // 天蝎: 毒弹直线
-                            bullets.push(new Bullet(this.x, this.y + 40, { color: "#4caf50", type: "poison" }, 90, true));
-                            break;
-                        case 'meteor_arrow': // 射手: 流星斜向
-                            bullets.push(new Bullet(this.x, this.y + 40, { color: "#ff5722" }, 60 + Math.random()*60, true));
-                            break;
-                        case 'bounce_rock': // 摩羯: 反弹石弹
-                            bullets.push(new Bullet(this.x, this.y + 40, { color: "#795548", bounces: 2 }, 80 + Math.random()*20, true));
-                            break;
-                        case 'tornado_wind': // 水瓶: 龙卷位移
-                            bullets.push(new Bullet(this.x, this.y + 40, { color: "#2196f3", type: "wind" }, 90, true));
-                            break;
-                        case 'ghost_bubble': // 双鱼: 隐形弹
-                            bullets.push(new Bullet(this.x, this.y + 40, { color: "rgba(255,255,255,0.2)", type: "ghost" }, 90, true));
-                            break;
+                        default:
+                            bullets.push(new Bullet(this.x, this.y + 40, { color: "#fff" }, 90, true));
                     }
                 }
             }
@@ -738,53 +758,41 @@
                 const interval = 180 / gameSpeedMult;
                 if (this.skillTimer % Math.floor(interval) === 0) {
                     const skill = this.cfg.big_skill;
-                    
-                    // 增加技能预警
                     logQA(`⚠️ Boss 正在蓄力: ${skill}`);
-                    screenFlash = 5; // 屏幕微闪预警
+                    screenFlash = 5; 
                     
                     switch(skill) {
-                        case 'parallel_rows': // 白羊: 三列平行
-                            [-60, 0, 60].forEach(ox => bullets.push(new Bullet(this.x + ox, this.y + 40, { color: "#ff4b2b" }, 90, true)));
+                        case 'cross_cutting': // 十字切割 (主流爽点3)
+                            for(let i=0; i<360; i+=45) {
+                                bullets.push(new Bullet(this.x, this.y, { color: "#ff0000", speed: 5 }, i, true));
+                            }
                             break;
-                        case 'falling_barrage': // 金牛: 全屏落弹
-                            for(let i=0; i<5; i++) bullets.push(new Bullet(Math.random()*400, 0, { color: "#8d6e63" }, 90, true));
+                        case 'parallel_rows': // 平行排弹
+                            for(let i=-2; i<=2; i++) {
+                                bullets.push(new Bullet(this.x + i*60, this.y, { color: "#ff9800", speed: 4 }, 90, true));
+                            }
                             break;
-                        case 'dual_lasers': // 双子: 双向激光
-                            bullets.push(new Bullet(this.x - 50, this.y, { color: "#ffeb3b", type: "boss_laser" }, 90, true));
-                            bullets.push(new Bullet(this.x + 50, this.y, { color: "#ffeb3b", type: "boss_laser" }, 90, true));
+                        case 'dual_lasers':
+                        case 'double_beams':
+                            for(let j=0; j<10; j++) {
+                                setTimeout(() => {
+                                    if(gameActive && boss) {
+                                        bullets.push(new Bullet(this.x - 40, this.y, { color: "#f00", speed: 8 }, 90, true));
+                                        bullets.push(new Bullet(this.x + 40, this.y, { color: "#f00", speed: 8 }, 90, true));
+                                    }
+                                }, j * 50);
+                            }
                             break;
-                        case 'arc_shield': // 巨蟹: 弧形包围
-                            for(let i=0; i<10; i++) bullets.push(new Bullet(this.x, this.y, { color: "#00bcd4" }, 45 + i*10, true));
+                        case 'center_explosion':
+                            for(let i=0; i<360; i+=20) {
+                                bullets.push(new Bullet(this.x, this.y, { color: "#ffeb3b", speed: 3 }, i, true));
+                            }
                             break;
-                        case 'center_explosion': // 狮子: 中央爆破
-                            createExplosion(200, 300, "#ff9800", 3);
-                            // 伤害由碰撞逻辑处理
+                        case 'arc_shield':
+                            for(let i=0; i<180; i+=15) bullets.push(new Bullet(this.x, this.y, { color: "#00bcd4" }, i, true));
                             break;
-                        case 'cross_laser': // 处女: 十字激光
-                            bullets.push(new Bullet(this.x, 0, { color: "#9c27b0", type: "boss_laser_v" }, 90, true));
-                            bullets.push(new Bullet(0, this.y, { color: "#9c27b0", type: "boss_laser_h" }, 0, true));
-                            break;
-                        case 'double_beams': // 天秤: 双束激光
-                            bullets.push(new Bullet(this.x - 30, this.y, { color: "#ffc107", type: "boss_laser" }, 90, true));
-                            bullets.push(new Bullet(this.x + 30, this.y, { color: "#ffc107", type: "boss_laser" }, 90, true));
-                            break;
-                        case 'blackhole_pull': // 天蝎: 黑洞牵引
-                            player.targetX = this.x; // 强制拉人
-                            break;
-                        case 'star_lock': // 射手: 星象锁定
-                            bullets.push(new Bullet(this.x, this.y, { color: "#ff5722", homing: true, speed_mult: 0.5 }, 90, true));
-                            break;
-                        case 'screen_rubble': // 摩羯: 全屏碎石
-                            for(let i=0; i<8; i++) bullets.push(new Bullet(Math.random()*400, -20, { color: "#795548" }, 90, true));
-                            break;
-                        case 'ice_beams': // 水瓶: 2条横向
-                            bullets.push(new Bullet(0, 200, { color: "#2196f3", type: "boss_laser_h" }, 0, true));
-                            bullets.push(new Bullet(0, 400, { color: "#2196f3", type: "boss_laser_h" }, 0, true));
-                            break;
-                        case 'ring_expansion': // 双鱼: 环形扩散
-                            for(let i=0; i<12; i++) bullets.push(new Bullet(this.x, this.y, { color: "#e91e63" }, i*30, true));
-                            break;
+                        default:
+                            for(let i=0; i<360; i+=30) bullets.push(new Bullet(this.x, this.y, { color: "#e91e63" }, i, true));
                     }
                 }
             }
@@ -792,6 +800,28 @@
             draw() {
                 ctx.save(); ctx.translate(this.x, this.y);
                 
+                // 绘制攻击预警 (蓄力阶段)
+                const bigInterval = 180 / gameSpeedMult;
+                const warningTime = 60; // 提前 1 秒预警
+                if (this.skillTimer % Math.floor(bigInterval) > (Math.floor(bigInterval) - warningTime)) {
+                    ctx.save();
+                    ctx.strokeStyle = "rgba(255, 0, 0, 0.5)";
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([10, 10]);
+                    // 根据不同大招画预警线
+                    const skill = this.cfg.big_skill;
+                    if (skill === 'parallel_rows') {
+                        [-60, 0, 60].forEach(ox => {
+                            ctx.beginPath(); ctx.moveTo(ox, 0); ctx.lineTo(ox, 600); ctx.stroke();
+                        });
+                    } else if (skill === 'dual_lasers' || skill === 'double_beams') {
+                        [-40, 40].forEach(ox => {
+                            ctx.beginPath(); ctx.moveTo(ox, 0); ctx.lineTo(ox, 600); ctx.stroke();
+                        });
+                    }
+                    ctx.restore();
+                }
+
                 // 受击闪白反馈
                 if (this.hitFlash > 0) {
                     ctx.filter = `brightness(${1 + this.hitFlash * 0.1})`;
