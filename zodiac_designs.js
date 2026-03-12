@@ -251,10 +251,16 @@ const CONSTELLATION_DESIGNS = {
         glow: "#ff0000",
         icon: "https://img.icons8.com/fluency/96/aries.png",
         draw: (ctx, boss) => {
+            // 3A 特效：旋转能量环
+            ctx.save();
+            ctx.strokeStyle = "rgba(255, 75, 43, 0.3)"; ctx.lineWidth = 2;
+            ctx.rotate(Date.now() * 0.001);
+            ctx.beginPath(); ctx.arc(0, 0, 55, 0, Math.PI * 2); ctx.stroke();
+            ctx.restore();
+
             if (boss.img && boss.img.complete) {
                 ctx.drawImage(boss.img, -45, -45, 90, 90);
             } else {
-                // 降级方案：发光核心
                 ctx.fillStyle = "#ff4b2b"; ctx.beginPath(); ctx.arc(0, 0, 30, 0, Math.PI*2); ctx.fill();
             }
         }
@@ -264,6 +270,13 @@ const CONSTELLATION_DESIGNS = {
         glow: "#ffd700",
         icon: "https://img.icons8.com/fluency/96/taurus.png",
         draw: (ctx, boss) => {
+            // 3A 特效：重装力场
+            ctx.save();
+            ctx.fillStyle = "rgba(255, 215, 0, 0.05)";
+            const s = 60 + Math.sin(Date.now() * 0.005) * 5;
+            ctx.fillRect(-s, -s, s*2, s*2);
+            ctx.restore();
+
             if (boss.img && boss.img.complete) {
                 ctx.drawImage(boss.img, -45, -45, 90, 90);
             } else {
@@ -276,7 +289,13 @@ const CONSTELLATION_DESIGNS = {
         glow: "#00ffff",
         icon: "https://img.icons8.com/fluency/96/gemini.png",
         draw: (ctx, boss) => {
+            // 3A 特效：双生镜像
+            const offset = Math.sin(Date.now() * 0.005) * 15;
+            ctx.globalAlpha = 0.4;
             if (boss.img && boss.img.complete) {
+                ctx.drawImage(boss.img, -45 + offset, -45, 90, 90);
+                ctx.drawImage(boss.img, -45 - offset, -45, 90, 90);
+                ctx.globalAlpha = 1.0;
                 ctx.drawImage(boss.img, -45, -45, 90, 90);
             }
         }
@@ -286,6 +305,13 @@ const CONSTELLATION_DESIGNS = {
         glow: "#ffffff",
         icon: "https://img.icons8.com/fluency/96/cancer.png",
         draw: (ctx, boss) => {
+            // 3A 特效：月光盾
+            ctx.save();
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.4)"; ctx.lineWidth = 3;
+            ctx.setLineDash([10, 5]);
+            ctx.beginPath(); ctx.arc(0, 0, 60, 0, Math.PI * 2); ctx.stroke();
+            ctx.restore();
+
             if (boss.img && boss.img.complete) {
                 ctx.drawImage(boss.img, -45, -45, 90, 90);
             }
@@ -296,6 +322,28 @@ const CONSTELLATION_DESIGNS = {
         glow: "#ff9800",
         icon: "https://img.icons8.com/fluency/96/leo.png",
         draw: (ctx, boss) => {
+            // 3A 特效：太阳火环 (参考用户提供的狮子机甲)
+            ctx.save();
+            const time = Date.now() * 0.002;
+            
+            // 1. 核心喷口粒子 (向上喷射)
+            for(let i=0; i<3; i++) {
+                const ox = (i-1) * 30;
+                const h = 40 + Math.sin(time + i) * 20;
+                const g = ctx.createLinearGradient(ox, -20, ox, -20 - h);
+                g.addColorStop(0, "rgba(255, 200, 0, 0.6)");
+                g.addColorStop(1, "rgba(255, 50, 0, 0)");
+                ctx.fillStyle = g;
+                ctx.fillRect(ox - 10, -20 - h, 20, h);
+            }
+
+            // 2. 机械神环
+            ctx.strokeStyle = "rgba(255, 150, 0, 0.4)"; ctx.lineWidth = 2;
+            ctx.setLineDash([15, 10]);
+            ctx.rotate(time * 0.5);
+            ctx.beginPath(); ctx.arc(0, 0, 75, 0, Math.PI * 2); ctx.stroke();
+            ctx.restore();
+
             if (boss.img && boss.img.complete) {
                 ctx.drawImage(boss.img, -45, -45, 90, 90);
             }
@@ -306,6 +354,32 @@ const CONSTELLATION_DESIGNS = {
         glow: "#f06292",
         icon: "https://img.icons8.com/fluency/96/virgo.png",
         draw: (ctx, boss) => {
+            // 3A 特效：神圣六翼 (参考用户提供的天使机甲)
+            ctx.save();
+            const time = Date.now() * 0.001;
+            for(let i=0; i<6; i++) {
+                ctx.save();
+                const side = i % 2 === 0 ? 1 : -1;
+                const row = Math.floor(i / 2);
+                ctx.rotate(side * (0.4 + row * 0.3 + Math.sin(time + row) * 0.1));
+                
+                const grad = ctx.createLinearGradient(0, 0, side * 80, 0);
+                grad.addColorStop(0, "rgba(255, 255, 255, 0.6)");
+                grad.addColorStop(1, "rgba(255, 255, 255, 0)");
+                ctx.fillStyle = grad;
+                
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.bezierCurveTo(side*40, -20, side*60, 20, side*80, 0);
+                ctx.fill();
+                ctx.restore();
+            }
+
+            // 机械核心光圈
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.2)"; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.arc(0, 0, 40 + Math.sin(time*2)*5, 0, Math.PI*2); ctx.stroke();
+            ctx.restore();
+
             if (boss.img && boss.img.complete) {
                 ctx.drawImage(boss.img, -45, -45, 90, 90);
             }
@@ -316,6 +390,12 @@ const CONSTELLATION_DESIGNS = {
         glow: "#8bc34a",
         icon: "https://img.icons8.com/fluency/96/libra.png",
         draw: (ctx, boss) => {
+            // 3A 特效：平衡领域
+            ctx.save();
+            ctx.strokeStyle = "#4caf50"; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(-70, 0); ctx.lineTo(70, 0); ctx.stroke();
+            ctx.restore();
+
             if (boss.img && boss.img.complete) {
                 ctx.drawImage(boss.img, -45, -45, 90, 90);
             }
@@ -326,6 +406,15 @@ const CONSTELLATION_DESIGNS = {
         glow: "#ff0000",
         icon: "https://img.icons8.com/fluency/96/scorpio.png",
         draw: (ctx, boss) => {
+            // 3A 特效：毒雾环绕
+            ctx.save();
+            ctx.fillStyle = "rgba(156, 39, 176, 0.1)";
+            for(let i=0; i<6; i++) {
+                const a = Date.now() * 0.002 + i * Math.PI/3;
+                ctx.beginPath(); ctx.arc(Math.cos(a)*55, Math.sin(a)*55, 12, 0, Math.PI*2); ctx.fill();
+            }
+            ctx.restore();
+
             if (boss.img && boss.img.complete) {
                 ctx.drawImage(boss.img, -45, -45, 90, 90);
             }
@@ -336,6 +425,12 @@ const CONSTELLATION_DESIGNS = {
         glow: "#03a9f4",
         icon: "https://img.icons8.com/fluency/96/sagittarius.png",
         draw: (ctx, boss) => {
+            // 3A 特效：流星轨迹
+            ctx.save();
+            ctx.strokeStyle = "rgba(33, 150, 243, 0.5)"; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -80); ctx.stroke();
+            ctx.restore();
+
             if (boss.img && boss.img.complete) {
                 ctx.drawImage(boss.img, -45, -45, 90, 90);
             }
@@ -346,6 +441,13 @@ const CONSTELLATION_DESIGNS = {
         glow: "#4caf50",
         icon: "https://img.icons8.com/fluency/96/capricorn.png",
         draw: (ctx, boss) => {
+            // 3A 特效：大地脉动
+            const s = 50 + Math.sin(Date.now() * 0.004) * 10;
+            ctx.save();
+            ctx.strokeStyle = "rgba(121, 85, 72, 0.3)"; ctx.lineWidth = 4;
+            ctx.strokeRect(-s, -s, s*2, s*2);
+            ctx.restore();
+
             if (boss.img && boss.img.complete) {
                 ctx.drawImage(boss.img, -45, -45, 90, 90);
             }
@@ -356,6 +458,15 @@ const CONSTELLATION_DESIGNS = {
         glow: "#e0f7fa",
         icon: "https://img.icons8.com/fluency/96/aquarius.png",
         draw: (ctx, boss) => {
+            // 3A 特效：水之涟漪
+            ctx.save();
+            ctx.strokeStyle = "rgba(0, 188, 212, 0.4)";
+            for(let i=0; i<3; i++) {
+                const r = (Date.now() * 0.05 + i * 20) % 70;
+                ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke();
+            }
+            ctx.restore();
+
             if (boss.img && boss.img.complete) {
                 ctx.drawImage(boss.img, -45, -45, 90, 90);
             }
@@ -366,6 +477,19 @@ const CONSTELLATION_DESIGNS = {
         glow: "#9c27b0",
         icon: "https://img.icons8.com/fluency/96/pisces.png",
         draw: (ctx, boss) => {
+            // 3A 特效：阴阳鱼巡航
+            const angle = Date.now() * 0.003;
+            ctx.save();
+            ctx.globalAlpha = 0.5;
+            for(let i=0; i<2; i++) {
+                const a = angle + i * Math.PI;
+                const x = Math.cos(a) * 55;
+                const y = Math.sin(a) * 55;
+                ctx.fillStyle = i === 0 ? "#3f51b5" : "#9c27b0";
+                ctx.beginPath(); ctx.arc(x, y, 10, 0, Math.PI * 2); ctx.fill();
+            }
+            ctx.restore();
+
             if (boss.img && boss.img.complete) {
                 ctx.drawImage(boss.img, -45, -45, 90, 90);
             }
