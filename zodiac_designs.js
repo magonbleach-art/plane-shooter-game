@@ -249,83 +249,110 @@ const CONSTELLATION_DESIGNS = {
     "白羊宫": {
         color: "#ff4b2b",
         glow: "#ff0000",
-        icon: "https://img.icons8.com/fluency/96/aries.png",
+        symbol: "♈",
         draw: (ctx, boss) => {
-            // 3A 特效：旋转能量环
+            // 3A 级机械神性骨架 (Aries Mecha)
             ctx.save();
-            ctx.strokeStyle = "rgba(255, 75, 43, 0.3)"; ctx.lineWidth = 2;
-            ctx.rotate(Date.now() * 0.001);
+            const time = Date.now() * 0.002;
+            
+            // 1. 绘制机械背甲 (等腰梯形结构)
+            ctx.fillStyle = "#1a1a1e";
+            ctx.strokeStyle = "rgba(255, 75, 43, 0.5)"; ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(-40, -20); ctx.lineTo(40, -20);
+            ctx.lineTo(25, 40); ctx.lineTo(-25, 40);
+            ctx.closePath(); ctx.fill(); ctx.stroke();
+
+            // 2. 机械羊角 (弧形金属管)
+            ctx.strokeStyle = "#ff4b2b"; ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(-25, -15, 20, Math.PI, Math.PI * 0.3); ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(25, -15, 20, 0, Math.PI * 0.7, true); ctx.stroke();
+
+            // 3. 核心星魂符号 (替代不稳定的 Image)
+            ctx.fillStyle = "#fff"; ctx.shadowBlur = 20; ctx.shadowColor = "#ff4b2b";
+            ctx.font = "bold 40px 'Segoe UI Symbol'"; ctx.textAlign = "center";
+            ctx.fillText("♈", 0, 15);
+
+            // 4. 动态能量流
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.3)"; ctx.lineWidth = 1;
+            ctx.setLineDash([5, 10]); ctx.rotate(time);
             ctx.beginPath(); ctx.arc(0, 0, 55, 0, Math.PI * 2); ctx.stroke();
             ctx.restore();
-
-            if (boss.img && boss.img.complete) {
-                ctx.drawImage(boss.img, -45, -45, 90, 90);
-            } else {
-                ctx.fillStyle = "#ff4b2b"; ctx.beginPath(); ctx.arc(0, 0, 30, 0, Math.PI*2); ctx.fill();
-            }
         }
     },
     "金牛宫": {
         color: "#8d6e63",
         glow: "#ffd700",
-        icon: "https://img.icons8.com/fluency/96/taurus.png",
+        symbol: "♉",
         draw: (ctx, boss) => {
-            // 3A 特效：重装力场
             ctx.save();
-            ctx.fillStyle = "rgba(255, 215, 0, 0.05)";
-            const s = 60 + Math.sin(Date.now() * 0.005) * 5;
-            ctx.fillRect(-s, -s, s*2, s*2);
-            ctx.restore();
+            const time = Date.now() * 0.002;
+            // 机械重装结构
+            ctx.fillStyle = "#1a1a1e";
+            ctx.strokeStyle = "rgba(255, 215, 0, 0.5)"; ctx.lineWidth = 2;
+            ctx.fillRect(-45, -25, 90, 50); ctx.strokeRect(-45, -25, 90, 50);
+            
+            // 金色牛角
+            ctx.strokeStyle = "#ffd700"; ctx.lineWidth = 6;
+            ctx.beginPath(); ctx.moveTo(-45, -25); ctx.quadraticCurveTo(-55, -50, -30, -55); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(45, -25); ctx.quadraticCurveTo(55, -50, 30, -55); ctx.stroke();
 
-            if (boss.img && boss.img.complete) {
-                ctx.drawImage(boss.img, -45, -45, 90, 90);
-            } else {
-                ctx.fillStyle = "#8d6e63"; ctx.beginPath(); ctx.arc(0, 0, 35, 0, Math.PI*2); ctx.fill();
-            }
+            ctx.fillStyle = "#fff"; ctx.shadowBlur = 25; ctx.shadowColor = "#ffd700";
+            ctx.font = "bold 40px 'Segoe UI Symbol'"; ctx.textAlign = "center";
+            ctx.fillText("♉", 0, 15);
+            ctx.restore();
         }
     },
     "双子宫": {
         color: "#03a9f4",
         glow: "#00ffff",
-        icon: "https://img.icons8.com/fluency/96/gemini.png",
+        symbol: "♊",
         draw: (ctx, boss) => {
-            // 3A 特效：双生镜像
-            const offset = Math.sin(Date.now() * 0.005) * 15;
-            ctx.globalAlpha = 0.4;
-            if (boss.img && boss.img.complete) {
-                ctx.drawImage(boss.img, -45 + offset, -45, 90, 90);
-                ctx.drawImage(boss.img, -45 - offset, -45, 90, 90);
-                ctx.globalAlpha = 1.0;
-                ctx.drawImage(boss.img, -45, -45, 90, 90);
-            }
+            ctx.save();
+            const offset = Math.sin(Date.now() * 0.005) * 20;
+            // 双生机甲结构
+            ctx.fillStyle = "#1a1a1e"; ctx.strokeStyle = "#03a9f4"; ctx.lineWidth = 2;
+            [-1, 1].forEach(side => {
+                ctx.save(); ctx.translate(side * 25 + (side * offset), 0);
+                ctx.beginPath(); ctx.moveTo(0, -30); ctx.lineTo(-15, 30); ctx.lineTo(15, 30); ctx.closePath();
+                ctx.fill(); ctx.stroke();
+                ctx.restore();
+            });
+            ctx.fillStyle = "#fff"; ctx.shadowBlur = 20; ctx.shadowColor = "#00ffff";
+            ctx.font = "bold 40px 'Segoe UI Symbol'"; ctx.textAlign = "center";
+            ctx.fillText("♊", 0, 15);
+            ctx.restore();
         }
     },
     "巨蟹宫": {
         color: "#e0e0e0",
         glow: "#ffffff",
-        icon: "https://img.icons8.com/fluency/96/cancer.png",
+        symbol: "♋",
         draw: (ctx, boss) => {
-            // 3A 特效：月光盾
             ctx.save();
-            ctx.strokeStyle = "rgba(255, 255, 255, 0.4)"; ctx.lineWidth = 3;
-            ctx.setLineDash([10, 5]);
-            ctx.beginPath(); ctx.arc(0, 0, 60, 0, Math.PI * 2); ctx.stroke();
+            ctx.fillStyle = "#1a1a1e"; ctx.strokeStyle = "#fff"; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.ellipse(0, 0, 45, 35, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+            // 机械巨螯
+            [-1, 1].forEach(side => {
+                ctx.save(); ctx.scale(side, 1);
+                ctx.beginPath(); ctx.arc(-50, -10, 20, 0.5, 2.5); ctx.stroke();
+                ctx.restore();
+            });
+            ctx.fillStyle = "#fff"; ctx.shadowBlur = 20; ctx.shadowColor = "#fff";
+            ctx.font = "bold 40px 'Segoe UI Symbol'"; ctx.textAlign = "center";
+            ctx.fillText("♋", 0, 15);
             ctx.restore();
-
-            if (boss.img && boss.img.complete) {
-                ctx.drawImage(boss.img, -45, -45, 90, 90);
-            }
         }
     },
     "狮子宫": {
         color: "#ffd700",
         glow: "#ff9800",
-        icon: "https://img.icons8.com/fluency/96/leo.png",
+        symbol: "♌",
         draw: (ctx, boss) => {
-            // 3A 特效：太阳火环 (参考用户提供的狮子机甲)
             ctx.save();
             const time = Date.now() * 0.002;
-            
             // 1. 核心喷口粒子 (向上喷射)
             for(let i=0; i<3; i++) {
                 const ox = (i-1) * 30;
@@ -333,166 +360,133 @@ const CONSTELLATION_DESIGNS = {
                 const g = ctx.createLinearGradient(ox, -20, ox, -20 - h);
                 g.addColorStop(0, "rgba(255, 200, 0, 0.6)");
                 g.addColorStop(1, "rgba(255, 50, 0, 0)");
-                ctx.fillStyle = g;
-                ctx.fillRect(ox - 10, -20 - h, 20, h);
+                ctx.fillStyle = g; ctx.fillRect(ox - 10, -20 - h, 20, h);
             }
-
-            // 2. 机械神环
-            ctx.strokeStyle = "rgba(255, 150, 0, 0.4)"; ctx.lineWidth = 2;
-            ctx.setLineDash([15, 10]);
-            ctx.rotate(time * 0.5);
-            ctx.beginPath(); ctx.arc(0, 0, 75, 0, Math.PI * 2); ctx.stroke();
+            // 2. 机械狮头结构
+            ctx.fillStyle = "#1a1a1e"; ctx.strokeStyle = "#ff9800"; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(0, -30); ctx.lineTo(-35, 10); ctx.lineTo(0, 40); ctx.lineTo(35, 10); ctx.closePath(); ctx.fill(); ctx.stroke();
+            
+            ctx.fillStyle = "#fff"; ctx.shadowBlur = 25; ctx.shadowColor = "#ff9800";
+            ctx.font = "bold 45px 'Segoe UI Symbol'"; ctx.textAlign = "center";
+            ctx.fillText("♌", 0, 15);
             ctx.restore();
-
-            if (boss.img && boss.img.complete) {
-                ctx.drawImage(boss.img, -45, -45, 90, 90);
-            }
         }
     },
     "处女宫": {
         color: "#e91e63",
         glow: "#f06292",
-        icon: "https://img.icons8.com/fluency/96/virgo.png",
+        symbol: "♍",
         draw: (ctx, boss) => {
-            // 3A 特效：神圣六翼 (参考用户提供的天使机甲)
             ctx.save();
             const time = Date.now() * 0.001;
+            // 机械六翼
             for(let i=0; i<6; i++) {
                 ctx.save();
                 const side = i % 2 === 0 ? 1 : -1;
                 const row = Math.floor(i / 2);
                 ctx.rotate(side * (0.4 + row * 0.3 + Math.sin(time + row) * 0.1));
-                
-                const grad = ctx.createLinearGradient(0, 0, side * 80, 0);
-                grad.addColorStop(0, "rgba(255, 255, 255, 0.6)");
+                const grad = ctx.createLinearGradient(0, 0, side * 90, 0);
+                grad.addColorStop(0, "rgba(255, 255, 255, 0.7)");
                 grad.addColorStop(1, "rgba(255, 255, 255, 0)");
                 ctx.fillStyle = grad;
-                
-                ctx.beginPath();
-                ctx.moveTo(0, 0);
-                ctx.bezierCurveTo(side*40, -20, side*60, 20, side*80, 0);
-                ctx.fill();
+                ctx.beginPath(); ctx.moveTo(0, 0); ctx.bezierCurveTo(side*45, -25, side*65, 25, side*90, 0); ctx.fill();
                 ctx.restore();
             }
-
-            // 机械核心光圈
-            ctx.strokeStyle = "rgba(255, 255, 255, 0.2)"; ctx.lineWidth = 1;
-            ctx.beginPath(); ctx.arc(0, 0, 40 + Math.sin(time*2)*5, 0, Math.PI*2); ctx.stroke();
+            ctx.fillStyle = "#fff"; ctx.shadowBlur = 25; ctx.shadowColor = "#f06292";
+            ctx.font = "bold 40px 'Segoe UI Symbol'"; ctx.textAlign = "center";
+            ctx.fillText("♍", 0, 15);
             ctx.restore();
-
-            if (boss.img && boss.img.complete) {
-                ctx.drawImage(boss.img, -45, -45, 90, 90);
-            }
         }
     },
     "天秤宫": {
         color: "#4caf50",
         glow: "#8bc34a",
-        icon: "https://img.icons8.com/fluency/96/libra.png",
+        symbol: "♎",
         draw: (ctx, boss) => {
-            // 3A 特效：平衡领域
             ctx.save();
-            ctx.strokeStyle = "#4caf50"; ctx.lineWidth = 1;
-            ctx.beginPath(); ctx.moveTo(-70, 0); ctx.lineTo(70, 0); ctx.stroke();
+            ctx.strokeStyle = "#4caf50"; ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.moveTo(-60, 0); ctx.lineTo(60, 0); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0, -30); ctx.lineTo(0, 30); ctx.stroke();
+            ctx.fillStyle = "#fff"; ctx.shadowBlur = 20; ctx.shadowColor = "#8bc34a";
+            ctx.font = "bold 40px 'Segoe UI Symbol'"; ctx.textAlign = "center";
+            ctx.fillText("♎", 0, 15);
             ctx.restore();
-
-            if (boss.img && boss.img.complete) {
-                ctx.drawImage(boss.img, -45, -45, 90, 90);
-            }
         }
     },
     "天蝎宫": {
         color: "#9c27b0",
         glow: "#ff0000",
-        icon: "https://img.icons8.com/fluency/96/scorpio.png",
+        symbol: "♏",
         draw: (ctx, boss) => {
-            // 3A 特效：毒雾环绕
             ctx.save();
-            ctx.fillStyle = "rgba(156, 39, 176, 0.1)";
-            for(let i=0; i<6; i++) {
-                const a = Date.now() * 0.002 + i * Math.PI/3;
-                ctx.beginPath(); ctx.arc(Math.cos(a)*55, Math.sin(a)*55, 12, 0, Math.PI*2); ctx.fill();
-            }
+            ctx.strokeStyle = "#9c27b0"; ctx.lineWidth = 5;
+            ctx.beginPath(); ctx.moveTo(0, 20); ctx.quadraticCurveTo(50, 20, 40, -40); ctx.stroke();
+            ctx.fillStyle = "#ff0000"; ctx.beginPath(); ctx.moveTo(40, -40); ctx.lineTo(50, -50); ctx.lineTo(35, -55); ctx.fill();
+            ctx.fillStyle = "#fff"; ctx.shadowBlur = 25; ctx.shadowColor = "#ff0000";
+            ctx.font = "bold 40px 'Segoe UI Symbol'"; ctx.textAlign = "center";
+            ctx.fillText("♏", 0, 15);
             ctx.restore();
-
-            if (boss.img && boss.img.complete) {
-                ctx.drawImage(boss.img, -45, -45, 90, 90);
-            }
         }
     },
     "射手宫": {
         color: "#2196f3",
         glow: "#03a9f4",
-        icon: "https://img.icons8.com/fluency/96/sagittarius.png",
+        symbol: "♐",
         draw: (ctx, boss) => {
-            // 3A 特效：流星轨迹
             ctx.save();
-            ctx.strokeStyle = "rgba(33, 150, 243, 0.5)"; ctx.lineWidth = 2;
-            ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -80); ctx.stroke();
+            ctx.strokeStyle = "#2196f3"; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.arc(0, 0, 50, -Math.PI*0.8, -Math.PI*0.2); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0, 30); ctx.lineTo(0, -50); ctx.stroke();
+            ctx.fillStyle = "#fff"; ctx.shadowBlur = 25; ctx.shadowColor = "#03a9f4";
+            ctx.font = "bold 40px 'Segoe UI Symbol'"; ctx.textAlign = "center";
+            ctx.fillText("♐", 0, 15);
             ctx.restore();
-
-            if (boss.img && boss.img.complete) {
-                ctx.drawImage(boss.img, -45, -45, 90, 90);
-            }
         }
     },
     "摩羯宫": {
         color: "#795548",
         glow: "#4caf50",
-        icon: "https://img.icons8.com/fluency/96/capricorn.png",
+        symbol: "♑",
         draw: (ctx, boss) => {
-            // 3A 特效：大地脉动
-            const s = 50 + Math.sin(Date.now() * 0.004) * 10;
             ctx.save();
-            ctx.strokeStyle = "rgba(121, 85, 72, 0.3)"; ctx.lineWidth = 4;
-            ctx.strokeRect(-s, -s, s*2, s*2);
+            ctx.fillStyle = "#1a1a1e"; ctx.strokeStyle = "#795548"; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(0, -40); ctx.lineTo(-35, 30); ctx.lineTo(35, 30); ctx.closePath(); ctx.fill(); ctx.stroke();
+            ctx.fillStyle = "#fff"; ctx.shadowBlur = 20; ctx.shadowColor = "#4caf50";
+            ctx.font = "bold 40px 'Segoe UI Symbol'"; ctx.textAlign = "center";
+            ctx.fillText("♑", 0, 15);
             ctx.restore();
-
-            if (boss.img && boss.img.complete) {
-                ctx.drawImage(boss.img, -45, -45, 90, 90);
-            }
         }
     },
     "水瓶宫": {
         color: "#00bcd4",
         glow: "#e0f7fa",
-        icon: "https://img.icons8.com/fluency/96/aquarius.png",
+        symbol: "♒",
         draw: (ctx, boss) => {
-            // 3A 特效：水之涟漪
             ctx.save();
-            ctx.strokeStyle = "rgba(0, 188, 212, 0.4)";
-            for(let i=0; i<3; i++) {
-                const r = (Date.now() * 0.05 + i * 20) % 70;
-                ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke();
-            }
+            ctx.fillStyle = "#1a1a1e"; ctx.strokeStyle = "#00bcd4"; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.arc(0, 0, 40, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+            ctx.fillStyle = "#fff"; ctx.shadowBlur = 25; ctx.shadowColor = "#e0f7fa";
+            ctx.font = "bold 40px 'Segoe UI Symbol'"; ctx.textAlign = "center";
+            ctx.fillText("♒", 0, 15);
             ctx.restore();
-
-            if (boss.img && boss.img.complete) {
-                ctx.drawImage(boss.img, -45, -45, 90, 90);
-            }
         }
     },
     "双鱼宫": {
         color: "#3f51b5",
         glow: "#9c27b0",
-        icon: "https://img.icons8.com/fluency/96/pisces.png",
+        symbol: "♓",
         draw: (ctx, boss) => {
-            // 3A 特效：阴阳鱼巡航
-            const angle = Date.now() * 0.003;
             ctx.save();
-            ctx.globalAlpha = 0.5;
-            for(let i=0; i<2; i++) {
-                const a = angle + i * Math.PI;
-                const x = Math.cos(a) * 55;
-                const y = Math.sin(a) * 55;
-                ctx.fillStyle = i === 0 ? "#3f51b5" : "#9c27b0";
-                ctx.beginPath(); ctx.arc(x, y, 10, 0, Math.PI * 2); ctx.fill();
-            }
+            const angle = Date.now() * 0.003;
+            [-1, 1].forEach(side => {
+                const a = angle + (side === 1 ? 0 : Math.PI);
+                ctx.fillStyle = side === 1 ? "#3f51b5" : "#9c27b0";
+                ctx.beginPath(); ctx.arc(Math.cos(a)*45, Math.sin(a)*45, 12, 0, Math.PI*2); ctx.fill();
+            });
+            ctx.fillStyle = "#fff"; ctx.shadowBlur = 25; ctx.shadowColor = "#3f51b5";
+            ctx.font = "bold 40px 'Segoe UI Symbol'"; ctx.textAlign = "center";
+            ctx.fillText("♓", 0, 15);
             ctx.restore();
-
-            if (boss.img && boss.img.complete) {
-                ctx.drawImage(boss.img, -45, -45, 90, 90);
-            }
         }
     }
 };
