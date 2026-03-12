@@ -254,31 +254,55 @@ const CONSTELLATION_DESIGNS = {
             // 3A 级机械神性骨架 (Aries Mecha)
             ctx.save();
             const time = Date.now() * 0.002;
+            const hpPercent = boss.hp / boss.maxHp;
             
-            // 1. 绘制机械背甲 (等腰梯形结构)
+            // 1. 绘制机械背甲 (分层结构)
             ctx.fillStyle = "#1a1a1e";
             ctx.strokeStyle = "rgba(255, 75, 43, 0.5)"; ctx.lineWidth = 2;
             ctx.beginPath();
             ctx.moveTo(-40, -20); ctx.lineTo(40, -20);
-            ctx.lineTo(25, 40); ctx.lineTo(-25, 40);
+            ctx.lineTo(30, 45); ctx.lineTo(-30, 45);
             ctx.closePath(); ctx.fill(); ctx.stroke();
 
-            // 2. 机械羊角 (弧形金属管)
-            ctx.strokeStyle = "#ff4b2b"; ctx.lineWidth = 4;
-            ctx.beginPath();
-            ctx.arc(-25, -15, 20, Math.PI, Math.PI * 0.3); ctx.stroke();
-            ctx.beginPath();
-            ctx.arc(25, -15, 20, 0, Math.PI * 0.7, true); ctx.stroke();
+            // 2. 机械羊角 (分段倒角处理)
+            ctx.strokeStyle = "#ff4b2b"; ctx.lineWidth = 6;
+            ctx.lineCap = "round";
+            [-1, 1].forEach(side => {
+                ctx.beginPath();
+                ctx.arc(side * 25, -15, 20, side === 1 ? 0 : Math.PI, side === 1 ? Math.PI * 0.7 : Math.PI * 0.3, side === -1);
+                ctx.stroke();
+                // 细节：角上的金属箍
+                ctx.strokeStyle = "rgba(255,255,255,0.3)"; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.arc(side * 25, -15, 20, side === 1 ? 0.2 : Math.PI-0.2, side === 1 ? 0.4 : Math.PI-0.4, side === -1); ctx.stroke();
+                ctx.strokeStyle = "#ff4b2b"; ctx.lineWidth = 6;
+            });
 
-            // 3. 核心星魂符号 (替代不稳定的 Image)
-            ctx.fillStyle = "#fff"; ctx.shadowBlur = 20; ctx.shadowColor = "#ff4b2b";
-            ctx.font = "bold 40px 'Segoe UI Symbol'"; ctx.textAlign = "center";
-            ctx.fillText("♈", 0, 15);
+            // 3. 损伤状态表现 (参考 v6.0 协议)
+            if (hpPercent < 0.7) {
+                // 阶段2：裸露电线与火花
+                ctx.strokeStyle = "#00aaff"; ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.moveTo(-30, 20); ctx.lineTo(-45, 35); ctx.lineTo(-35, 45); ctx.stroke();
+                if (Math.random() > 0.8) {
+                    ctx.fillStyle = "#fff"; ctx.fillRect(-45 + Math.random()*10, 35 + Math.random()*10, 2, 2);
+                }
+            }
+            if (hpPercent < 0.3) {
+                // 阶段3：核心能量外泄
+                const g = ctx.createRadialGradient(0, 10, 0, 0, 10, 40);
+                g.addColorStop(0, "rgba(255, 0, 0, 0.6)");
+                g.addColorStop(1, "rgba(255, 0, 0, 0)");
+                ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 10, 40, 0, Math.PI*2); ctx.fill();
+            }
 
-            // 4. 动态能量流
-            ctx.strokeStyle = "rgba(255, 255, 255, 0.3)"; ctx.lineWidth = 1;
-            ctx.setLineDash([5, 10]); ctx.rotate(time);
-            ctx.beginPath(); ctx.arc(0, 0, 55, 0, Math.PI * 2); ctx.stroke();
+            // 4. 核心星魂符号 (发光增强)
+            ctx.fillStyle = "#fff"; ctx.shadowBlur = 30; ctx.shadowColor = "#ff4b2b";
+            ctx.font = "bold 45px 'Segoe UI Symbol'"; ctx.textAlign = "center";
+            ctx.fillText("♈", 0, 20);
+
+            // 5. 机械神性光环
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.2)"; ctx.lineWidth = 1;
+            ctx.setLineDash([10, 15]); ctx.rotate(time * 0.5);
+            ctx.beginPath(); ctx.arc(0, 0, 65, 0, Math.PI * 2); ctx.stroke();
             ctx.restore();
         }
     },
@@ -289,19 +313,38 @@ const CONSTELLATION_DESIGNS = {
         draw: (ctx, boss) => {
             ctx.save();
             const time = Date.now() * 0.002;
-            // 机械重装结构
-            ctx.fillStyle = "#1a1a1e";
-            ctx.strokeStyle = "rgba(255, 215, 0, 0.5)"; ctx.lineWidth = 2;
-            ctx.fillRect(-45, -25, 90, 50); ctx.strokeRect(-45, -25, 90, 50);
+            const hpPercent = boss.hp / boss.maxHp;
             
-            // 金色牛角
-            ctx.strokeStyle = "#ffd700"; ctx.lineWidth = 6;
-            ctx.beginPath(); ctx.moveTo(-45, -25); ctx.quadraticCurveTo(-55, -50, -30, -55); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(45, -25); ctx.quadraticCurveTo(55, -50, 30, -55); ctx.stroke();
+            // 机械重装背甲
+            ctx.fillStyle = "#1a1a1e";
+            ctx.strokeStyle = "rgba(255, 215, 0, 0.5)"; ctx.lineWidth = 3;
+            ctx.strokeRect(-50, -30, 100, 60);
+            ctx.fillRect(-50, -30, 100, 60);
+            
+            // 细节：铆钉
+            ctx.fillStyle = "rgba(255,255,255,0.2)";
+            [-40, 40].forEach(x => [-20, 20].forEach(y => {
+                ctx.beginPath(); ctx.arc(x, y, 2, 0, Math.PI*2); ctx.fill();
+            }));
 
-            ctx.fillStyle = "#fff"; ctx.shadowBlur = 25; ctx.shadowColor = "#ffd700";
-            ctx.font = "bold 40px 'Segoe UI Symbol'"; ctx.textAlign = "center";
+            // 金色机械牛角
+            ctx.strokeStyle = "#ffd700"; ctx.lineWidth = 8;
+            ctx.lineJoin = "round";
+            ctx.beginPath(); ctx.moveTo(-50, -30); ctx.lineTo(-65, -60); ctx.lineTo(-40, -65); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(50, -30); ctx.lineTo(65, -60); ctx.lineTo(40, -65); ctx.stroke();
+
+            // 核心符号
+            ctx.fillStyle = "#fff"; ctx.shadowBlur = 35; ctx.shadowColor = "#ffd700";
+            ctx.font = "bold 45px 'Segoe UI Symbol'"; ctx.textAlign = "center";
             ctx.fillText("♉", 0, 15);
+            
+            // 推进器火花 (重型感)
+            if (hpPercent < 0.5) {
+                ctx.fillStyle = "#ff6600";
+                for(let i=0; i<5; i++) {
+                    ctx.fillRect(-30 + Math.random()*60, 30, 4, 15);
+                }
+            }
             ctx.restore();
         }
     },
@@ -311,18 +354,25 @@ const CONSTELLATION_DESIGNS = {
         symbol: "♊",
         draw: (ctx, boss) => {
             ctx.save();
-            const offset = Math.sin(Date.now() * 0.005) * 20;
+            const time = Date.now() * 0.005;
+            const offset = Math.sin(time) * 25;
+            
             // 双生机甲结构
-            ctx.fillStyle = "#1a1a1e"; ctx.strokeStyle = "#03a9f4"; ctx.lineWidth = 2;
             [-1, 1].forEach(side => {
-                ctx.save(); ctx.translate(side * 25 + (side * offset), 0);
-                ctx.beginPath(); ctx.moveTo(0, -30); ctx.lineTo(-15, 30); ctx.lineTo(15, 30); ctx.closePath();
+                ctx.save(); ctx.translate(side * 30 + (side * offset), 0);
+                ctx.fillStyle = "#1a1a1e"; ctx.strokeStyle = "#03a9f4"; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.moveTo(0, -40); ctx.lineTo(-20, 40); ctx.lineTo(20, 40); ctx.closePath();
                 ctx.fill(); ctx.stroke();
+                
+                // 内部骨架灯
+                ctx.fillStyle = "#00ffff"; ctx.shadowBlur = 10;
+                ctx.fillRect(-2, -10, 4, 20);
                 ctx.restore();
             });
-            ctx.fillStyle = "#fff"; ctx.shadowBlur = 20; ctx.shadowColor = "#00ffff";
-            ctx.font = "bold 40px 'Segoe UI Symbol'"; ctx.textAlign = "center";
-            ctx.fillText("♊", 0, 15);
+            
+            ctx.fillStyle = "#fff"; ctx.shadowBlur = 30; ctx.shadowColor = "#00ffff";
+            ctx.font = "bold 50px 'Segoe UI Symbol'"; ctx.textAlign = "center";
+            ctx.fillText("♊", 0, 20);
             ctx.restore();
         }
     },
@@ -332,16 +382,27 @@ const CONSTELLATION_DESIGNS = {
         symbol: "♋",
         draw: (ctx, boss) => {
             ctx.save();
-            ctx.fillStyle = "#1a1a1e"; ctx.strokeStyle = "#fff"; ctx.lineWidth = 2;
-            ctx.beginPath(); ctx.ellipse(0, 0, 45, 35, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
-            // 机械巨螯
+            // 机械甲壳
+            ctx.fillStyle = "#1a1a1e"; ctx.strokeStyle = "#fff"; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.ellipse(0, 0, 55, 45, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+            
+            // 细节：装甲缝隙
+            ctx.strokeStyle = "rgba(255,255,255,0.1)"; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(-55, 0); ctx.lineTo(55, 0); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0, -45); ctx.lineTo(0, 45); ctx.stroke();
+
+            // 机械巨螯 (液压杆感)
             [-1, 1].forEach(side => {
                 ctx.save(); ctx.scale(side, 1);
-                ctx.beginPath(); ctx.arc(-50, -10, 20, 0.5, 2.5); ctx.stroke();
+                ctx.strokeStyle = "#fff"; ctx.lineWidth = 4;
+                ctx.beginPath(); ctx.arc(-60, -10, 25, 0.5, 2.5); ctx.stroke();
+                // 液压核心
+                ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(-75, 5, 5, 0, Math.PI*2); ctx.fill();
                 ctx.restore();
             });
-            ctx.fillStyle = "#fff"; ctx.shadowBlur = 20; ctx.shadowColor = "#fff";
-            ctx.font = "bold 40px 'Segoe UI Symbol'"; ctx.textAlign = "center";
+            
+            ctx.fillStyle = "#fff"; ctx.shadowBlur = 30; ctx.shadowColor = "#fff";
+            ctx.font = "bold 45px 'Segoe UI Symbol'"; ctx.textAlign = "center";
             ctx.fillText("♋", 0, 15);
             ctx.restore();
         }
@@ -353,22 +414,35 @@ const CONSTELLATION_DESIGNS = {
         draw: (ctx, boss) => {
             ctx.save();
             const time = Date.now() * 0.002;
-            // 1. 核心喷口粒子 (向上喷射)
-            for(let i=0; i<3; i++) {
-                const ox = (i-1) * 30;
-                const h = 40 + Math.sin(time + i) * 20;
-                const g = ctx.createLinearGradient(ox, -20, ox, -20 - h);
-                g.addColorStop(0, "rgba(255, 200, 0, 0.6)");
-                g.addColorStop(1, "rgba(255, 50, 0, 0)");
-                ctx.fillStyle = g; ctx.fillRect(ox - 10, -20 - h, 20, h);
-            }
-            // 2. 机械狮头结构
-            ctx.fillStyle = "#1a1a1e"; ctx.strokeStyle = "#ff9800"; ctx.lineWidth = 2;
-            ctx.beginPath(); ctx.moveTo(0, -30); ctx.lineTo(-35, 10); ctx.lineTo(0, 40); ctx.lineTo(35, 10); ctx.closePath(); ctx.fill(); ctx.stroke();
+            const hpPercent = boss.hp / boss.maxHp;
             
-            ctx.fillStyle = "#fff"; ctx.shadowBlur = 25; ctx.shadowColor = "#ff9800";
-            ctx.font = "bold 45px 'Segoe UI Symbol'"; ctx.textAlign = "center";
-            ctx.fillText("♌", 0, 15);
+            // 1. 三重高能粒子喷口 (参考 v6.0 协议)
+            for(let i=0; i<3; i++) {
+                const ox = (i-1) * 35;
+                const h = 50 + Math.sin(time + i) * 30;
+                const g = ctx.createLinearGradient(ox, -30, ox, -30 - h);
+                g.addColorStop(0, hpPercent > 0.3 ? "rgba(255, 200, 0, 0.8)" : "rgba(255, 50, 0, 0.9)");
+                g.addColorStop(1, "rgba(255, 50, 0, 0)");
+                ctx.fillStyle = g; ctx.fillRect(ox - 12, -30 - h, 24, h);
+            }
+            
+            // 2. 机械狮王装甲
+            ctx.fillStyle = "#1a1a1e"; ctx.strokeStyle = "#ff9800"; ctx.lineWidth = 3;
+            ctx.beginPath(); 
+            ctx.moveTo(0, -40); ctx.lineTo(-45, 15); ctx.lineTo(-20, 50); 
+            ctx.lineTo(20, 50); ctx.lineTo(45, 15); ctx.closePath(); 
+            ctx.fill(); ctx.stroke();
+            
+            // 3. 机械鬃毛 (放射状装甲片)
+            ctx.strokeStyle = "rgba(255, 152, 0, 0.4)"; ctx.lineWidth = 2;
+            for(let i=0; i<8; i++) {
+                ctx.rotate(Math.PI/4);
+                ctx.beginPath(); ctx.moveTo(0, -40); ctx.lineTo(0, -65); ctx.stroke();
+            }
+            
+            ctx.fillStyle = "#fff"; ctx.shadowBlur = 40; ctx.shadowColor = "#ff9800";
+            ctx.font = "bold 50px 'Segoe UI Symbol'"; ctx.textAlign = "center";
+            ctx.fillText("♌", 0, 20);
             ctx.restore();
         }
     },
@@ -379,21 +453,36 @@ const CONSTELLATION_DESIGNS = {
         draw: (ctx, boss) => {
             ctx.save();
             const time = Date.now() * 0.001;
-            // 机械六翼
+            // 3A 级机械六翼 (参考用户机甲天使)
             for(let i=0; i<6; i++) {
                 ctx.save();
                 const side = i % 2 === 0 ? 1 : -1;
                 const row = Math.floor(i / 2);
-                ctx.rotate(side * (0.4 + row * 0.3 + Math.sin(time + row) * 0.1));
-                const grad = ctx.createLinearGradient(0, 0, side * 90, 0);
-                grad.addColorStop(0, "rgba(255, 255, 255, 0.7)");
+                ctx.rotate(side * (0.5 + row * 0.4 + Math.sin(time + row) * 0.15));
+                
+                // 翼展装甲
+                const grad = ctx.createLinearGradient(0, 0, side * 110, 0);
+                grad.addColorStop(0, "rgba(255, 255, 255, 0.8)");
+                grad.addColorStop(0.5, "rgba(233, 30, 99, 0.4)");
                 grad.addColorStop(1, "rgba(255, 255, 255, 0)");
                 ctx.fillStyle = grad;
-                ctx.beginPath(); ctx.moveTo(0, 0); ctx.bezierCurveTo(side*45, -25, side*65, 25, side*90, 0); ctx.fill();
+                
+                ctx.beginPath(); ctx.moveTo(0, 0);
+                ctx.bezierCurveTo(side*50, -30, side*80, 30, side*110, 0); ctx.fill();
+                
+                // 翼尖羽片细节
+                ctx.strokeStyle = "rgba(255,255,255,0.2)"; ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.moveTo(side*40, 0); ctx.lineTo(side*100, -10); ctx.stroke();
                 ctx.restore();
             }
-            ctx.fillStyle = "#fff"; ctx.shadowBlur = 25; ctx.shadowColor = "#f06292";
-            ctx.font = "bold 40px 'Segoe UI Symbol'"; ctx.textAlign = "center";
+            
+            // 核心机械神环
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.3)"; ctx.lineWidth = 2;
+            ctx.setLineDash([5, 10]);
+            ctx.beginPath(); ctx.arc(0, 0, 50 + Math.sin(time*3)*8, 0, Math.PI*2); ctx.stroke();
+            
+            ctx.fillStyle = "#fff"; ctx.shadowBlur = 40; ctx.shadowColor = "#f06292";
+            ctx.font = "bold 45px 'Segoe UI Symbol'"; ctx.textAlign = "center";
             ctx.fillText("♍", 0, 15);
             ctx.restore();
         }
@@ -404,11 +493,15 @@ const CONSTELLATION_DESIGNS = {
         symbol: "♎",
         draw: (ctx, boss) => {
             ctx.save();
-            ctx.strokeStyle = "#4caf50"; ctx.lineWidth = 4;
-            ctx.beginPath(); ctx.moveTo(-60, 0); ctx.lineTo(60, 0); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(0, -30); ctx.lineTo(0, 30); ctx.stroke();
-            ctx.fillStyle = "#fff"; ctx.shadowBlur = 20; ctx.shadowColor = "#8bc34a";
-            ctx.font = "bold 40px 'Segoe UI Symbol'"; ctx.textAlign = "center";
+            ctx.strokeStyle = "#4caf50"; ctx.lineWidth = 5;
+            ctx.beginPath(); ctx.moveTo(-70, 0); ctx.lineTo(70, 0); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0, -40); ctx.lineTo(0, 40); ctx.stroke();
+            // 机械托盘
+            ctx.fillStyle = "#1a1a1e";
+            ctx.fillRect(-80, 0, 20, 10); ctx.fillRect(60, 0, 20, 10);
+            
+            ctx.fillStyle = "#fff"; ctx.shadowBlur = 30; ctx.shadowColor = "#8bc34a";
+            ctx.font = "bold 45px 'Segoe UI Symbol'"; ctx.textAlign = "center";
             ctx.fillText("♎", 0, 15);
             ctx.restore();
         }
@@ -419,12 +512,24 @@ const CONSTELLATION_DESIGNS = {
         symbol: "♏",
         draw: (ctx, boss) => {
             ctx.save();
-            ctx.strokeStyle = "#9c27b0"; ctx.lineWidth = 5;
-            ctx.beginPath(); ctx.moveTo(0, 20); ctx.quadraticCurveTo(50, 20, 40, -40); ctx.stroke();
-            ctx.fillStyle = "#ff0000"; ctx.beginPath(); ctx.moveTo(40, -40); ctx.lineTo(50, -50); ctx.lineTo(35, -55); ctx.fill();
-            ctx.fillStyle = "#fff"; ctx.shadowBlur = 25; ctx.shadowColor = "#ff0000";
-            ctx.font = "bold 40px 'Segoe UI Symbol'"; ctx.textAlign = "center";
-            ctx.fillText("♏", 0, 15);
+            ctx.strokeStyle = "#9c27b0"; ctx.lineWidth = 6;
+            ctx.lineCap = "round";
+            // 机械蝎尾 (多段关节感)
+            ctx.beginPath(); 
+            ctx.moveTo(0, 25); ctx.quadraticCurveTo(60, 25, 50, -50); 
+            ctx.stroke();
+            // 关节节点
+            ctx.fillStyle = "rgba(255,255,255,0.2)";
+            for(let i=0; i<4; i++) {
+                ctx.beginPath(); ctx.arc(i*15, 25 - i*10, 4, 0, Math.PI*2); ctx.fill();
+            }
+            // 毒针核心
+            ctx.fillStyle = "#ff0000"; ctx.shadowBlur = 20;
+            ctx.beginPath(); ctx.moveTo(50, -50); ctx.lineTo(65, -65); ctx.lineTo(45, -70); ctx.fill();
+            
+            ctx.fillStyle = "#fff"; ctx.shadowBlur = 35; ctx.shadowColor = "#ff0000";
+            ctx.font = "bold 45px 'Segoe UI Symbol'"; ctx.textAlign = "center";
+            ctx.fillText("♏", 0, 20);
             ctx.restore();
         }
     },
@@ -434,12 +539,17 @@ const CONSTELLATION_DESIGNS = {
         symbol: "♐",
         draw: (ctx, boss) => {
             ctx.save();
-            ctx.strokeStyle = "#2196f3"; ctx.lineWidth = 3;
-            ctx.beginPath(); ctx.arc(0, 0, 50, -Math.PI*0.8, -Math.PI*0.2); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(0, 30); ctx.lineTo(0, -50); ctx.stroke();
-            ctx.fillStyle = "#fff"; ctx.shadowBlur = 25; ctx.shadowColor = "#03a9f4";
-            ctx.font = "bold 40px 'Segoe UI Symbol'"; ctx.textAlign = "center";
-            ctx.fillText("♐", 0, 15);
+            ctx.strokeStyle = "#2196f3"; ctx.lineWidth = 4;
+            // 机械复合弓
+            ctx.beginPath(); ctx.arc(0, 0, 60, -Math.PI*0.8, -Math.PI*0.2); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0, 40); ctx.lineTo(0, -60); ctx.stroke();
+            // 激光箭簇
+            ctx.fillStyle = "#ffd700"; ctx.shadowBlur = 20;
+            ctx.beginPath(); ctx.moveTo(0, -65); ctx.lineTo(-15, -45); ctx.lineTo(15, -45); ctx.fill();
+            
+            ctx.fillStyle = "#fff"; ctx.shadowBlur = 35; ctx.shadowColor = "#03a9f4";
+            ctx.font = "bold 45px 'Segoe UI Symbol'"; ctx.textAlign = "center";
+            ctx.fillText("♐", 0, 20);
             ctx.restore();
         }
     },
@@ -449,10 +559,13 @@ const CONSTELLATION_DESIGNS = {
         symbol: "♑",
         draw: (ctx, boss) => {
             ctx.save();
-            ctx.fillStyle = "#1a1a1e"; ctx.strokeStyle = "#795548"; ctx.lineWidth = 2;
-            ctx.beginPath(); ctx.moveTo(0, -40); ctx.lineTo(-35, 30); ctx.lineTo(35, 30); ctx.closePath(); ctx.fill(); ctx.stroke();
-            ctx.fillStyle = "#fff"; ctx.shadowBlur = 20; ctx.shadowColor = "#4caf50";
-            ctx.font = "bold 40px 'Segoe UI Symbol'"; ctx.textAlign = "center";
+            ctx.fillStyle = "#1a1a1e"; ctx.strokeStyle = "#795548"; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.moveTo(0, -50); ctx.lineTo(-45, 40); ctx.lineTo(45, 40); ctx.closePath(); ctx.fill(); ctx.stroke();
+            // 机械侧鳍
+            ctx.strokeStyle = "#4caf50"; ctx.beginPath(); ctx.moveTo(-20, 40); ctx.quadraticCurveTo(-40, 60, -20, 80); ctx.stroke();
+            
+            ctx.fillStyle = "#fff"; ctx.shadowBlur = 30; ctx.shadowColor = "#4caf50";
+            ctx.font = "bold 45px 'Segoe UI Symbol'"; ctx.textAlign = "center";
             ctx.fillText("♑", 0, 15);
             ctx.restore();
         }
@@ -463,10 +576,18 @@ const CONSTELLATION_DESIGNS = {
         symbol: "♒",
         draw: (ctx, boss) => {
             ctx.save();
-            ctx.fillStyle = "#1a1a1e"; ctx.strokeStyle = "#00bcd4"; ctx.lineWidth = 2;
-            ctx.beginPath(); ctx.arc(0, 0, 40, 0, Math.PI*2); ctx.fill(); ctx.stroke();
-            ctx.fillStyle = "#fff"; ctx.shadowBlur = 25; ctx.shadowColor = "#e0f7fa";
-            ctx.font = "bold 40px 'Segoe UI Symbol'"; ctx.textAlign = "center";
+            const time = Date.now() * 0.003;
+            ctx.fillStyle = "#1a1a1e"; ctx.strokeStyle = "#00bcd4"; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.arc(0, 0, 50, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+            // 动态流体装甲
+            ctx.strokeStyle = "rgba(224, 247, 250, 0.3)";
+            for(let i=0; i<3; i++) {
+                const r = (time*20 + i*25) % 80;
+                ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI*2); ctx.stroke();
+            }
+            
+            ctx.fillStyle = "#fff"; ctx.shadowBlur = 35; ctx.shadowColor = "#e0f7fa";
+            ctx.font = "bold 45px 'Segoe UI Symbol'"; ctx.textAlign = "center";
             ctx.fillText("♒", 0, 15);
             ctx.restore();
         }
@@ -478,13 +599,18 @@ const CONSTELLATION_DESIGNS = {
         draw: (ctx, boss) => {
             ctx.save();
             const angle = Date.now() * 0.003;
+            // 机械阴阳鱼
             [-1, 1].forEach(side => {
                 const a = angle + (side === 1 ? 0 : Math.PI);
+                const x = Math.cos(a)*60;
+                const y = Math.sin(a)*60;
                 ctx.fillStyle = side === 1 ? "#3f51b5" : "#9c27b0";
-                ctx.beginPath(); ctx.arc(Math.cos(a)*45, Math.sin(a)*45, 12, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.ellipse(x, y, 12, 22, a + Math.PI/2, 0, Math.PI*2); ctx.fill();
+                // 鱼眼灯
+                ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(x, y - side*5, 3, 0, Math.PI*2); ctx.fill();
             });
-            ctx.fillStyle = "#fff"; ctx.shadowBlur = 25; ctx.shadowColor = "#3f51b5";
-            ctx.font = "bold 40px 'Segoe UI Symbol'"; ctx.textAlign = "center";
+            ctx.fillStyle = "#fff"; ctx.shadowBlur = 35; ctx.shadowColor = "#3f51b5";
+            ctx.font = "bold 45px 'Segoe UI Symbol'"; ctx.textAlign = "center";
             ctx.fillText("♓", 0, 15);
             ctx.restore();
         }
