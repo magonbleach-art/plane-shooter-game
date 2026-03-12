@@ -142,7 +142,11 @@
         <div id="game-over" class="overlay hidden">
             <div class="overlay-content">
                 <h1 style="color: #ff4b2b;">灵力枯竭</h1>
-                <p style="color: #aaa; margin-bottom: 20px;">你的意志已消散在星空之中...</p>
+                <p style="color: #aaa; margin-bottom: 10px;">你的意志已消散在星空之中...</p>
+                <p id="final-score-display" style="color: #ffd700; font-size: 1.5rem; margin-bottom: 5px;">最终得分: 0</p>
+                <div id="qa-failure-analysis" style="background: rgba(255,0,0,0.1); border: 1px solid rgba(255,0,0,0.3); padding: 10px; border-radius: 8px; margin-bottom: 20px; font-size: 0.8rem; color: #ff9999; text-align: left;">
+                    [QA 事故报告] 正在分析失败原因...
+                </div>
                 <button id="restart-btn">再次挑战</button>
             </div>
         </div>
@@ -790,71 +794,61 @@
                 // QA 状态检查
                 if (boss) {
                     const hpPercent = (boss.hp / boss.maxHp * 100).toFixed(1);
-                    logQA(`正在压制 Boss: ${boss.cfg.name} (HP: ${hpPercent}%)`);
-                    if (hpPercent > 95 && frameCount > 2000) logQA("⚠️ 警报: Boss 掉血过慢，建议增强子弹威力");
+                    logQA(`压制 Boss: ${boss.cfg.name} (HP: ${hpPercent}%)`);
+                    if (hpPercent > 90 && frameCount > 2500) logQA("⚠️ 警告: 火力不足，Boss 掉血过慢");
                 } else {
                     const enemyCount = enemies.length;
-                    if (enemyCount > 8) logQA(`⚠️ 警告: 敌机堆积 (${enemyCount})，火力可能不足`);
+                    if (enemyCount > 10) logQA(`⚠️ 警告: 敌机堆积 (${enemyCount})`);
                 }
             }
 
-            // 1. 避弹逻辑：扫描 150 像素范围内的敌弹
-            let dangerousBullet = null;
-            let minDist = 150;
-            bullets.forEach(b => {
-                if (b.isEnemy && b.y < player.y && b.y > player.y - 200) {
-                    let dist = Math.abs(b.x - player.x);
-                    if (dist < 60) {
-                        dangerousBullet = b;
-                    }
-                }
-            });
-
-            if (dangerousBullet) {
-                // 逃离危险子弹
-                player.targetX = dangerousBullet.x > player.x ? player.x - 40 : player.x + 40;
-                return;
-            }
-
-            // 2. 拾取道具：如果道具在附近，去捡它
-            let nearestPowerup = null;
-            let minPUdist = 200;
-            powerups.forEach(p => {
-                let d = Math.hypot(p.x - player.x, p.y - player.y);
-                if (d < minPUdist) {
-                    minPUdist = d;
-                    nearestPowerup = p;
-                }
-            });
-
-            if (nearestPowerup) {
-                player.targetX = nearestPowerup.x;
-                return;
-            }
-
-            // 3. 进攻逻辑：对准 Boss 或最近的敌人
-            let target = boss || null;
-            if (!target) {
-                let minEdist = 1000;
-                enemies.forEach(e => {
-                    if (e.y < player.y) {
-                        let d = Math.hypot(e.x - player.x, e.y - player.y);
-                        if (d < minEdist) {
-                            minEdist = d;
-                            target = e;
-                        }
+            // 1. 避弹逻辑 (场力避让算法：多弹避让)
+            let dangerousBullets = bullets.filter(b => b.isEnemy && b.y < player.y && b.y > player.y - 250);
+            if (dangerousBullets.length > 0) {
+                let avoidX = 0;
+                dangerousBullets.forEach(b => {
+                    let dx = player.x - b.x;
+                    let dy = player.y - b.y;
+                    let dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist < 120) {
+                        // 距离越近，排斥力越大。增加侧向逃逸权重
+                        avoidX += (dx / dist) * (200 / dist);
                     }
                 });
+                if (Math.abs(avoidX) > 0.5) {
+                    player.targetX += avoidX * 15;
+                    // 边界检查
+                    player.targetX = Math.max(25, Math.min(375, player.targetX));
+                    return;
+                }
             }
+
+            // 2. 拾取道具
+            if (powerups.length > 0) {
+                let nearestPowerup = powerups.reduce((prev, curr) => {
+                    let dPrev = Math.hypot(prev.x - player.x, prev.y - player.y);
+                    let dCurr = Math.hypot(curr.x - player.x, curr.y - player.y);
+                    return dCurr < dPrev ? curr : prev;
+                });
+
+                if (nearestPowerup && Math.hypot(nearestPowerup.x - player.x, nearestPowerup.y - player.y) < 300) {
+                    player.targetX = nearestPowerup.x;
+                    return;
+                }
+            }
+
+            // 3. 进攻逻辑
+            let target = boss || (enemies.length > 0 ? enemies.reduce((prev, curr) => {
+                let dPrev = Math.hypot(prev.x - player.x, prev.y - player.y);
+                let dCurr = Math.hypot(curr.x - player.x, curr.y - player.y);
+                return dCurr < dPrev ? curr : prev;
+            }) : null);
 
             if (target) {
                 player.targetX = target.x;
             }
 
-            // 4. 自动觉醒
-            if (ultEnergy >= 100) {
-                triggerUltimate();
-            }
+            if (ultEnergy >= 100) triggerUltimate();
         }
 
         function gameLoop() {
@@ -1204,6 +1198,21 @@
         function endGame() {
             gameActive = false;
             document.getElementById('game-over').classList.remove('hidden');
+            document.getElementById('final-score-display').innerText = `最终得分: ${score}`;
+            
+            // QA 失败分析报告
+            let report = "【QA 事故报告】\n";
+            if (autopilotEnabled) {
+                report += "🚨 AI 决策失效：在密集弹幕下，当前的 X 轴规避算法陷入了局部最优解，未能识别出更安全的逃逸路径。";
+                if (frameCount > bossSpawnTime) report += "\n⚠️ 观察到 Boss 阶段弹幕密度已超出当前 AI 的处理阈值。";
+            } else {
+                report += "🎮 玩家操作失误：检测到机体在短时间内连续受击，建议在设置中尝试调低游戏速度或开启 AI 辅助。";
+            }
+            
+            if (score < 500) report += "\n📉 建议：初期火力严重不足，请优先升级子弹等级或更换更强力的生肖。";
+            
+            document.getElementById('qa-failure-analysis').innerText = report;
+            logQA("❌ 战斗结束：机体损毁。正在将报告上传至指挥中心...");
         }
 
         document.getElementById('start-btn').onclick = () => startGame(true);
