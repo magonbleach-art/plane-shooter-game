@@ -4,84 +4,162 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>生肖射手：十二星座秘境</title>
-    <script src="zodiac_designs.js?v=3.1"></script>
+    <script src="zodiac_designs.js?v=4.0"></script>
     <style>
-        body { margin: 0; padding: 0; background: #000; color: #fff; font-family: 'Segoe UI', sans-serif; overflow: hidden; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        #game-container { position: relative; width: 400px; height: 600px; background: #050505; box-shadow: 0 0 50px rgba(255, 215, 0, 0.1); border: 2px solid rgba(255, 255, 255, 0.1); overflow: hidden; display: flex; flex-direction: column; border-radius: 16px; }
-        
-        /* UI 容器化规范 */
-        .ui-panel { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 20px; padding: 25px 0; }
-        .ui-section { width: 100%; max-width: 340px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,215,0,0.1); border-radius: 20px; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; align-items: stretch; }
-        .ui-title { color: #ffd700; font-size: 0.95rem; margin-bottom: 18px; font-weight: bold; text-transform: uppercase; letter-spacing: 1.5px; display: flex; align-items: center; gap: 10px; opacity: 0.9; }
-        .ui-title::before { content: ''; width: 4px; height: 16px; background: #ffd700; border-radius: 2px; }
+        :root {
+            --primary: #ffd700;
+            --accent: #00ffff;
+            --bg-dark: #0a0a0c;
+            --glass: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 215, 0, 0.15);
+            --neon-glow: 0 0 15px rgba(255, 215, 0, 0.3);
+        }
 
-        /* 等宽网格按钮 */
-        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; }
-        .grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; width: 100%; }
-        .flex-col { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+        body { margin: 0; padding: 0; background: #050507; color: #e0e0e0; font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; overflow: hidden; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        
+        #game-container { 
+            position: relative; width: 400px; height: 600px; background: var(--bg-dark); 
+            box-shadow: 0 0 100px rgba(0, 0, 0, 0.8), 0 0 30px rgba(255, 215, 0, 0.05); 
+            border: 1px solid rgba(255, 255, 255, 0.05); overflow: hidden; display: flex; 
+            flex-direction: column; border-radius: 24px;
+        }
+        
+        /* 星际玻态 (Celestial Glass) 规范 */
+        .ui-panel { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 24px; padding: 30px 0; }
+        
+        .ui-section { 
+            width: 100%; max-width: 340px; background: var(--glass); 
+            border: 1px solid var(--glass-border); border-radius: 20px; 
+            padding: 20px; box-sizing: border-box; display: flex; 
+            flex-direction: column; align-items: stretch; backdrop-filter: blur(10px);
+            box-shadow: inset 0 0 20px rgba(255, 215, 0, 0.02);
+        }
+
+        .ui-title { 
+            color: var(--primary); font-size: 0.8rem; margin-bottom: 18px; 
+            font-weight: 800; text-transform: uppercase; letter-spacing: 2px; 
+            display: flex; align-items: center; gap: 12px; opacity: 0.8;
+        }
+        .ui-title::before { content: ''; width: 3px; height: 12px; background: var(--primary); border-radius: 1px; box-shadow: 0 0 8px var(--primary); }
+
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%; }
+        .grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; width: 100%; }
+        .flex-col { display: flex; flex-direction: column; gap: 12px; width: 100%; }
         
         .setting-btn { 
-            width: 100% !important; height: 44px !important; margin: 0 !important;
-            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,215,0,0.2);
-            color: #fff; border-radius: 12px; font-size: 0.85rem; font-weight: 500;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex; align-items: center; justify-content: center;
+            width: 100% !important; height: 46px !important; margin: 0 !important;
+            background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #aaa; border-radius: 14px; font-size: 0.85rem; font-weight: 600;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
         }
+        .setting-btn:hover { background: rgba(255, 255, 255, 0.05); color: #fff; border-color: rgba(255, 215, 0, 0.3); transform: translateY(-1px); }
+        
         .setting-btn.active { 
-            background: linear-gradient(135deg, #ffd700, #b8860b); color: #000; 
-            border-color: #fff; box-shadow: 0 0 15px rgba(255,215,0,0.4); 
+            background: linear-gradient(145deg, #ffd700, #b8860b); color: #000; 
+            border-color: #fff; box-shadow: 0 8px 20px rgba(184, 134, 11, 0.4); 
+            transform: scale(1.02);
         }
-        canvas { display: block; width: 400px; height: 600px; cursor: crosshair; }
-        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.92); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; padding: 0; box-sizing: border-box; backdrop-filter: blur(15px); }
-        .overlay-content { width: 100%; display: flex; flex-direction: column; align-items: center; text-align: center; max-height: 100%; overflow-y: auto; padding: 30px 0; }
-        /* 隐藏滚动条但保留功能 */
+
+        canvas { display: block; width: 400px; height: 600px; cursor: crosshair; filter: saturate(1.1); }
+        
+        .overlay { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            background: radial-gradient(circle at center, rgba(15, 15, 20, 0.95), rgba(5, 5, 7, 0.98));
+            display: flex; flex-direction: column; justify-content: center; align-items: center; 
+            z-index: 100; padding: 0; box-sizing: border-box; backdrop-filter: blur(25px); 
+        }
+        
+        .overlay-content { 
+            width: 100%; display: flex; flex-direction: column; align-items: center; 
+            text-align: center; max-height: 100%; overflow-y: auto; padding: 40px 0; 
+        }
         .overlay-content::-webkit-scrollbar { width: 0; background: transparent; }
         
-        .zodiac-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%; }
+        .zodiac-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; width: 100%; }
         .zodiac-item { 
-            aspect-ratio: 1/1; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,215,0,0.15); 
-            border-radius: 16px; padding: 10px; text-align: center; cursor: pointer; 
-            transition: 0.3s; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+            aspect-ratio: 1/1; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); 
+            border-radius: 20px; padding: 12px; text-align: center; cursor: pointer; 
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1); display: flex; 
+            flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+            position: relative; overflow: hidden;
         }
-        .zodiac-item:hover { background: rgba(255,215,0,0.1); border-color: #ffd700; transform: translateY(-3px); }
-        .zodiac-item.selected { background: #ffd700 !important; color: #000 !important; border-color: #fff; box-shadow: 0 0 15px rgba(255,215,0,0.5); }
-        .zodiac-icon { font-size: 1.5rem; margin-bottom: 2px; }
-        .zodiac-tag { font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.1); margin-top: 4px; }
-        .selected .zodiac-tag { background: rgba(0,0,0,0.1); color: #000; }
+        .zodiac-item::after {
+            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: conic-gradient(from 0deg, transparent, rgba(255, 215, 0, 0.1), transparent);
+            opacity: 0; transition: 0.5s;
+        }
+        .zodiac-item:hover { background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 215, 0, 0.2); transform: translateY(-4px) scale(1.05); }
+        .zodiac-item:hover::after { opacity: 1; animation: rotate 4s linear infinite; }
+        .zodiac-item.selected { 
+            background: rgba(255, 215, 0, 0.1); border-color: var(--primary); 
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.15), inset 0 0 15px rgba(255, 215, 0, 0.1); 
+        }
+        
+        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        .zodiac-icon { font-size: 2rem; filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.2)); }
+        .zodiac-tag { font-size: 0.6rem; padding: 4px 10px; border-radius: 8px; background: rgba(255, 255, 255, 0.05); color: #888; font-weight: bold; }
+        .selected .zodiac-tag { background: var(--primary); color: #000; }
 
         .hidden { display: none !important; }
-        h1 { color: #ffd700; font-size: 1.8rem; margin: 0 0 10px 0; text-align: center; text-shadow: 0 0 20px rgba(255, 215, 0, 0.5); font-weight: 800; letter-spacing: 1px; }
-        .tutorial { color: #aaa; font-size: 0.8rem; line-height: 1.4; text-align: center; margin-bottom: 15px; background: rgba(255,255,255,0.03); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,215,0,0.1); width: 100%; box-sizing: border-box; }
-        .tutorial b { color: #ffd700; font-size: 0.9rem; display: block; margin-bottom: 5px; }
+        h1 { 
+            color: #fff; font-size: 2.2rem; margin: 0 0 15px 0; text-align: center; 
+            font-weight: 900; letter-spacing: -1px; line-height: 1;
+            background: linear-gradient(to bottom, #fff, #aaa); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
         
-        .btn-group { width: 100%; max-width: 280px; display: flex; flex-direction: column; gap: 8px; }
-        button { width: 100%; height: 44px; margin: 0; background: linear-gradient(135deg, #ffd700, #b8860b); border: none; border-radius: 22px; color: #000; font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.2); }
-        button:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4); }
+        .btn-group { width: 100%; max-width: 280px; display: flex; flex-direction: column; gap: 12px; }
+        button:not(.setting-btn) { 
+            width: 100%; height: 52px; margin: 0; background: #fff; border: none; 
+            border-radius: 16px; color: #000; font-size: 1rem; font-weight: 800; 
+            cursor: pointer; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); 
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+        button:not(.setting-btn):hover { transform: translateY(-2px); box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3); filter: brightness(1.1); }
+        button:not(.setting-btn):active { transform: translateY(0); }
         
-        #show-settings-btn { background: #444; color: #ffd700; border: 1px solid #ffd700; }
-        #show-select-btn { background: #222; color: #fff; border: 1px solid #444; }
-        #start-btn { background: linear-gradient(135deg, #4caf50, #2e7d32); color: #fff; height: 50px; font-size: 1.1rem; margin-top: 5px; }
+        #start-btn { background: linear-gradient(135deg, #fff, #eee); color: #000; }
+        #show-settings-btn { background: rgba(255, 255, 255, 0.05); color: #fff; border: 1px solid rgba(255, 255, 255, 0.1); }
 
-        .feedback-area { width: 100%; max-width: 280px; margin-top: 20px; display: flex; flex-direction: column; gap: 8px; padding-top: 15px; border-top: 1px solid rgba(255,215,0,0.1); }
-        .feedback-input { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,215,0,0.2); border-radius: 10px; color: #fff; padding: 10px; font-size: 0.85rem; outline: none; transition: 0.3s; box-sizing: border-box; }
-        #submit-feedback-btn { background: #ffd700; color: #000; font-size: 0.85rem; height: 36px; border-radius: 18px; box-shadow: none; }
-        #hud { position: absolute; top: 15px; left: 15px; right: 15px; display: flex; justify-content: space-between; font-size: 1rem; pointer-events: none; z-index: 50; color: #ffd700; font-weight: bold; text-shadow: 0 0 5px #000; }
-        #ai-status { position: absolute; top: 80px; left: 50%; transform: translateX(-50%); font-size: 0.7rem; color: #0f0; text-transform: uppercase; letter-spacing: 2px; display: none; z-index: 50; animation: blink 1s infinite; }
-        #qa-log { position: absolute; bottom: 80px; left: 10px; right: 10px; background: rgba(0,0,0,0.7); color: #0f0; font-family: monospace; font-size: 10px; padding: 5px; border-radius: 4px; pointer-events: none; max-height: 100px; overflow: hidden; z-index: 50; border-left: 2px solid #0f0; display: none; }
-        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
-        #boss-info { position: absolute; top: 50px; left: 60px; right: 60px; text-align: center; z-index: 50; }
-        #boss-countdown { font-size: 0.8rem; color: #aaa; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
-        #boss-hp-bar { height: 8px; background: rgba(255,0,0,0.1); border: 1px solid rgba(255,0,0,0.5); border-radius: 4px; display: none; overflow: hidden; }
-        #boss-hp-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #ff4b2b, #ff0000); transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 0 15px #f00; }
+        .feedback-input { 
+            width: 100%; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); 
+            border-radius: 14px; color: #fff; padding: 12px 16px; font-size: 0.9rem; outline: none; 
+            transition: 0.3s; box-sizing: border-box; 
+        }
+        .feedback-input:focus { border-color: var(--primary); background: rgba(255, 215, 0, 0.02); }
+
+        #hud { 
+            position: absolute; top: 25px; left: 25px; right: 25px; display: flex; 
+            justify-content: space-between; font-size: 0.9rem; pointer-events: none; 
+            z-index: 50; color: #fff; font-weight: 800; letter-spacing: 1px;
+        }
+        #hud div { background: rgba(0, 0, 0, 0.3); padding: 6px 14px; border-radius: 12px; backdrop-filter: blur(5px); border: 1px solid rgba(255, 255, 255, 0.05); }
         
-        /* 大招能量条 */
-        #ult-container { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: 200px; text-align: center; z-index: 50; }
-        #ult-bar { height: 10px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,215,0,0.3); border-radius: 5px; overflow: hidden; margin-bottom: 5px; }
-        #ult-fill { width: 0%; height: 100%; background: linear-gradient(90deg, #ffd700, #ff8c00); transition: width 0.1s; box-shadow: 0 0 10px #ffd700; }
-        #ult-btn { width: 100px; height: 100px; border-radius: 50%; background: rgba(255,215,0,0.2); border: 2px solid #ffd700; color: #ffd700; font-weight: bold; font-size: 1.2rem; cursor: pointer; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); box-shadow: 0 0 20px rgba(255,215,0,0.3); position: absolute; bottom: 80px; right: 20px; transition: 0.3s; z-index: 100; }
-        #ult-btn.ready { background: rgba(255,215,0,0.8); color: #000; box-shadow: 0 0 30px #ffd700; animation: pulse 1s infinite; display: flex; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
-        #ult-info { font-size: 0.7rem; color: #ffd700; text-transform: uppercase; letter-spacing: 1px; text-shadow: 0 0 5px #000; }
+        #boss-hp-bar { 
+            height: 6px; background: rgba(255, 255, 255, 0.05); border-radius: 3px; 
+            display: none; overflow: hidden; width: 100%; margin-top: 10px;
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.1);
+        }
+        #boss-hp-fill { 
+            width: 100%; height: 100%; background: linear-gradient(90deg, #ff4b2b, #ff0000); 
+            transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 0 20px #f00; 
+        }
+        
+        #ult-container { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); width: 220px; text-align: center; z-index: 50; }
+        #ult-bar { height: 4px; background: rgba(255, 255, 255, 0.05); border-radius: 2px; overflow: hidden; margin-bottom: 8px; }
+        #ult-fill { width: 0%; height: 100%; background: var(--primary); transition: width 0.3s; box-shadow: 0 0 15px var(--primary); }
+        #ult-info { font-size: 0.65rem; color: var(--primary); font-weight: 900; text-transform: uppercase; letter-spacing: 2px; opacity: 0.6; }
+        
+        #ult-btn { 
+            width: 80px; height: 80px; border-radius: 50%; background: rgba(255, 215, 0, 0.05); 
+            border: 1px solid var(--glass-border); color: var(--primary); font-weight: 900; 
+            font-size: 1rem; cursor: pointer; display: none; align-items: center; 
+            justify-content: center; backdrop-filter: blur(10px); position: absolute; 
+            bottom: 100px; right: 25px; transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1); z-index: 100; 
+        }
+        #ult-btn.ready { background: var(--primary); color: #000; box-shadow: 0 0 40px rgba(255, 215, 0, 0.4); animation: pulse 2s infinite; display: flex; border: none; }
+        @keyframes pulse { 0% { transform: scale(1); box-shadow: 0 0 20px rgba(255, 215, 0, 0.4); } 50% { transform: scale(1.1); box-shadow: 0 0 50px rgba(255, 215, 0, 0.6); } 100% { transform: scale(1); box-shadow: 0 0 20px rgba(255, 215, 0, 0.4); } }
     </style>
 </head>
 <body>
@@ -243,6 +321,46 @@
     </div>
 
     <script>
+        let stars = [];
+        const STAR_COUNT = 80;
+        function initStars() {
+            stars = [];
+            for(let i=0; i<STAR_COUNT; i++) {
+                stars.push({
+                    x: Math.random() * 400,
+                    y: Math.random() * 600,
+                    speed: 0.5 + Math.random() * 2,
+                    size: 1 + Math.random() * 2,
+                    opacity: 0.2 + Math.random() * 0.8
+                });
+            }
+        }
+
+        function drawBackground() {
+            // 3A 级星际深空效果：微弱星云
+            const nebula = ctx.createRadialGradient(200, 300, 0, 200, 300, 400);
+            nebula.addColorStop(0, "#080810");
+            nebula.addColorStop(1, "#000");
+            ctx.fillStyle = nebula;
+            ctx.fillRect(0, 0, 400, 600);
+
+            // 视差星空
+            ctx.save();
+            stars.forEach(s => {
+                s.y += s.speed * gameSpeedMult;
+                if (s.y > 600) {
+                    s.y = -10;
+                    s.x = Math.random() * 400;
+                }
+                ctx.globalAlpha = s.opacity * (0.5 + Math.sin(frameCount * 0.05 + s.x) * 0.5);
+                ctx.fillStyle = "#fff";
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.restore();
+        }
+
         let gameConfig = { settings: {}, zodiac_bullets: [], constellation_levels: [] };
         async function loadConfig() {
             const res = await fetch('game_config.json?t=' + Date.now());
@@ -383,62 +501,86 @@
             ctx.save();
             ctx.translate(player.x, player.y);
             
-            // 绘制侧翼机枪
+            // 3A 引擎喷火特效 (双重火焰 + 粒子感)
+            if (gameActive) {
+                const fireLen = 25 + Math.random() * 15;
+                const grad = ctx.createLinearGradient(0, 15, 0, 15 + fireLen);
+                grad.addColorStop(0, "rgba(255, 255, 255, 0.8)");
+                grad.addColorStop(0.2, "rgba(0, 255, 255, 0.6)");
+                grad.addColorStop(1, "rgba(0, 100, 255, 0)");
+                
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.moveTo(-12, 15); ctx.lineTo(0, 15 + fireLen); ctx.lineTo(12, 15);
+                ctx.fill();
+                
+                // 核心喷口
+                ctx.fillStyle = "#fff";
+                ctx.fillRect(-4, 15, 8, 4);
+            }
+
+            // 侧翼机枪 (3A 机械感)
             if (player.hasWingman) {
-                ctx.fillStyle = "#aaa";
-                ctx.fillRect(-45, 10, 10, 20); // 左侧翼
-                ctx.fillRect(35, 10, 10, 20);  // 右侧翼
-                ctx.shadowBlur = 15; ctx.shadowColor = "#0ff";
-                ctx.fillStyle = "#0ff";
-                ctx.fillRect(-42, 5, 4, 5);
-                ctx.fillRect(38, 5, 4, 5);
+                ctx.fillStyle = "#222";
+                ctx.strokeStyle = "rgba(0, 255, 255, 0.5)";
+                ctx.lineWidth = 1;
+                // 左翼
+                ctx.fillRect(-48, 5, 12, 25); ctx.strokeRect(-48, 5, 12, 25);
+                ctx.fillStyle = "#0ff"; ctx.fillRect(-44, 0, 4, 10);
+                // 右翼
+                ctx.fillStyle = "#222";
+                ctx.fillRect(36, 5, 12, 25); ctx.strokeRect(36, 5, 12, 25);
+                ctx.fillStyle = "#0ff"; ctx.fillRect(40, 0, 4, 10);
             }
             
-            // 基础光晕 (随等级增强)
+            // 基础光晕
             const bCfg = gameConfig.zodiac_bullets.find(b => b.id === activeBulletId) || {color: '#ffd700'};
-            ctx.shadowBlur = 10 + bulletLevel * 10 + (ultActive ? 30 : 0);
+            ctx.shadowBlur = 20 + bulletLevel * 10 + (ultActive ? 40 : 0);
             ctx.shadowColor = bCfg.color;
             
             if (ultActive) {
-                // 觉醒状态下的额外视觉
-                ctx.strokeStyle = "#fff"; ctx.lineWidth = 3;
-                ctx.beginPath(); ctx.arc(0, 0, 35 + Math.sin(frameCount*0.2)*5, 0, Math.PI*2); ctx.stroke();
+                ctx.strokeStyle = "#fff"; ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath(); ctx.arc(0, 0, 45 + Math.sin(frameCount*0.1)*5, 0, Math.PI*2); ctx.stroke();
+                ctx.setLineDash([]);
             }
             
-            // 绘制等级指示器 (小星点)
+            // 机体本体 (机械硬核风)
+            // 1. 机翼
+            ctx.fillStyle = "#1a1a1e";
+            ctx.beginPath();
+            ctx.moveTo(0, -10); ctx.lineTo(-35, 15); ctx.lineTo(35, 15);
+            ctx.closePath(); ctx.fill();
+            ctx.strokeStyle = "rgba(255,255,255,0.1)"; ctx.stroke();
+
+            // 2. 主躯干
+            const bodyGrad = ctx.createLinearGradient(-15, 0, 15, 0);
+            bodyGrad.addColorStop(0, "#2c2c34");
+            bodyGrad.addColorStop(0.5, "#3f3f4a");
+            bodyGrad.addColorStop(1, "#2c2c34");
+            ctx.fillStyle = bodyGrad;
+            ctx.beginPath();
+            ctx.moveTo(0, -35); ctx.lineTo(-12, 15); ctx.lineTo(12, 15);
+            ctx.closePath(); ctx.fill();
+
+            // 3. 驾驶舱 (宝石蓝)
+            ctx.fillStyle = "#0077ff";
+            ctx.shadowBlur = 10; ctx.shadowColor = "#0077ff";
+            ctx.beginPath();
+            ctx.ellipse(0, -10, 6, 12, 0, 0, Math.PI*2);
+            ctx.fill();
+            
+            // 4. 生肖能量核心 (根据当前武器颜色)
+            ctx.fillStyle = bCfg.color;
+            ctx.shadowBlur = 15; ctx.shadowColor = bCfg.color;
+            ctx.beginPath(); ctx.arc(0, 5, 4, 0, Math.PI*2); ctx.fill();
+
+            // 等级指示器 (能量槽感)
             for(let i=0; i<bulletLevel; i++) {
-                ctx.fillStyle = "#fff";
-                ctx.beginPath();
-                ctx.arc(-15 + i*15, 25, 3, 0, Math.PI*2);
-                ctx.fill();
+                ctx.fillStyle = "#fff"; ctx.shadowBlur = 5;
+                ctx.fillRect(-18 + i*15, 22, 10, 3);
             }
 
-            // 根据不同子弹类型变形
-            if (activeBulletId === 'rat') { // 鼠：网状防御
-                ctx.strokeStyle = "#e0e0e0"; ctx.lineWidth = 2;
-                ctx.beginPath(); for(let i=0; i<8; i++) { ctx.moveTo(0,0); ctx.lineTo(Math.cos(i*Math.PI/4)*25, Math.sin(i*Math.PI/4)*25); }
-                ctx.stroke();
-            } else if (activeBulletId === 'ox') { // 牛：重装
-                ctx.fillStyle = "#8d6e63"; ctx.fillRect(-20, -20, 40, 40); ctx.fillRect(-10, -30, 20, 10);
-            } else if (activeBulletId === 'tiger') { // 虎：霸气
-                ctx.fillStyle = "#ff9800"; ctx.beginPath(); ctx.moveTo(0, -30); ctx.lineTo(-25, 20); ctx.lineTo(25, 20); ctx.closePath(); ctx.fill();
-                ctx.fillStyle = "#000"; ctx.fillRect(-15, -5, 30, 2);
-            } else if (activeBulletId === 'dragon') { // 龙：金光
-                ctx.fillStyle = "#ffd700"; ctx.beginPath(); ctx.arc(0, 0, 20, 0, Math.PI*2); ctx.fill();
-                ctx.shadowBlur = 30; ctx.shadowColor = "#ffd700";
-            } else if (activeBulletId === 'horse') { // 马：流线
-                ctx.fillStyle = "#2196f3"; ctx.beginPath(); ctx.moveTo(0, -35); ctx.lineTo(-15, 15); ctx.lineTo(15, 15); ctx.closePath(); ctx.fill();
-            } else { // 其他默认形态
-                ctx.fillStyle = bCfg.color; ctx.beginPath(); ctx.moveTo(0, -30); ctx.lineTo(-25, 15); ctx.lineTo(25, 15); ctx.closePath(); ctx.fill();
-            }
-            
-            // 引擎喷火
-            if (gameActive) {
-                ctx.fillStyle = "#f44336";
-                ctx.beginPath();
-                ctx.moveTo(-10, 15); ctx.lineTo(0, 15 + Math.random()*20); ctx.lineTo(10, 15);
-                ctx.fill();
-            }
             ctx.restore();
         }
 
@@ -1044,6 +1186,7 @@
             }
             
             ctx.clearRect(0, 0, 400, 600); frameCount++;
+            drawBackground();
             updateUlt();
 
             // 觉醒全屏闪光效果
@@ -1278,6 +1421,7 @@
 
         function startGame(isNewGame = true) {
             loadConfig().then(() => {
+                initStars();
                 gameActive = true;
                 if (isNewGame) {
                     score = 0; 
