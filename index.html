@@ -39,6 +39,7 @@
         #submit-feedback-btn { background: #ffd700; color: #000; font-size: 0.85rem; height: 36px; border-radius: 18px; box-shadow: none; }
         #hud { position: absolute; top: 15px; left: 15px; right: 15px; display: flex; justify-content: space-between; font-size: 1rem; pointer-events: none; z-index: 50; color: #ffd700; font-weight: bold; text-shadow: 0 0 5px #000; }
         #ai-status { position: absolute; top: 80px; left: 50%; transform: translateX(-50%); font-size: 0.7rem; color: #0f0; text-transform: uppercase; letter-spacing: 2px; display: none; z-index: 50; animation: blink 1s infinite; }
+        #qa-log { position: absolute; bottom: 80px; left: 10px; right: 10px; background: rgba(0,0,0,0.7); color: #0f0; font-family: monospace; font-size: 10px; padding: 5px; border-radius: 4px; pointer-events: none; max-height: 100px; overflow: hidden; z-index: 50; border-left: 2px solid #0f0; display: none; }
         @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
         #boss-info { position: absolute; top: 50px; left: 60px; right: 60px; text-align: center; z-index: 50; }
         #boss-countdown { font-size: 0.8rem; color: #aaa; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
@@ -63,6 +64,7 @@
             <div id="life">❤️x3</div>
         </div>
         <div id="ai-status">AI 自动驾驶激活</div>
+        <div id="qa-log"></div>
         <div id="boss-info">
             <div id="boss-countdown">Boss 降临倒计时: 30s</div>
             <div id="boss-hp-bar"><div id="boss-hp-fill"></div></div>
@@ -773,7 +775,29 @@
             screenShake = 10 * size;
         }
 
+        function logQA(msg) {
+            const logEl = document.getElementById('qa-log');
+            if (!logEl) return;
+            const time = new Date().toLocaleTimeString().split(' ')[0];
+            const newLog = document.createElement('div');
+            newLog.innerHTML = `<span style="color:#888">[${time}]</span> [QA-Agent] ${msg}`;
+            logEl.prepend(newLog);
+            if (logEl.children.length > 5) logEl.removeChild(logEl.lastChild);
+        }
+
         function updateAutopilot() {
+            if (frameCount % 60 === 0) {
+                // QA 状态检查
+                if (boss) {
+                    const hpPercent = (boss.hp / boss.maxHp * 100).toFixed(1);
+                    logQA(`正在压制 Boss: ${boss.cfg.name} (HP: ${hpPercent}%)`);
+                    if (hpPercent > 95 && frameCount > 2000) logQA("⚠️ 警报: Boss 掉血过慢，建议增强子弹威力");
+                } else {
+                    const enemyCount = enemies.length;
+                    if (enemyCount > 8) logQA(`⚠️ 警告: 敌机堆积 (${enemyCount})，火力可能不足`);
+                }
+            }
+
             // 1. 避弹逻辑：扫描 150 像素范围内的敌弹
             let dangerousBullet = null;
             let minDist = 150;
@@ -1122,11 +1146,14 @@
                 btn.style.background = "#ffd700";
                 btn.style.color = "#000";
                 status.style.display = "block";
+                document.getElementById('qa-log').style.display = "block";
+                logQA("启动自动化回归测试...");
             } else {
                 btn.innerText = "开启 AI 自动驾驶";
                 btn.style.background = "#444";
                 btn.style.color = "#ffd700";
                 status.style.display = "none";
+                document.getElementById('qa-log').style.display = "none";
             }
         };
 
