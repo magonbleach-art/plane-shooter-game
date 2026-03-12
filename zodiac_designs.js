@@ -8,7 +8,7 @@ const ZODIAC_DESIGNS = {
         name: "鼠·天罗网弹",
         color: "#e0e0e0",
         description: "智能追踪，拦截敌弹",
-        damage: 0.8,
+        damage: 3.5,
         homing: true,
         homing_speed: 0.2,
         attack_effect: (ctx, bullet) => {
@@ -185,7 +185,7 @@ const ZODIAC_DESIGNS = {
         name: "鸡·鸣啼眩弹",
         color: "#f44336",
         description: "金光眩晕，控制核心",
-        damage: 0.3,
+        damage: 1.2,
         stun_dur: 180,
         attack_effect: (ctx, bullet) => {
             ctx.fillStyle = "#f44336";
