@@ -31,14 +31,6 @@
             background: linear-gradient(135deg, #ffd700, #b8860b); color: #000; 
             border-color: #fff; box-shadow: 0 0 15px rgba(255,215,0,0.4); 
         }
-
-        /* PC 端缩放适配 */
-        @media (min-height: 700px) and (min-width: 500px) {
-            #game-container { transform: scale(1.1); }
-        }
-        @media (max-height: 600px) {
-            #game-container { transform: scale(0.8); }
-        }
         canvas { display: block; width: 400px; height: 600px; cursor: crosshair; }
         .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.92); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; padding: 0; box-sizing: border-box; backdrop-filter: blur(15px); }
         .overlay-content { width: 100%; display: flex; flex-direction: column; align-items: center; text-align: center; max-height: 100%; overflow-y: auto; padding: 30px 0; }
