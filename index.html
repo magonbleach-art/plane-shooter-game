@@ -7,7 +7,29 @@
     <script src="zodiac_designs.js"></script>
     <style>
         body { margin: 0; padding: 0; background: #000; color: #fff; font-family: 'Segoe UI', sans-serif; overflow: hidden; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        #game-container { position: relative; width: 400px; height: 600px; background: #050505; box-shadow: 0 0 50px rgba(255, 255, 255, 0.1); border: 2px solid rgba(255, 255, 255, 0.1); overflow: hidden; display: flex; flex-direction: column; }
+        #game-container { position: relative; width: 400px; height: 600px; background: #050505; box-shadow: 0 0 50px rgba(255, 215, 0, 0.1); border: 2px solid rgba(255, 255, 255, 0.1); overflow: hidden; display: flex; flex-direction: column; border-radius: 16px; }
+        
+        /* UI 容器化规范 */
+        .ui-panel { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 20px; padding: 25px 0; }
+        .ui-section { width: 100%; max-width: 340px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,215,0,0.1); border-radius: 20px; padding: 18px; box-sizing: border-box; }
+        .ui-title { color: #ffd700; font-size: 0.95rem; margin-bottom: 15px; font-weight: bold; text-transform: uppercase; letter-spacing: 1.5px; display: flex; align-items: center; gap: 10px; opacity: 0.9; }
+        .ui-title::before { content: ''; width: 4px; height: 16px; background: #ffd700; border-radius: 2px; }
+
+        /* 等宽网格按钮 */
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; }
+        .grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; width: 100%; }
+        
+        .setting-btn { 
+            width: 100% !important; height: 44px !important; margin: 0 !important;
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,215,0,0.2);
+            color: #fff; border-radius: 12px; font-size: 0.85rem; font-weight: 500;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .setting-btn.active { 
+            background: linear-gradient(135deg, #ffd700, #b8860b); color: #000; 
+            border-color: #fff; box-shadow: 0 0 15px rgba(255,215,0,0.4); 
+        }
+
         /* PC 端缩放适配 */
         @media (min-height: 700px) and (min-width: 500px) {
             #game-container { transform: scale(1.1); }
@@ -16,15 +38,16 @@
             #game-container { transform: scale(0.8); }
         }
         canvas { display: block; width: 400px; height: 600px; cursor: crosshair; }
-        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; padding: 0; box-sizing: border-box; backdrop-filter: blur(10px); }
-        .overlay-content { width: 90%; display: flex; flex-direction: column; align-items: center; text-align: center; max-height: 95%; overflow-y: auto; padding: 10px 0; }
+        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.92); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; padding: 0; box-sizing: border-box; backdrop-filter: blur(15px); }
+        .overlay-content { width: 100%; display: flex; flex-direction: column; align-items: center; text-align: center; max-height: 100%; overflow-y: auto; padding: 30px 0; }
         /* 隐藏滚动条但保留功能 */
         .overlay-content::-webkit-scrollbar { width: 0; background: transparent; }
         
+        .zodiac-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%; }
         .zodiac-item { 
-            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,215,0,0.2); 
-            border-radius: 12px; padding: 12px; text-align: center; cursor: pointer; 
-            transition: 0.3s; display: flex; flex-direction: column; align-items: center; gap: 5px;
+            aspect-ratio: 1/1; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,215,0,0.15); 
+            border-radius: 16px; padding: 10px; text-align: center; cursor: pointer; 
+            transition: 0.3s; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
         }
         .zodiac-item:hover { background: rgba(255,215,0,0.1); border-color: #ffd700; transform: translateY(-3px); }
         .zodiac-item.selected { background: #ffd700 !important; color: #000 !important; border-color: #fff; box-shadow: 0 0 15px rgba(255,215,0,0.5); }
@@ -88,100 +111,139 @@
         <canvas id="gameCanvas"></canvas>
 
         <div id="start-screen" class="overlay">
-            <div class="overlay-content">
+            <div class="overlay-content ui-panel">
                 <h1>生肖射手<br>十二星座秘境</h1>
-                <div class="tutorial">
-                    <b>秘境法则</b>
-                    1. 挑战<b>十二星座</b>宫殿，净化黑暗之力<br>
-                    2. 收集掉落的<b>生肖灵珠</b>切换子弹形态<br>
-                    3. 击败最终 Boss 解锁下一关及新子弹
+                
+                <div class="ui-section">
+                    <div class="ui-title">秘境法则</div>
+                    <div class="tutorial" style="background:none; border:none; padding:0; margin:0; text-align:left;">
+                        1. 挑战<b>十二星座</b>宫殿，净化黑暗之力<br>
+                        2. 收集掉落的<b>生肖灵珠</b>切换子弹形态<br>
+                        3. 击败最终 Boss 解锁下一关及新子弹
+                    </div>
                 </div>
-                <button id="show-select-btn">选择生肖开局</button>
-                <button id="show-settings-btn" style="background: #607d8b; color: #fff;">游戏设置 (难度/速度)</button>
-                <button id="start-btn" style="background: #4caf50; color: #fff;">直接开启秘境</button>
-                <div class="feedback-area">
-                    <input type="text" id="feedback-input" class="feedback-input" placeholder="输入进化建议 (由 AI 专家评审)">
-                    <button id="submit-feedback-btn">提交进化建议</button>
+
+                <div class="btn-group">
+                    <button id="show-select-btn">选择生肖开局</button>
+                    <button id="show-settings-btn" style="background: #444; color: #ffd700; border: 1px solid #ffd700;">游戏设置</button>
+                    <button id="start-btn" style="background: linear-gradient(135deg, #4caf50, #2e7d32); color: #fff;">开启秘境</button>
+                </div>
+
+                <div class="ui-section">
+                    <div class="ui-title">进化建议</div>
+                    <div style="display:flex; gap:8px;">
+                        <input type="text" id="feedback-input" class="feedback-input" style="margin:0; flex:1;" placeholder="由 AI 专家评审...">
+                        <button id="submit-feedback-btn" style="width:80px; height:36px;">提交</button>
+                    </div>
                 </div>
             </div>
         </div>
 
         <div id="zodiac-select" class="overlay hidden">
-             <div class="overlay-content">
+             <div class="overlay-content ui-panel">
                  <h1>选择开局生肖</h1>
-                 <div id="zodiac-list" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; width: 100%;">
-                     <!-- 动态生成已解锁的生肖按钮 -->
+                <div class="ui-section">
+                    <div id="zodiac-list" class="zodiac-grid">
+                        <!-- 动态生成已解锁的生肖按钮 -->
+                    </div>
                  </div>
-                 <button id="confirm-select-btn">确认并开始</button>
-                 <button id="back-to-start-btn" style="background: #666; color: #fff;">返回</button>
+                 <div class="btn-group">
+                    <button id="confirm-select-btn">确认并开始</button>
+                    <button id="back-to-start-btn" style="background: #444; color: #fff; border: 1px solid #666;">返回</button>
+                 </div>
              </div>
          </div>
  
          <div id="game-settings" class="overlay hidden">
-             <div class="overlay-content">
+             <div class="overlay-content ui-panel">
                  <h1>游戏配置</h1>
                  
-                 <div class="setting-group" style="margin-bottom: 20px; width: 100%;">
-                     <h3 style="color: #ffd700; margin-bottom: 10px;">敌方血量 (难度)</h3>
-                     <div id="difficulty-options" style="display: flex; gap: 10px; justify-content: center;">
-                         <button class="setting-btn" data-type="diff" data-val="0.5" style="flex:1; height: 40px; font-size: 0.9rem;">简单 (x0.5)</button>
-                         <button class="setting-btn active" data-type="diff" data-val="1.0" style="flex:1; height: 40px; font-size: 0.9rem; background: #ffd700;">普通 (x1.0)</button>
-                         <button class="setting-btn" data-type="diff" data-val="2.0" style="flex:1; height: 40px; font-size: 0.9rem;">困难 (x2.0)</button>
+                 <div class="ui-section">
+                     <div class="ui-title">敌方血量 (难度)</div>
+                     <div id="difficulty-options" class="grid-3">
+                         <button class="setting-btn" data-type="diff" data-val="0.5">简单</button>
+                         <button class="setting-btn active" data-type="diff" data-val="1.0">普通</button>
+                         <button class="setting-btn" data-type="diff" data-val="2.0">困难</button>
                      </div>
                  </div>
 
-                 <div class="setting-group" style="margin-bottom: 30px; width: 100%;">
-                     <h3 style="color: #ffd700; margin-bottom: 10px;">游戏速度 (1-5 档)</h3>
-                     <div id="speed-options" style="display: flex; gap: 8px; justify-content: center;">
-                         <button class="setting-btn" data-type="speed" data-val="0.6" style="width: 45px; height: 45px;">1</button>
-                         <button class="setting-btn" data-type="speed" data-val="0.8" style="width: 45px; height: 45px;">2</button>
-                         <button class="setting-btn active" data-type="speed" data-val="1.0" style="width: 45px; height: 45px; background: #ffd700;">3</button>
-                         <button class="setting-btn" data-type="speed" data-val="1.2" style="width: 45px; height: 45px;">4</button>
-                         <button class="setting-btn" data-type="speed" data-val="1.5" style="width: 45px; height: 45px;">5</button>
+                 <div class="ui-section">
+                     <div class="ui-title">游戏速度 (档位)</div>
+                     <div id="speed-options" class="grid-5">
+                         <button class="setting-btn" data-type="speed" data-val="0.6">1</button>
+                         <button class="setting-btn" data-type="speed" data-val="0.8">2</button>
+                         <button class="setting-btn active" data-type="speed" data-val="1.0">3</button>
+                         <button class="setting-btn" data-type="speed" data-val="1.2">4</button>
+                         <button class="setting-btn" data-type="speed" data-val="1.5">5</button>
                      </div>
                  </div>
 
-                 <div class="setting-group" style="margin-bottom: 30px; width: 100%;">
-                     <h3 style="color: #ffd700; margin-bottom: 10px;">AI 辅助 (看我打游戏)</h3>
-                     <button id="ai-toggle-btn" style="background: #444; color: #ffd700; border: 1px solid #ffd700; height: 44px; border-radius: 22px;">开启 AI 自动驾驶</button>
+                 <div class="ui-section">
+                     <div class="ui-title">实验室</div>
+                     <div style="display:flex; flex-direction:column; gap:10px;">
+                        <button id="ai-toggle-btn" style="background: #222; color: #ffd700; border: 1px solid #ffd700; height: 36px; font-size:0.8rem;">开启 AI 自动驾驶</button>
+                        <button onclick="bossSpawnTime=10" style="background: #222; color: #ff4b2b; border: 1px solid #ff4b2b; height: 36px; font-size:0.8rem;">👿 立即召唤 Boss (调试)</button>
+                        <button id="run-cabinet-test-btn" style="background: linear-gradient(135deg, #2196f3, #1976d2); color: #fff; height: 36px; border: none; font-size:0.8rem;">🚀 启动内阁 5 轮测试</button>
+                     </div>
                  </div>
 
-                 <div class="setting-group" style="margin-bottom: 30px; width: 100%;">
-                     <h3 style="color: #ffd700; margin-bottom: 10px;">内阁测试实验室</h3>
-                     <button id="run-cabinet-test-btn" style="background: linear-gradient(135deg, #2196f3, #1976d2); color: #fff; height: 44px; border-radius: 22px; width: 100%; font-weight: bold; border: none; box-shadow: 0 4px 15px rgba(33,150,243,0.3);">🚀 启动 5 轮回归测试 (QA 自主运行)</button>
-                 </div>
-
-                 <button id="save-settings-btn">保存并返回</button>
+                 <button id="save-settings-btn" style="max-width:280px;">保存并返回</button>
              </div>
          </div>
 
         <div id="game-over" class="overlay hidden">
-            <div class="overlay-content">
+            <div class="overlay-content ui-panel">
                 <h1 style="color: #ff4b2b;">灵力枯竭</h1>
-                <p style="color: #aaa; margin-bottom: 10px;">你的意志已消散在星空之中...</p>
-                <p id="final-score-display" style="color: #ffd700; font-size: 1.5rem; margin-bottom: 5px;">最终得分: 0</p>
-                <div id="qa-failure-analysis" style="background: rgba(255,0,0,0.1); border: 1px solid rgba(255,0,0,0.3); padding: 10px; border-radius: 8px; margin-bottom: 20px; font-size: 0.8rem; color: #ff9999; text-align: left;">
-                    [QA 事故报告] 正在分析失败原因...
+                
+                <div class="ui-section">
+                    <div class="ui-title">战果统计</div>
+                    <p id="final-score-display" style="color: #ffd700; font-size: 1.8rem; margin: 10px 0; font-weight: bold;">得分: 0</p>
+                    <p style="color: #aaa; font-size: 0.8rem;">你的意志已消散在星空之中...</p>
                 </div>
-                <button id="restart-btn">再次挑战</button>
+
+                <div class="ui-section">
+                    <div class="ui-title">内阁 QA 报告</div>
+                    <div id="qa-failure-analysis" style="background: rgba(255,0,0,0.1); border: 1px solid rgba(255,0,0,0.3); padding: 12px; border-radius: 8px; font-size: 0.8rem; color: #ff9999; text-align: left; line-height: 1.5;">
+                        [QA 事故报告] 正在分析失败原因...
+                    </div>
+                </div>
+
+                <div class="btn-group">
+                    <button id="restart-btn">再次挑战</button>
+                    <button onclick="location.reload()" style="background: #444; color: #fff; border: 1px solid #666;">返回主页</button>
+                </div>
             </div>
         </div>
 
         <div id="level-clear" class="overlay hidden">
-            <div class="overlay-content">
+            <div class="overlay-content ui-panel">
                 <h1 style="color: #00ff00;">宫殿净化成功!</h1>
-                <p id="unlock-msg" style="color: #ffd700; font-size: 1.2rem; margin-bottom: 25px;">解锁新生肖之力: 鼠</p>
-                <button id="next-level-btn">进入下一宫</button>
+                
+                <div class="ui-section">
+                    <div class="ui-title">获得新生</div>
+                    <p id="unlock-msg" style="color: #ffd700; font-size: 1.2rem; margin: 10px 0;">解锁新生肖之力: 鼠</p>
+                </div>
+
+                <div class="btn-group">
+                    <button id="next-level-btn">进入下一宫</button>
+                </div>
             </div>
         </div>
 
         <div id="test-report-overlay" class="overlay hidden">
-            <div class="overlay-content" style="max-width: 320px; text-align: left;">
-                <h1 style="color: #2196f3; text-align: center;">内阁评审报告</h1>
-                <div id="test-report-content" style="font-family: monospace; font-size: 0.75rem; background: rgba(0,0,0,0.5); padding: 15px; border-radius: 10px; color: #fff; line-height: 1.6; max-height: 300px; overflow-y: auto; margin-bottom: 20px;">
-                    <!-- 测试结果将注入此处 -->
+            <div class="overlay-content ui-panel">
+                <h1 style="color: #2196f3;">内阁评审报告</h1>
+                
+                <div class="ui-section">
+                    <div class="ui-title">测试详情</div>
+                    <div id="test-report-content" style="font-family: monospace; font-size: 0.75rem; background: rgba(0,0,0,0.5); padding: 15px; border-radius: 10px; color: #fff; line-height: 1.6; max-height: 300px; overflow-y: auto;">
+                        <!-- 测试结果将注入此处 -->
+                    </div>
                 </div>
-                <button id="close-report-btn" style="background: #2196f3;">收到，立即执行修复</button>
+
+                <div class="btn-group">
+                    <button id="close-report-btn" style="background: #2196f3; color:#fff;">收到，立即执行修复</button>
+                </div>
             </div>
         </div>
     </div>
@@ -800,45 +862,70 @@
             draw() {
                 ctx.save(); ctx.translate(this.x, this.y);
                 
-                // 绘制攻击预警 (蓄力阶段)
+                // 绘制攻击预警 (AAA 预警)
                 const bigInterval = 180 / gameSpeedMult;
-                const warningTime = 60; // 提前 1 秒预警
+                const warningTime = 60; 
                 if (this.skillTimer % Math.floor(bigInterval) > (Math.floor(bigInterval) - warningTime)) {
                     ctx.save();
-                    ctx.strokeStyle = "rgba(255, 0, 0, 0.5)";
-                    ctx.lineWidth = 2;
-                    ctx.setLineDash([10, 10]);
-                    // 根据不同大招画预警线
+                    const opacity = (Math.sin(frameCount * 0.2) + 1) * 0.2;
+                    ctx.fillStyle = `rgba(255, 0, 0, ${opacity})`;
                     const skill = this.cfg.big_skill;
                     if (skill === 'parallel_rows') {
                         [-60, 0, 60].forEach(ox => {
-                            ctx.beginPath(); ctx.moveTo(ox, 0); ctx.lineTo(ox, 600); ctx.stroke();
+                            ctx.fillRect(ox - 15, 0, 30, 600);
                         });
                     } else if (skill === 'dual_lasers' || skill === 'double_beams') {
                         [-40, 40].forEach(ox => {
-                            ctx.beginPath(); ctx.moveTo(ox, 0); ctx.lineTo(ox, 600); ctx.stroke();
+                            ctx.fillRect(ox - 20, 0, 40, 600);
                         });
                     }
                     ctx.restore();
                 }
 
-                // 受击闪白反馈
-                if (this.hitFlash > 0) {
-                    ctx.filter = `brightness(${1 + this.hitFlash * 0.1})`;
-                }
+                // 获取星座视觉设计
+                const levelName = gameConfig.constellation_levels[currentLevelIdx].constellation;
+                const design = CONSTELLATION_DESIGNS[levelName];
 
-                ctx.fillStyle = this.isPhase2 ? "#f00" : "#333"; 
-                ctx.shadowBlur = this.isPhase2 ? 50 : 20; 
-                ctx.shadowColor = this.isPhase2 ? "#f00" : "#ffd700";
-                
-                // 绘制不同形状代表不同星座BOSS (简化处理，用颜色和装饰区分)
-                ctx.beginPath();
-                ctx.moveTo(0, 40); ctx.lineTo(-40, -20); ctx.lineTo(40, -20);
-                ctx.closePath(); ctx.fill();
-                
-                // 核心点
-                ctx.fillStyle = this.isPhase2 ? "#fff" : "#ff0";
-                ctx.beginPath(); ctx.arc(0, 0, 15, 0, Math.PI*2); ctx.fill();
+                if (design) {
+                    // 1. 绘制星图粒子 (Aura Particles)
+                    const time = frameCount * 0.02;
+                    ctx.save();
+                    ctx.globalAlpha = 0.5;
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = design.color;
+                    for(let i=0; i<8; i++) {
+                        const angle = time + i * (Math.PI / 4);
+                        const r = 45 + Math.sin(time * 2) * 5;
+                        ctx.fillStyle = design.color;
+                        ctx.beginPath();
+                        ctx.arc(Math.cos(angle) * r, Math.sin(angle) * r, 2, 0, Math.PI*2);
+                        ctx.fill();
+                    }
+                    ctx.restore();
+
+                    // 2. 核心光晕 (AAA Glow)
+                    const pulse = Math.sin(frameCount * 0.05) * 10;
+                    ctx.shadowBlur = (this.isPhase2 ? 60 : 40) + pulse;
+                    ctx.shadowColor = design.glow || design.color;
+
+                    // 3. 受击反馈 (摒弃闪白，使用边缘发光增强)
+                    if (this.hitFlash > 0) {
+                        ctx.shadowBlur += this.hitFlash * 2;
+                        ctx.shadowColor = "#fff";
+                        ctx.filter = `brightness(${1 + this.hitFlash * 0.05})`; // 极轻微亮度提升
+                    }
+
+                    // 4. 调用具体星座绘图逻辑
+                    design.draw(ctx, this);
+                } else {
+                    // 回退方案
+                    ctx.fillStyle = this.isPhase2 ? "#f00" : "#333"; 
+                    ctx.shadowBlur = this.isPhase2 ? 50 : 20; 
+                    ctx.shadowColor = this.isPhase2 ? "#f00" : "#ffd700";
+                    ctx.beginPath();
+                    ctx.moveTo(0, 40); ctx.lineTo(-40, -20); ctx.lineTo(40, -20);
+                    ctx.closePath(); ctx.fill();
+                }
                 
                 ctx.restore();
             }
