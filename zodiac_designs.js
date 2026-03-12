@@ -249,178 +249,126 @@ const CONSTELLATION_DESIGNS = {
     "白羊宫": {
         color: "#ff4b2b",
         glow: "#ff0000",
+        icon: "https://img.icons8.com/fluency/96/aries.png",
         draw: (ctx, boss) => {
-            // 白羊：卷曲的羊角
-            ctx.strokeStyle = "#ff4b2b"; ctx.lineWidth = 4;
-            ctx.beginPath();
-            ctx.arc(-20, -10, 15, Math.PI, Math.PI * 0.2);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.arc(20, -10, 15, 0, Math.PI * 0.8, true);
-            ctx.stroke();
-            // 核心
-            ctx.fillStyle = "#fff";
-            ctx.beginPath(); ctx.moveTo(0, 20); ctx.lineTo(-15, -10); ctx.lineTo(15, -10); ctx.fill();
+            if (boss.img && boss.img.complete) {
+                ctx.drawImage(boss.img, -45, -45, 90, 90);
+            } else {
+                // 降级方案：发光核心
+                ctx.fillStyle = "#ff4b2b"; ctx.beginPath(); ctx.arc(0, 0, 30, 0, Math.PI*2); ctx.fill();
+            }
         }
     },
     "金牛宫": {
         color: "#8d6e63",
         glow: "#ffd700",
+        icon: "https://img.icons8.com/fluency/96/taurus.png",
         draw: (ctx, boss) => {
-            // 金牛：坚硬的牛角与方正的核心
-            ctx.fillStyle = "#8d6e63";
-            ctx.fillRect(-25, -15, 50, 30);
-            ctx.strokeStyle = "#ffd700"; ctx.lineWidth = 5;
-            ctx.beginPath();
-            ctx.moveTo(-25, -15); ctx.quadraticCurveTo(-35, -40, -15, -45);
-            ctx.moveTo(25, -15); ctx.quadraticCurveTo(35, -40, 15, -45);
-            ctx.stroke();
-            // 核心光点
-            ctx.fillStyle = "#ffd700"; ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI*2); ctx.fill();
+            if (boss.img && boss.img.complete) {
+                ctx.drawImage(boss.img, -45, -45, 90, 90);
+            } else {
+                ctx.fillStyle = "#8d6e63"; ctx.beginPath(); ctx.arc(0, 0, 35, 0, Math.PI*2); ctx.fill();
+            }
         }
     },
     "双子宫": {
         color: "#03a9f4",
         glow: "#00ffff",
+        icon: "https://img.icons8.com/fluency/96/gemini.png",
         draw: (ctx, boss) => {
-            // 双子：双生晶体
-            const offset = Math.sin(Date.now() * 0.005) * 10;
-            ctx.fillStyle = "#03a9f4";
-            ctx.beginPath(); ctx.moveTo(-20 + offset, -20); ctx.lineTo(-10 + offset, 20); ctx.lineTo(-30 + offset, 20); ctx.fill();
-            ctx.fillStyle = "#00bcd4";
-            ctx.beginPath(); ctx.moveTo(20 - offset, -20); ctx.lineTo(30 - offset, 20); ctx.lineTo(10 - offset, 20); ctx.fill();
+            if (boss.img && boss.img.complete) {
+                ctx.drawImage(boss.img, -45, -45, 90, 90);
+            }
         }
     },
     "巨蟹宫": {
         color: "#e0e0e0",
         glow: "#ffffff",
+        icon: "https://img.icons8.com/fluency/96/cancer.png",
         draw: (ctx, boss) => {
-            // 巨蟹：圆润甲壳与巨螯
-            ctx.fillStyle = "#e0e0e0";
-            ctx.beginPath(); ctx.ellipse(0, 0, 30, 25, 0, 0, Math.PI*2); ctx.fill();
-            ctx.strokeStyle = "#fff"; ctx.lineWidth = 3;
-            ctx.beginPath(); ctx.arc(-35, -10, 15, 0.5, 2.5); ctx.stroke();
-            ctx.beginPath(); ctx.arc(35, -10, 15, Math.PI - 2.5, Math.PI - 0.5); ctx.stroke();
+            if (boss.img && boss.img.complete) {
+                ctx.drawImage(boss.img, -45, -45, 90, 90);
+            }
         }
     },
     "狮子宫": {
         color: "#ffd700",
         glow: "#ff9800",
+        icon: "https://img.icons8.com/fluency/96/leo.png",
         draw: (ctx, boss) => {
-            // 狮子：太阳般的鬃毛
-            ctx.save();
-            ctx.strokeStyle = "#ff9800"; ctx.lineWidth = 2;
-            for(let i=0; i<12; i++) {
-                ctx.rotate(Math.PI/6);
-                ctx.beginPath(); ctx.moveTo(0, -25); ctx.lineTo(0, -45); ctx.stroke();
+            if (boss.img && boss.img.complete) {
+                ctx.drawImage(boss.img, -45, -45, 90, 90);
             }
-            ctx.restore();
-            ctx.fillStyle = "#ffd700";
-            ctx.beginPath(); ctx.arc(0, 0, 25, 0, Math.PI*2); ctx.fill();
         }
     },
     "处女宫": {
         color: "#e91e63",
         glow: "#f06292",
+        icon: "https://img.icons8.com/fluency/96/virgo.png",
         draw: (ctx, boss) => {
-            // 处女：羽翼结构
-            ctx.fillStyle = "#e91e63";
-            for(let i=0; i<2; i++) {
-                ctx.save();
-                ctx.scale(i === 0 ? 1 : -1, 1);
-                ctx.beginPath(); ctx.moveTo(5, -10);
-                ctx.bezierCurveTo(30, -40, 50, 0, 10, 30);
-                ctx.fill();
-                ctx.restore();
+            if (boss.img && boss.img.complete) {
+                ctx.drawImage(boss.img, -45, -45, 90, 90);
             }
-            ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI*2); ctx.fill();
         }
     },
     "天秤宫": {
         color: "#4caf50",
         glow: "#8bc34a",
+        icon: "https://img.icons8.com/fluency/96/libra.png",
         draw: (ctx, boss) => {
-            // 天秤：平衡杠杆
-            ctx.strokeStyle = "#4caf50"; ctx.lineWidth = 4;
-            ctx.beginPath(); ctx.moveTo(-40, 10); ctx.lineTo(40, 10); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(0, -20); ctx.lineTo(0, 10); ctx.stroke();
-            ctx.fillStyle = "#8bc34a";
-            ctx.fillRect(-45, 10, 10, 5);
-            ctx.fillRect(35, 10, 10, 5);
+            if (boss.img && boss.img.complete) {
+                ctx.drawImage(boss.img, -45, -45, 90, 90);
+            }
         }
     },
     "天蝎宫": {
         color: "#9c27b0",
         glow: "#ff0000",
+        icon: "https://img.icons8.com/fluency/96/scorpio.png",
         draw: (ctx, boss) => {
-            // 天蝎：弯曲的尾钩
-            ctx.strokeStyle = "#9c27b0"; ctx.lineWidth = 5;
-            ctx.beginPath();
-            ctx.moveTo(0, 20); ctx.quadraticCurveTo(40, 20, 30, -30);
-            ctx.stroke();
-            ctx.fillStyle = "#ff0000";
-            ctx.beginPath(); ctx.moveTo(30, -30); ctx.lineTo(40, -40); ctx.lineTo(25, -45); ctx.fill();
-            ctx.fillStyle = "#333"; ctx.beginPath(); ctx.arc(0, 0, 20, 0, Math.PI*2); ctx.fill();
+            if (boss.img && boss.img.complete) {
+                ctx.drawImage(boss.img, -45, -45, 90, 90);
+            }
         }
     },
     "射手宫": {
         color: "#2196f3",
         glow: "#03a9f4",
+        icon: "https://img.icons8.com/fluency/96/sagittarius.png",
         draw: (ctx, boss) => {
-            // 射手：弓箭意象
-            ctx.strokeStyle = "#2196f3"; ctx.lineWidth = 3;
-            ctx.beginPath(); ctx.arc(0, 0, 35, -Math.PI*0.8, -Math.PI*0.2); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(0, 20); ctx.lineTo(0, -40); ctx.stroke();
-            ctx.fillStyle = "#ffd700";
-            ctx.beginPath(); ctx.moveTo(0, -45); ctx.lineTo(-10, -30); ctx.lineTo(10, -30); ctx.fill();
+            if (boss.img && boss.img.complete) {
+                ctx.drawImage(boss.img, -45, -45, 90, 90);
+            }
         }
     },
     "摩羯宫": {
         color: "#795548",
         glow: "#4caf50",
+        icon: "https://img.icons8.com/fluency/96/capricorn.png",
         draw: (ctx, boss) => {
-            // 摩羯：羊角鱼尾
-            ctx.fillStyle = "#795548";
-            ctx.beginPath(); ctx.moveTo(0, -20); ctx.lineTo(-20, 20); ctx.lineTo(20, 20); ctx.fill();
-            ctx.strokeStyle = "#4caf50"; ctx.lineWidth = 4;
-            ctx.beginPath(); ctx.moveTo(0, 20); ctx.quadraticCurveTo(-30, 40, -10, 50); ctx.stroke();
+            if (boss.img && boss.img.complete) {
+                ctx.drawImage(boss.img, -45, -45, 90, 90);
+            }
         }
     },
     "水瓶宫": {
         color: "#00bcd4",
         glow: "#e0f7fa",
+        icon: "https://img.icons8.com/fluency/96/aquarius.png",
         draw: (ctx, boss) => {
-            // 水瓶：流动的波纹
-            ctx.fillStyle = "#00bcd4";
-            ctx.beginPath(); ctx.arc(0, 0, 25, 0, Math.PI*2); ctx.fill();
-            ctx.strokeStyle = "#fff"; ctx.lineWidth = 2;
-            for(let i=0; i<3; i++) {
-                ctx.beginPath();
-                ctx.moveTo(-20, 10 + i*8);
-                ctx.bezierCurveTo(-10, 10 + i*8 - 10, 10, 10 + i*8 + 10, 20, 10 + i*8);
-                ctx.stroke();
+            if (boss.img && boss.img.complete) {
+                ctx.drawImage(boss.img, -45, -45, 90, 90);
             }
         }
     },
     "双鱼宫": {
         color: "#3f51b5",
         glow: "#9c27b0",
+        icon: "https://img.icons8.com/fluency/96/pisces.png",
         draw: (ctx, boss) => {
-            // 双鱼：双鱼戏水
-            const angle = Date.now() * 0.003;
-            for(let i=0; i<2; i++) {
-                const a = angle + i * Math.PI;
-                const x = Math.cos(a) * 25;
-                const y = Math.sin(a) * 25;
-                ctx.save();
-                ctx.translate(x, y);
-                ctx.rotate(a + Math.PI/2);
-                ctx.fillStyle = i === 0 ? "#3f51b5" : "#9c27b0";
-                ctx.beginPath(); ctx.ellipse(0, 0, 8, 15, 0, 0, Math.PI*2); ctx.fill();
-                ctx.restore();
+            if (boss.img && boss.img.complete) {
+                ctx.drawImage(boss.img, -45, -45, 90, 90);
             }
-            ctx.strokeStyle = "rgba(255,255,255,0.2)";
-            ctx.beginPath(); ctx.arc(0, 0, 25, 0, Math.PI*2); ctx.stroke();
         }
     }
 };
