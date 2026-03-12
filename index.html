@@ -38,6 +38,8 @@
         .feedback-input { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,215,0,0.2); border-radius: 10px; color: #fff; padding: 10px; font-size: 0.85rem; outline: none; transition: 0.3s; box-sizing: border-box; }
         #submit-feedback-btn { background: #ffd700; color: #000; font-size: 0.85rem; height: 36px; border-radius: 18px; box-shadow: none; }
         #hud { position: absolute; top: 15px; left: 15px; right: 15px; display: flex; justify-content: space-between; font-size: 1rem; pointer-events: none; z-index: 50; color: #ffd700; font-weight: bold; text-shadow: 0 0 5px #000; }
+        #ai-status { position: absolute; top: 80px; left: 50%; transform: translateX(-50%); font-size: 0.7rem; color: #0f0; text-transform: uppercase; letter-spacing: 2px; display: none; z-index: 50; animation: blink 1s infinite; }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
         #boss-info { position: absolute; top: 50px; left: 60px; right: 60px; text-align: center; z-index: 50; }
         #boss-countdown { font-size: 0.8rem; color: #aaa; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
         #boss-hp-bar { height: 8px; background: rgba(255,0,0,0.1); border: 1px solid rgba(255,0,0,0.5); border-radius: 4px; display: none; overflow: hidden; }
@@ -60,6 +62,7 @@
             <div id="level-name">白羊宫</div>
             <div id="life">❤️x3</div>
         </div>
+        <div id="ai-status">AI 自动驾驶激活</div>
         <div id="boss-info">
             <div id="boss-countdown">Boss 降临倒计时: 30s</div>
             <div id="boss-hp-bar"><div id="boss-hp-fill"></div></div>
@@ -125,6 +128,11 @@
                      </div>
                  </div>
 
+                 <div class="setting-group" style="margin-bottom: 30px; width: 100%;">
+                     <h3 style="color: #ffd700; margin-bottom: 10px;">AI 辅助 (看我打游戏)</h3>
+                     <button id="ai-toggle-btn" style="background: #444; color: #ffd700; border: 1px solid #ffd700; height: 44px; border-radius: 22px;">开启 AI 自动驾驶</button>
+                 </div>
+
                  <button id="save-settings-btn">保存并返回</button>
              </div>
          </div>
@@ -169,6 +177,7 @@
         let selectedStartWeapon = 'rat'; // 选中的开局武器
         let difficultyMult = 1.0; // 难度系数
         let gameSpeedMult = 1.0; // 速度系数
+        let autopilotEnabled = false; // AI 自动驾驶
         
         // 觉醒系统变量
         let ultEnergy = 0;
@@ -196,6 +205,7 @@
             if (e.key === 'ArrowLeft' || e.key === 'a') player.targetX -= step;
             if (e.key === 'ArrowRight' || e.key === 'd') player.targetX += step;
             if (e.key === ' ' || e.key === 'Enter') triggerUltimate();
+            if (e.key === 'v' || e.key === 'V') document.getElementById('ai-toggle-btn').click();
             if (e.key === 'Escape') {
                 if (!gameActive) {
                     location.reload(); // 在结束或结算界面按 Esc 返回主界面
@@ -364,7 +374,7 @@
                 
                 // 狗·忠魂追踪弹 / 龙·贯日激光 (追踪部分)
                 if (this.isHoming && !this.isEnemy) {
-                    let target = null, minDist = 1000;
+                    let target = null, minDist = 1500; // 扩大追踪范围
                     enemies.concat(boss ? [boss] : []).forEach(e => {
                         let d = Math.hypot(e.x - this.x, e.y - this.y);
                         if (d < minDist) { minDist = d; target = e; }
@@ -374,7 +384,9 @@
                         let diff = targetAngle - this.angle;
                         while (diff < -Math.PI) diff += Math.PI * 2;
                         while (diff > Math.PI) diff -= Math.PI * 2;
-                        this.angle += diff * (this.cfg.homing_speed || 0.15);
+                        // 显著增强追踪灵敏度 (从 0.15 提升到 0.25 或根据配置)
+                        const hSpeed = (this.cfg.homing_speed || 0.2) * (1 + this.level * 0.1);
+                        this.angle += diff * hSpeed;
                     }
                 }
                 
@@ -739,8 +751,73 @@
             screenShake = 10 * size;
         }
 
+        function updateAutopilot() {
+            // 1. 避弹逻辑：扫描 150 像素范围内的敌弹
+            let dangerousBullet = null;
+            let minDist = 150;
+            bullets.forEach(b => {
+                if (b.isEnemy && b.y < player.y && b.y > player.y - 200) {
+                    let dist = Math.abs(b.x - player.x);
+                    if (dist < 60) {
+                        dangerousBullet = b;
+                    }
+                }
+            });
+
+            if (dangerousBullet) {
+                // 逃离危险子弹
+                player.targetX = dangerousBullet.x > player.x ? player.x - 40 : player.x + 40;
+                return;
+            }
+
+            // 2. 拾取道具：如果道具在附近，去捡它
+            let nearestPowerup = null;
+            let minPUdist = 200;
+            powerups.forEach(p => {
+                let d = Math.hypot(p.x - player.x, p.y - player.y);
+                if (d < minPUdist) {
+                    minPUdist = d;
+                    nearestPowerup = p;
+                }
+            });
+
+            if (nearestPowerup) {
+                player.targetX = nearestPowerup.x;
+                return;
+            }
+
+            // 3. 进攻逻辑：对准 Boss 或最近的敌人
+            let target = boss || null;
+            if (!target) {
+                let minEdist = 1000;
+                enemies.forEach(e => {
+                    if (e.y < player.y) {
+                        let d = Math.hypot(e.x - player.x, e.y - player.y);
+                        if (d < minEdist) {
+                            minEdist = d;
+                            target = e;
+                        }
+                    }
+                });
+            }
+
+            if (target) {
+                player.targetX = target.x;
+            }
+
+            // 4. 自动觉醒
+            if (ultEnergy >= 100) {
+                triggerUltimate();
+            }
+        }
+
         function gameLoop() {
             if (!gameActive) return;
+            
+            // AI 自动驾驶逻辑
+            if (autopilotEnabled) {
+                updateAutopilot();
+            }
             
             ctx.save();
             if (screenShake > 0) {
@@ -942,7 +1019,8 @@
         function updateHUD() {
             document.getElementById('score').innerText = `得分: ${score}`;
             document.getElementById('life').innerText = `❤️x${lives}`;
-            document.getElementById('level-name').innerText = `${gameConfig.constellation_levels[currentLevelIdx].constellation} (Lv.${bulletLevel})`;
+            const levelData = gameConfig.constellation_levels[currentLevelIdx];
+            document.getElementById('level-name').innerText = `第 ${currentLevelIdx + 1} 关: ${levelData ? levelData.constellation : '未知'} (Lv.${bulletLevel})`;
         }
 
         // 初始化每关随机生肖池
@@ -1002,6 +1080,23 @@
         document.getElementById('save-settings-btn').onclick = () => {
             document.getElementById('game-settings').classList.add('hidden');
             document.getElementById('start-screen').classList.remove('hidden');
+        };
+
+        document.getElementById('ai-toggle-btn').onclick = () => {
+            autopilotEnabled = !autopilotEnabled;
+            const btn = document.getElementById('ai-toggle-btn');
+            const status = document.getElementById('ai-status');
+            if (autopilotEnabled) {
+                btn.innerText = "关闭 AI 自动驾驶";
+                btn.style.background = "#ffd700";
+                btn.style.color = "#000";
+                status.style.display = "block";
+            } else {
+                btn.innerText = "开启 AI 自动驾驶";
+                btn.style.background = "#444";
+                btn.style.color = "#ffd700";
+                status.style.display = "none";
+            }
         };
 
         document.getElementById('show-select-btn').onclick = () => {
