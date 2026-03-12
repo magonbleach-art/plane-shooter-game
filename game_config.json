@@ -191,13 +191,10 @@
             "boss": {
                 "name": "白羊 BOSS",
                 "hp": 500,
-                "small_skill": "straight_bullet",
+                "small_skill": "spiral_spread",
                 "big_skill": "parallel_rows",
                 "counter_bullet": "rat",
-                "big_counter": [
-                    "tiger",
-                    "horse"
-                ]
+                "big_counter": ["tiger", "horse"]
             }
         },
         {
@@ -206,9 +203,9 @@
             "unlock_bullet": "ox",
             "boss": {
                 "name": "金牛 BOSS",
-                "hp": 500,
-                "small_skill": "gravity_bullet",
-                "big_skill": "falling_barrage",
+                "hp": 600,
+                "small_skill": "targeted_burst",
+                "big_skill": "cross_cutting",
                 "counter_bullet": "rabbit",
                 "big_counter": "rat"
             }
@@ -219,7 +216,7 @@
             "unlock_bullet": "tiger",
             "boss": {
                 "name": "双子 BOSS",
-                "hp": 500,
+                "hp": 700,
                 "small_skill": "cross_bullets",
                 "big_skill": "dual_lasers",
                 "counter_bullet": "dog",
@@ -232,8 +229,8 @@
             "unlock_bullet": "rabbit",
             "boss": {
                 "name": "巨蟹 BOSS",
-                "hp": 500,
-                "small_skill": "wave_push",
+                "hp": 800,
+                "small_skill": "wave_barrage",
                 "big_skill": "arc_shield",
                 "counter_bullet": "goat",
                 "big_counter": "dragon"
@@ -245,7 +242,7 @@
             "unlock_bullet": "dragon",
             "boss": {
                 "name": "狮子 BOSS",
-                "hp": 500,
+                "hp": 1000,
                 "small_skill": "fan_scatter",
                 "big_skill": "center_explosion",
                 "counter_bullet": "tiger",
@@ -258,8 +255,8 @@
             "unlock_bullet": "snake",
             "boss": {
                 "name": "处女 BOSS",
-                "hp": 500,
-                "small_skill": "homing_seed",
+                "hp": 1200,
+                "small_skill": "homing_clusters",
                 "big_skill": "cross_laser",
                 "counter_bullet": "dog",
                 "big_counter": "dodge"
