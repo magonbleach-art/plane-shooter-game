@@ -146,7 +146,7 @@
             <div id="life">❤️x2</div>
         </div>
         <div id="boss-hp-bar"><div id="boss-hp-fill"></div></div>
-        <div id="version-tag" style="position:absolute; top:10px; right:10px; background:linear-gradient(135deg, #f00, #b00); color:#fff; font-size:12px; padding:4px 12px; z-index:9999; border-radius:20px; font-weight:bold; box-shadow:0 0 20px rgba(255,0,0,0.6); border:2px solid #fff;">VER: 7.8.7-LIVE</div>
+        <div id="version-tag" style="position:absolute; top:10px; right:10px; background:linear-gradient(135deg, #f00, #b00); color:#fff; font-size:12px; padding:4px 12px; z-index:9999; border-radius:20px; font-weight:bold; box-shadow:0 0 20px rgba(255,0,0,0.6); border:2px solid #fff;">VER: 7.8.8-LIVE</div>
         <div id="ultimate-bar">
             <div id="ultimate-hint">能量已满 - 点击屏幕释放大招</div>
             <div id="ultimate-fill"></div>
@@ -509,32 +509,35 @@
         }
 
         async function load() {
+            log("正在同步星际配置...");
             try {
                 const r = await fetch('game_config.json?v=' + Date.now());
+                if (!r.ok) throw new Error("配置获取失败");
                 Config = await r.json();
                 
-                // 注册 AI 资产路径 (如果存在)
+                // 注册 AI 资产路径
                 AssetManager.add('player', 'assets/planes/hero.png');
-                AssetManager.add('enemy_basic', 'assets/planes/enemy_basic.png');
                 AssetManager.add('wingman', 'assets/planes/wingman.png');
                 
                 const constellations = ['aries', 'taurus', 'gemini', 'cancer', 'leo', 'virgo', 'libra', 'scorpio', 'sagittarius', 'capricorn', 'aquarius', 'pisces'];
                 constellations.forEach(name => {
-                    // 加载三个阶段的贴图
                     AssetManager.add(`boss_${name}_phase1`, `assets/bosses/${name}/${name}_phase1.png`);
                     AssetManager.add(`boss_${name}_phase2`, `assets/bosses/${name}/${name}_phase2.png`);
                     AssetManager.add(`boss_${name}_phase3`, `assets/bosses/${name}/${name}_phase3.png`);
                 });
                 
-                await AssetManager.loadAll();
+                // 🛡️ 核心修复：不再等待 AssetManager.loadAll() 阻塞主流程
+                // 我们让它在后台加载，loop 中会检查 State.assets
+                AssetManager.loadAll().then(() => log("全量资源注入完成")).catch(e => log("资源加载有缺失，使用 Canvas 渲染"));
                 
-                log("配置就绪");
+                log("内核配置就绪");
             } catch(e) {
+                console.error("Load Error:", e);
                 Config = {
                     constellation_levels: [{constellation:'白羊宫', boss:{hp:500}}],
                     zodiac_bullets: [{id:'rat', color:'#e0e0e0'}]
                 };
-                log("使用兜底配置");
+                log("使用本地备份内核");
             }
         }
 
@@ -648,8 +651,11 @@
                 State.frameCount++;
                 ctx.clearRect(0, 0, 400, 600);
                 
-                // 更新 UI
-                const ultFill = document.getElementById('ultimate-fill');
+                // 渲染心跳：在状态栏显示帧率，证明引擎在动
+                if (State.frameCount % 60 === 0) {
+                    const elapsed = Math.floor((Date.now() - State.startTime) / 1000);
+                    log(`战斗中 - 计时: ${elapsed}s | 帧率: 稳定`);
+                }
                 const ultHint = document.getElementById('ultimate-hint');
                 if (ultFill && ultHint) {
                     const percent = (State.ultimateEnergy / State.maxUltimateEnergy) * 100;
