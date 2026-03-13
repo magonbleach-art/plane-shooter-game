@@ -146,7 +146,7 @@
             <div id="life">❤️x2</div>
         </div>
         <div id="boss-hp-bar"><div id="boss-hp-fill"></div></div>
-        <div id="version-tag" style="position:absolute; top:10px; right:10px; background:linear-gradient(135deg, #f00, #b00); color:#fff; font-size:12px; padding:4px 12px; z-index:9999; border-radius:20px; font-weight:bold; box-shadow:0 0 20px rgba(255,0,0,0.6); border:2px solid #fff;">VER: 7.8.6-LIVE</div>
+        <div id="version-tag" style="position:absolute; top:10px; right:10px; background:linear-gradient(135deg, #f00, #b00); color:#fff; font-size:12px; padding:4px 12px; z-index:9999; border-radius:20px; font-weight:bold; box-shadow:0 0 20px rgba(255,0,0,0.6); border:2px solid #fff;">VER: 7.8.7-LIVE</div>
         <div id="ultimate-bar">
             <div id="ultimate-hint">能量已满 - 点击屏幕释放大招</div>
             <div id="ultimate-fill"></div>
@@ -598,6 +598,7 @@
             log("内核就绪");
         });
 
+        let gameLoopId = null;
         function startGame(isNew) {
             if(isNew) { State.score = 0; State.level = 0; State.lives = 3; State.bulletLevel = 1; State.wingmen = []; State.ultimateEnergy = 0; }
             State.gameActive = true; State.bullets = []; State.enemies = []; State.powerups = []; State.boss = null; State.frameCount = 0;
@@ -605,7 +606,8 @@
             State.isUltimateActive = false;
             showScreen('none');
             document.getElementById('ultimate-bar').style.display = "block";
-            requestAnimationFrame(loop);
+            if (gameLoopId) cancelAnimationFrame(gameLoopId);
+            gameLoopId = requestAnimationFrame(loop);
         }
 
         function triggerUltimate() {
@@ -642,179 +644,182 @@
 
         function loop() {
             if (!State.gameActive) return;
-            State.frameCount++;
-            ctx.clearRect(0, 0, 400, 600);
-            
-            // 更新 UI
-            const ultFill = document.getElementById('ultimate-fill');
-            const ultHint = document.getElementById('ultimate-hint');
-            const percent = (State.ultimateEnergy / State.maxUltimateEnergy) * 100;
-            ultFill.style.width = percent + "%";
-            if (percent >= 100) {
-                ultHint.style.display = "block";
-                ultFill.style.background = "linear-gradient(90deg, #fff, #ffd700)";
-            } else {
-                ultHint.style.display = "none";
-                ultFill.style.background = "linear-gradient(90deg, #00ffff, #ffd700)";
-            }
-            
-            // 星空
-            ctx.fillStyle = "#fff";
-            State.stars.forEach(s => {
-                s.y += s.sp * State.speed; if (s.y > 600) s.y = -10;
-                ctx.fillRect(s.x, s.y, 2, 2);
-            });
-
-            // 玩家
-            State.playerX += (State.playerTargetX - State.playerX) * 0.2;
-            const bCfg = Config.zodiac_bullets.find(b => b.id === State.weapon) || {color:'#e0e0e0', id: State.weapon};
-            if (State.assets['player']) {
-                ctx.drawImage(State.assets['player'], State.playerX-25, 500, 50, 50);
-            } else {
-                ctx.fillStyle = "#1a1a1e"; ctx.beginPath(); ctx.moveTo(State.playerX, 500); ctx.lineTo(State.playerX-20, 540); ctx.lineTo(State.playerX+20, 540); ctx.fill();
-                ctx.fillStyle = bCfg.color; ctx.beginPath(); ctx.arc(State.playerX, 520, 5, 0, Math.PI*2); ctx.fill();
-            }
-
-            // 侧翼机枪
-            State.wingmen.forEach(w => {
-                w.update(); w.draw();
-                if (State.frameCount % 20 === 0) w.shoot();
-            });
-
-            // 生成逻辑
-            if (State.frameCount % Math.floor(60/State.speed) === 0 && !State.boss) {
-                const r = Math.random();
-                if(r < 0.7) State.enemies.push(new Enemy('scout'));
-                else if(r < 0.9) State.enemies.push(new Enemy('shooter'));
-                else State.enemies.push(new Enemy('tank'));
-            }
-
-            // 固定精英怪：每关 10秒(600帧) 和 20秒(1200帧)
-            if ((State.frameCount === 600 || State.frameCount === 1200) && !State.boss) {
-                State.enemies.push(new Enemy('elite'));
-                log("精英怪出现！击败它获取生肖灵珠");
-            }
-
-            // 道具生成逻辑 (普通敌人小概率掉落补给)
-            // 在碰撞检测中实现掉落更合理
-
-            // Boss 降临 (严格 30 秒，不受刷新率/倍速影响)
-            const elapsed = (Date.now() - State.startTime) / 1000;
-            if (elapsed >= 30 && !State.boss) {
-                State.boss = new Boss(Config.constellation_levels[State.level]);
-                log(`${Config.constellation_levels[State.level].constellation} 降临！`);
-            }
-
-            // 更新与绘制
-            [...State.bullets, ...State.enemies, ...State.powerups].forEach((obj, i) => {
-                obj.update(); obj.draw();
-                if (obj.y < -100 || obj.y > 700) {
-                    if (obj instanceof Bullet) State.bullets.splice(State.bullets.indexOf(obj), 1);
-                    else if (obj instanceof Enemy) State.enemies.splice(State.enemies.indexOf(obj), 1);
-                    else if (obj instanceof Powerup) State.powerups.splice(State.powerups.indexOf(obj), 1);
+            try {
+                State.frameCount++;
+                ctx.clearRect(0, 0, 400, 600);
+                
+                // 更新 UI
+                const ultFill = document.getElementById('ultimate-fill');
+                const ultHint = document.getElementById('ultimate-hint');
+                if (ultFill && ultHint) {
+                    const percent = (State.ultimateEnergy / State.maxUltimateEnergy) * 100;
+                    ultFill.style.width = percent + "%";
+                    if (percent >= 100) {
+                        ultHint.style.display = "block";
+                        ultFill.style.background = "linear-gradient(90deg, #fff, #ffd700)";
+                    } else {
+                        ultHint.style.display = "none";
+                        ultFill.style.background = "linear-gradient(90deg, #00ffff, #ffd700)";
+                    }
                 }
-            });
+                
+                // 星空
+                ctx.fillStyle = "#fff";
+                State.stars.forEach(s => {
+                    s.y += s.sp * State.speed; if (s.y > 600) s.y = -10;
+                    ctx.fillRect(s.x, s.y, 2, 2);
+                });
 
-            if (State.boss) {
-                State.boss.update(); State.boss.draw();
-                document.getElementById('boss-hp-bar').style.display = "block";
-                document.getElementById('boss-hp-fill').style.width = (State.boss.hp / State.boss.maxHp * 100) + "%";
-            } else {
-                document.getElementById('boss-hp-bar').style.display = "none";
-            }
-
-            // 碰撞检测
-            // 1. 玩家子弹 vs 敌人/Boss
-            State.bullets.forEach((b, bi) => {
-                if (!b.isEnemy) {
-                    State.enemies.forEach((e, ei) => {
-                        if (Math.hypot(b.x - e.x, b.y - e.y) < 30) {
-                            e.hp -= (1 * State.bulletLevel);
-                            State.bullets.splice(bi, 1);
-                            
-                            if (e.hp <= 0) {
-                                // 掉落逻辑
-                                if (e.type === 'elite') {
-                                    const z = State.unlockedZodiacs[Math.floor(Math.random() * State.unlockedZodiacs.length)];
-                                    State.powerups.push(new Powerup(e.x, e.y, 'zodiac', z));
-                                } else {
-                                    const r = Math.random();
-                                    if (r < 0.05) State.powerups.push(new Powerup(e.x, e.y, 'health'));
-                                    else if (r < 0.10) State.powerups.push(new Powerup(e.x, e.y, 'wingman'));
-                                    else if (r < 0.15) State.powerups.push(new Powerup(e.x, e.y, 'bullet'));
-                                }
-                                State.enemies.splice(ei, 1);
-                                State.ultimateEnergy = Math.min(State.ultimateEnergy + (e.type === 'elite' ? 20 : 5), State.maxUltimateEnergy);
-                                State.score += (e.type === 'elite' ? 100 : 10);
-                                updateHUD();
-                            }
-                        }
-                    });
-                    if (State.boss && Math.hypot(b.x - State.boss.x, b.y - State.boss.y) < 60) {
-                        State.boss.hp -= (5 * State.bulletLevel); 
-                        State.bullets.splice(bi, 1);
-                        if(State.boss.hp <= 0) { 
-                            State.boss = null; State.level++; State.score += 500; 
-                            State.startTime = Date.now(); // 重置计时器，开启下一关的 30秒 倒计时
-                            log("晋级！"); updateHUD(); 
-                            if(State.level >= Config.constellation_levels.length) {
-                                log("全秘境通关！"); endGame();
-                            }
-                        }
-                    }
+                // 玩家
+                State.playerX += (State.playerTargetX - State.playerX) * 0.2;
+                const bCfg = (Config.zodiac_bullets && Config.zodiac_bullets.find(b => b.id === State.weapon)) || {color:'#e0e0e0', id: State.weapon};
+                if (State.assets['player']) {
+                    ctx.drawImage(State.assets['player'], State.playerX-25, 500, 50, 50);
                 } else {
-                    // 敌人子弹 vs 玩家
-                    if (Math.hypot(b.x - State.playerX, b.y - 520) < 20) {
-                        State.bullets.splice(bi, 1); State.lives--; updateHUD();
-                        if(State.lives <= 0) endGame();
+                    ctx.fillStyle = "#1a1a1e"; ctx.beginPath(); ctx.moveTo(State.playerX, 500); ctx.lineTo(State.playerX-20, 540); ctx.lineTo(State.playerX+20, 540); ctx.fill();
+                    ctx.fillStyle = bCfg.color || "#fff"; ctx.beginPath(); ctx.arc(State.playerX, 520, 5, 0, Math.PI*2); ctx.fill();
+                }
+
+                // 侧翼机枪
+                State.wingmen.forEach(w => {
+                    w.update(); w.draw();
+                    if (State.frameCount % 20 === 0) w.shoot();
+                });
+
+                // 生成逻辑
+                if (State.frameCount % Math.floor(60/State.speed) === 0 && !State.boss) {
+                    const r = Math.random();
+                    if(r < 0.7) State.enemies.push(new Enemy('scout'));
+                    else if(r < 0.9) State.enemies.push(new Enemy('shooter'));
+                    else State.enemies.push(new Enemy('tank'));
+                }
+
+                // 固定精英怪
+                if ((State.frameCount === 600 || State.frameCount === 1200) && !State.boss) {
+                    State.enemies.push(new Enemy('elite'));
+                    log("精英怪出现！击败它获取生肖灵珠");
+                }
+
+                // Boss 降临
+                const elapsed = (Date.now() - State.startTime) / 1000;
+                if (elapsed >= 30 && !State.boss) {
+                    const bossCfg = Config.constellation_levels ? Config.constellation_levels[State.level] : null;
+                    if (bossCfg) {
+                        State.boss = new Boss(bossCfg);
+                        log(`${bossCfg.constellation} 降临！`);
                     }
-                    // 鼠的特性：子弹阻拦敌方子弹
-                    if (State.weapon === 'rat') {
-                        State.bullets.forEach((pb, pbi) => {
-                            if (!pb.isEnemy && Math.hypot(b.x - pb.x, b.y - pb.y) < 15) {
-                                State.bullets.splice(bi, 1); // 销毁敌人子弹
-                                State.bullets.splice(pbi, 1); // 销毁玩家子弹
+                }
+
+                // 更新与绘制
+                [...State.bullets, ...State.enemies, ...State.powerups].forEach((obj) => {
+                    obj.update(); obj.draw();
+                });
+
+                // 清理越界
+                State.bullets = State.bullets.filter(b => b.y > -50 && b.y < 650 && b.x > -50 && b.x < 450);
+                State.enemies = State.enemies.filter(e => e.y < 650);
+                State.powerups = State.powerups.filter(p => p.y < 650);
+
+                if (State.boss) {
+                    State.boss.update(); State.boss.draw();
+                    document.getElementById('boss-hp-bar').style.display = "block";
+                    document.getElementById('boss-hp-fill').style.width = (State.boss.hp / State.boss.maxHp * 100) + "%";
+                } else {
+                    document.getElementById('boss-hp-bar').style.display = "none";
+                }
+
+                // 碰撞检测
+                // 1. 玩家子弹 vs 敌人/Boss
+                State.bullets.forEach((b, bi) => {
+                    if (!b.isEnemy) {
+                        State.enemies.forEach((e, ei) => {
+                            if (Math.hypot(b.x - e.x, b.y - e.y) < 30) {
+                                e.hp -= (1 * State.bulletLevel);
+                                b.y = -999; // 标记待清理
+                                
+                                if (e.hp <= 0) {
+                                    if (e.type === 'elite') {
+                                        const z = State.unlockedZodiacs[Math.floor(Math.random() * State.unlockedZodiacs.length)];
+                                        State.powerups.push(new Powerup(e.x, e.y, 'zodiac', z));
+                                    } else {
+                                        const r = Math.random();
+                                        if (r < 0.05) State.powerups.push(new Powerup(e.x, e.y, 'health'));
+                                        else if (r < 0.10) State.powerups.push(new Powerup(e.x, e.y, 'wingman'));
+                                        else if (r < 0.15) State.powerups.push(new Powerup(e.x, e.y, 'bullet'));
+                                    }
+                                    State.enemies.splice(ei, 1);
+                                    State.ultimateEnergy = Math.min(State.ultimateEnergy + (e.type === 'elite' ? 20 : 5), State.maxUltimateEnergy);
+                                    State.score += (e.type === 'elite' ? 100 : 10);
+                                    updateHUD();
+                                }
                             }
                         });
+                        if (State.boss && Math.hypot(b.x - State.boss.x, b.y - State.boss.y) < 60) {
+                            State.boss.hp -= (5 * State.bulletLevel); 
+                            b.y = -999;
+                            if(State.boss.hp <= 0) { 
+                                State.boss = null; State.level++; State.score += 500; 
+                                    State.startTime = Date.now(); // 重置计时器，开启下一关的 30秒 倒计时
+                                    log("晋级！"); updateHUD(); 
+                                    if(State.level >= (Config.constellation_levels ? Config.constellation_levels.length : 0)) {
+                                        log("全秘境通关！"); endGame();
+                                    }
+                            }
+                        }
+                    } else {
+                        // 敌人子弹 vs 玩家
+                        if (Math.hypot(b.x - State.playerX, b.y - 520) < 20) {
+                            b.y = 999; State.lives--; updateHUD();
+                            if(State.lives <= 0) endGame();
+                        }
+                        // 鼠的特性
+                        if (State.weapon === 'rat') {
+                            State.bullets.forEach((pb) => {
+                                if (!pb.isEnemy && Math.hypot(b.x - pb.x, b.y - pb.y) < 15) {
+                                    b.y = 999; pb.y = -999;
+                                }
+                            });
+                        }
+                    }
+                });
+
+                // 2. 玩家 vs 敌人/道具
+                State.enemies.forEach((e, ei) => {
+                    if (Math.hypot(e.x - State.playerX, e.y - 520) < 30) {
+                        State.enemies.splice(ei, 1); State.lives--; updateHUD();
+                        if(State.lives <= 0) endGame();
+                    }
+                });
+
+                State.powerups.forEach((p, pi) => {
+                    if (Math.hypot(p.x - State.playerX, p.y - 520) < 30) {
+                        if (p.type === 'bullet') { State.bulletLevel = Math.min(State.bulletLevel + 1, 5); log("子弹升级！"); }
+                        if (p.type === 'health') { State.lives = Math.min(State.lives + 1, 5); log("获得生命！"); }
+                        if (p.type === 'wingman') {
+                            if (State.wingmen.length === 0) State.wingmen.push(new Wingman(-1));
+                            else if (State.wingmen.length === 1) State.wingmen.push(new Wingman(1));
+                            log("侧翼支援已就位！");
+                        }
+                        if (p.type === 'zodiac') { State.weapon = p.zodiacId; log(`生肖切换: ${p.zodiacId.toUpperCase()}`); }
+                        State.powerups.splice(pi, 1); updateHUD();
+                    }
+                });
+
+                // 自动射击
+                if (State.frameCount % 10 === 0) {
+                    const spread = (State.bulletLevel - 1) * 10;
+                    for(let i=0; i<State.bulletLevel; i++) {
+                        const angle = -90 - spread/2 + (i * (spread/(State.bulletLevel-1 || 1)));
+                        State.bullets.push(new Bullet(State.playerX, 500, bCfg, angle, false));
                     }
                 }
-            });
 
-            // 2. 玩家 vs 敌人/道具
-            State.enemies.forEach((e, ei) => {
-                if (Math.hypot(e.x - State.playerX, e.y - 520) < 30) {
-                    State.enemies.splice(ei, 1); State.lives--; updateHUD();
-                    if(State.lives <= 0) endGame();
-                }
-            });
-
-            State.powerups.forEach((p, pi) => {
-                if (Math.hypot(p.x - State.playerX, p.y - 520) < 30) {
-                    if (p.type === 'bullet') { State.bulletLevel = Math.min(State.bulletLevel + 1, 5); log("子弹升级！"); }
-                    if (p.type === 'health') { State.lives = Math.min(State.lives + 1, 5); log("获得生命！"); }
-                    if (p.type === 'wingman') {
-                        if (State.wingmen.length === 0) State.wingmen.push(new Wingman(-1));
-                        else if (State.wingmen.length === 1) State.wingmen.push(new Wingman(1));
-                        log("侧翼支援已就位！");
-                    }
-                    if (p.type === 'zodiac') {
-                        State.weapon = p.zodiacId;
-                        log(`生肖切换: ${p.zodiacId.toUpperCase()}`);
-                    }
-                    State.powerups.splice(pi, 1); updateHUD();
-                }
-            });
-
-            // 自动射击
-            if (State.frameCount % 10 === 0) {
-                const spread = (State.bulletLevel - 1) * 10;
-                for(let i=0; i<State.bulletLevel; i++) {
-                    const angle = -90 - spread/2 + (i * (spread/(State.bulletLevel-1 || 1)));
-                    State.bullets.push(new Bullet(State.playerX, 500, bCfg, angle, false));
-                }
+                gameLoopId = requestAnimationFrame(loop);
+            } catch (err) {
+                console.error("Game Loop Error:", err);
+                log(`内核错误: ${err.message}`);
+                State.gameActive = false;
             }
-
-            requestAnimationFrame(loop);
         }
 
         function endGame() {
