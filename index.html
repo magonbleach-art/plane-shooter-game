@@ -146,7 +146,7 @@
             <div id="life">❤️x2</div>
         </div>
         <div id="boss-hp-bar"><div id="boss-hp-fill"></div></div>
-        <div id="version-tag" style="position:absolute; top:10px; right:10px; background:linear-gradient(135deg, #f00, #b00); color:#fff; font-size:12px; padding:4px 12px; z-index:9999; border-radius:20px; font-weight:bold; box-shadow:0 0 20px rgba(255,0,0,0.6); border:2px solid #fff;">VER: 7.9.1-LIVE</div>
+        <div id="version-tag" style="position:absolute; top:10px; right:10px; background:linear-gradient(135deg, #f00, #b00); color:#fff; font-size:12px; padding:4px 12px; z-index:9999; border-radius:20px; font-weight:bold; box-shadow:0 0 20px rgba(255,0,0,0.6); border:2px solid #fff;">VER: 7.9.2-LIVE</div>
         <div id="ultimate-bar">
             <div id="ultimate-hint">能量已满 - 点击屏幕释放大招</div>
             <div id="ultimate-fill"></div>
@@ -678,9 +678,7 @@
                 // 玩家
                 State.playerX += (State.playerTargetX - State.playerX) * 0.2;
                 const bCfg = (Config.zodiac_bullets && Config.zodiac_bullets.find(b => b.id === State.weapon)) || {color:'#e0e0e0', id: State.weapon};
-                if (State.assets['player']) {
-                    ctx.drawImage(State.assets['player'], State.playerX-25, 500, 50, 50);
-                } else {
+                if (!safeDrawImage(State.assets['player'], State.playerX-25, 500, 50, 50)) {
                     ctx.fillStyle = "#1a1a1e"; ctx.beginPath(); ctx.moveTo(State.playerX, 500); ctx.lineTo(State.playerX-20, 540); ctx.lineTo(State.playerX+20, 540); ctx.fill();
                     ctx.fillStyle = bCfg.color || "#fff"; ctx.beginPath(); ctx.arc(State.playerX, 520, 5, 0, Math.PI*2); ctx.fill();
                 }
