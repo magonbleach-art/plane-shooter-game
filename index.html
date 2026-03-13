@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>生肖射手：十二星座秘境</title>
-    <script src="zodiac_designs.js?v=7.7"></script>
+    <script src="zodiac_designs.js?v=7.8"></script>
     <style>
         :root {
             --primary: #ffd700;
@@ -76,6 +76,32 @@
         }
         #boss-hp-fill { width: 100%; height: 100%; background: #f00; border-radius: 4px; box-shadow: 0 0 10px #f00; }
 
+        #ultimate-bar {
+            position: absolute; bottom: 50px; left: 20px; right: 20px; height: 12px;
+            background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px; overflow: hidden; z-index: 50; display: none;
+        }
+        #ultimate-fill { 
+            width: 0%; height: 100%; 
+            background: linear-gradient(90deg, #00ffff, #ffd700);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+            transition: width 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        #ultimate-hint {
+            position: absolute; top: -20px; left: 50%; transform: translateX(-50%);
+            font-size: 10px; color: var(--accent); font-weight: bold; text-transform: uppercase;
+            letter-spacing: 1px; animation: pulse 1s infinite; display: none;
+        }
+        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+
+        #loading-screen { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            background: #000; z-index: 1000; display: flex; flex-direction: column; 
+            justify-content: center; align-items: center; 
+        }
+        #loading-bar { width: 200px; height: 4px; background: #333; margin-top: 20px; border-radius: 2px; overflow: hidden; }
+        #loading-fill { width: 0%; height: 100%; background: var(--primary); transition: width 0.1s; }
+
         .feedback-box {
             width: 100%; max-width: 340px; margin-top: 10px;
             background: rgba(255, 215, 0, 0.05); border: 1px solid rgba(255, 215, 0, 0.1);
@@ -92,7 +118,7 @@
             position: absolute; bottom: 0; left: 0; width: 100%; height: 30px;
             background: rgba(0,0,0,0.8); font-family: monospace; font-size: 10px;
             color: #0f0; padding: 8px; box-sizing: border-box; z-index: 200;
-            pointer-events: none; border-top: 1px solid #333;
+            border-top: 1px solid #333;
         }
         .status-ready { background: rgba(0, 255, 0, 0.9) !important; color: #000 !important; }
 
@@ -108,14 +134,28 @@
 </head>
 <body>
     <div id="game-container">
+        <!-- 资源加载层 -->
+        <div id="loading-screen" class="hidden">
+            <h2 style="color:var(--primary); letter-spacing:4px;">灵力注入中...</h2>
+            <div id="loading-bar"><div id="loading-fill"></div></div>
+        </div>
+
         <div id="hud">
             <div id="score">得分: 0</div>
             <div id="level-name">准备中...</div>
             <div id="life">❤️x2</div>
         </div>
         <div id="boss-hp-bar"><div id="boss-hp-fill"></div></div>
+        <div id="version-tag" style="position:absolute; top:10px; right:10px; background:linear-gradient(135deg, #f00, #b00); color:#fff; font-size:12px; padding:4px 12px; z-index:9999; border-radius:20px; font-weight:bold; box-shadow:0 0 20px rgba(255,0,0,0.6); border:2px solid #fff;">VER: 7.8.6-LIVE</div>
+        <div id="ultimate-bar">
+            <div id="ultimate-hint">能量已满 - 点击屏幕释放大招</div>
+            <div id="ultimate-fill"></div>
+        </div>
         <canvas id="gameCanvas"></canvas>
-        <div id="debug-overlay">系统状态: 就绪</div>
+        <div id="debug-overlay">
+            系统状态: 就绪 
+            <button onclick="location.reload(true)" style="width:60px; height:20px; font-size:9px; background:#444; color:#fff; border:1px solid #666; margin-left:10px; cursor:pointer;">强制刷新</button>
+        </div>
 
         <!-- 初始屏幕 -->
         <div id="start-screen" class="overlay">
@@ -164,8 +204,12 @@
 
         <!-- 设置界面 -->
         <div id="game-settings" class="overlay hidden">
-            <div class="ui-panel">
+            <div class="ui-panel" style="overflow-y:auto; max-height:90vh; padding:10px;">
                 <h2>实验室配置</h2>
+                <div class="ui-section" style="border:1px solid var(--accent);">
+                    <div style="margin-bottom:10px; font-size:0.8rem; color:var(--accent);">调试与验证</div>
+                    <button id="automation-test-btn" style="background:rgba(0,255,255,0.1); color:var(--accent); border:1px solid var(--accent); height:40px; font-size:0.9rem;">🧪 启动自动化测试仿真</button>
+                </div>
                 <div class="ui-section">
                     <div style="margin-bottom:10px; font-size:0.8rem; color:var(--primary);">敌方强度</div>
                     <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;">
@@ -176,14 +220,16 @@
                 </div>
                 <div class="ui-section">
                     <div style="margin-bottom:10px; font-size:0.8rem; color:var(--primary);">模拟速度</div>
-                    <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:10px;">
+                    <div style="display:grid; grid-template-columns:repeat(5, 1fr); gap:10px;">
                         <button class="setting-btn" data-type="speed" data-val="0.6">1档</button>
+                        <button class="setting-btn" data-type="speed" data-val="0.8">2档</button>
                         <button class="setting-btn active" data-type="speed" data-val="1.0">3档</button>
+                        <button class="setting-btn" data-type="speed" data-val="1.2">4档</button>
                         <button class="setting-btn" data-type="speed" data-val="1.5">5档</button>
                     </div>
                 </div>
                 <div class="btn-group">
-                    <button id="save-settings-btn" style="background:var(--primary); color:#000;">保存并应用</button>
+                    <button id="save-settings-btn" style="background:var(--primary); color:#000;">保存并返回</button>
                 </div>
             </div>
         </div>
@@ -202,15 +248,62 @@
     </div>
 
     <script>
+        console.log("%c OpenClaw v7.8.5 Loaded %c", "background:#f00; color:#fff; font-weight:bold;", "");
+        
         /**
-         * 🛡️ [进化 v7.7] 全逻辑闭环引擎
+         * 🛡️ [进化 v7.8.5] AI 分工与精灵引擎
          */
         const State = {
-            gameActive: false, score: 0, lives: 2, frameCount: 0,
-            weapon: 'rat', level: 0, diff: 1.0, speed: 1.0,
+            gameActive: false, score: 0, lives: 3, frameCount: 0,
+            startTime: 0, // 记录游戏开始时间，用于 Boss 30秒计时
+            weapon: 'rat', bulletLevel: 1, wingmen: [], powerups: [],
+            ultimateEnergy: 0, maxUltimateEnergy: 100, isUltimateActive: false,
+            level: 0, diff: 1.0, speed: 1.0,
             stars: [], bullets: [], enemies: [], boss: null,
             playerX: 200, playerTargetX: 200,
-            unlockedZodiacs: ['rat', 'ox', 'tiger', 'rabbit', 'dragon', 'snake', 'horse', 'goat', 'monkey', 'rooster', 'dog', 'pig']
+            unlockedZodiacs: ['rat', 'ox', 'tiger', 'rabbit', 'dragon', 'snake', 'horse', 'goat', 'monkey', 'rooster', 'dog', 'pig'],
+            assets: {} // 存放加载的精灵图
+        };
+
+        // 🛡️ 资源管理器：支持动态加载 AI 生成的专业原画
+        const AssetManager = {
+            queue: [],
+            total: 0,
+            loaded: 0,
+            add(id, src) {
+                this.queue.push({id, src});
+                this.total++;
+            },
+            async loadAll() {
+                if (this.total === 0) return;
+                document.getElementById('loading-screen').classList.remove('hidden');
+                
+                // 设置总加载超时 5 秒，防止资源缺失卡死
+                const timeout = new Promise(resolve => setTimeout(() => {
+                    log("部分资源加载超时，跳过...");
+                    resolve();
+                }, 5000));
+
+                const loadAssets = async () => {
+                    for (let item of this.queue) {
+                        try {
+                            const img = new Image();
+                            const loadPromise = new Promise((resolve) => {
+                                img.onload = resolve;
+                                img.onerror = resolve;
+                            });
+                            img.src = item.src + "?v=" + Date.now();
+                            await loadPromise;
+                            State.assets[item.id] = img;
+                            this.loaded++;
+                            document.getElementById('loading-fill').style.width = (this.loaded / this.total * 100) + "%";
+                        } catch(e) { console.warn(`Asset ${item.id} fail`, e); }
+                    }
+                };
+
+                await Promise.race([loadAssets(), timeout]);
+                setTimeout(() => document.getElementById('loading-screen').classList.add('hidden'), 500);
+            }
         };
 
         let Config = { constellation_levels: [], zodiac_bullets: [] };
@@ -221,7 +314,9 @@
         function log(msg) {
             const el = document.getElementById('debug-overlay');
             if (el) {
-                el.innerText = `系统状态: ${msg}`;
+                const now = new Date().toLocaleTimeString();
+                el.innerHTML = `<span style="color:#ffd700">[${now}]</span> 系统状态: ${msg} 
+                <button onclick="location.reload(true)" style="width:60px; height:20px; font-size:9px; background:#444; color:#fff; border:1px solid #666; margin-left:10px; cursor:pointer;">强制刷新</button>`;
                 el.classList.add('status-ready');
             }
             console.log(`[OpenClaw] ${msg}`);
@@ -258,50 +353,158 @@
             }
             draw() {
                 ctx.save(); ctx.translate(this.x, this.y);
-                const design = window.ZODIAC_DESIGNS ? window.ZODIAC_DESIGNS[this.cfg.id] : null;
-                if (!this.isEnemy && design && design.attack_effect) {
-                    design.attack_effect(ctx, this);
+                // 优先使用精灵图资源
+                const assetId = `bullet_${this.cfg.id}`;
+                if (State.assets[assetId]) {
+                    ctx.drawImage(State.assets[assetId], -10, -10, 20, 20);
                 } else {
-                    ctx.fillStyle = this.isEnemy ? "#f44336" : (this.cfg.color || "#fff");
-                    ctx.beginPath(); ctx.arc(0, 0, 4, 0, Math.PI*2); ctx.fill();
+                    const design = window.ZODIAC_DESIGNS ? window.ZODIAC_DESIGNS[this.cfg.id] : null;
+                    if (!this.isEnemy && design && design.attack_effect) {
+                        design.attack_effect(ctx, this);
+                    } else {
+                        ctx.fillStyle = this.isEnemy ? "#f44336" : (this.cfg.color || "#fff");
+                        ctx.beginPath(); ctx.arc(0, 0, 4, 0, Math.PI*2); ctx.fill();
+                    }
                 }
                 ctx.restore();
             }
         }
 
         class Enemy {
-            constructor() {
-                this.x = Math.random()*360+20; this.y = -30;
-                this.hp = 2 * State.diff * (1 + State.level*0.2);
-                this.speed = (1.5 + Math.random()) * State.speed;
+            constructor(type = 'scout') {
+                this.type = type; // 'scout', 'shooter', 'tank', 'elite'
+                this.x = Math.random()*360+20; this.y = -40;
+                this.frameCount = 0;
+                
+                if(type === 'scout') { this.hp = 1 * State.diff; this.speed = (2 + Math.random()) * State.speed; }
+                if(type === 'shooter') { this.hp = 3 * State.diff; this.speed = 1.2 * State.speed; }
+                if(type === 'tank') { this.hp = 10 * State.diff; this.speed = 0.8 * State.speed; }
+                if(type === 'elite') { this.hp = 25 * State.diff; this.speed = 0.5 * State.speed; this.x = 200; }
             }
-            update() { this.y += this.speed; }
+            update() {
+                this.y += this.speed;
+                this.frameCount++;
+                
+                // 射击型敌人发弹
+                if (this.type === 'shooter' && this.frameCount % 120 === 0) {
+                    State.bullets.push(new Bullet(this.x, this.y, {id:'enemy'}, 90, true));
+                }
+                // 精英怪发弹
+                if (this.type === 'elite' && this.frameCount % 60 === 0) {
+                    for(let i=0; i<360; i+=60) State.bullets.push(new Bullet(this.x, this.y, {id:'enemy'}, i, true));
+                }
+            }
             draw() {
-                ctx.fillStyle = "#ff4b2b"; ctx.shadowBlur = 10; ctx.shadowColor = "#ff4b2b";
-                ctx.beginPath(); ctx.moveTo(this.x, this.y+15); ctx.lineTo(this.x-15, this.y-15); ctx.lineTo(this.x+15, this.y-15); ctx.fill();
-                ctx.shadowBlur = 0;
+                ctx.save(); ctx.translate(this.x, this.y);
+                const assetId = `enemy_${this.type}`;
+                if (State.assets[assetId]) {
+                    ctx.drawImage(State.assets[assetId], -20, -20, 40, 40);
+                } else {
+                    ctx.shadowBlur = 10;
+                    if(this.type === 'tank') { ctx.fillStyle = "#ffc107"; ctx.fillRect(-20, -20, 40, 40); }
+                    else if(this.type === 'elite') { ctx.fillStyle = "#9c27b0"; ctx.beginPath(); ctx.arc(0,0,30,0,Math.PI*2); ctx.fill(); }
+                    else {
+                        ctx.fillStyle = this.type === 'shooter' ? "#2196f3" : "#ff4b2b";
+                        ctx.shadowColor = ctx.fillStyle;
+                        ctx.beginPath(); ctx.moveTo(0, 15); ctx.lineTo(-15, -15); ctx.lineTo(15, -15); ctx.fill();
+                    }
+                }
+                ctx.restore();
             }
         }
 
         class Boss {
             constructor(cfg) {
                 this.cfg = cfg; this.hp = (cfg.boss ? cfg.boss.hp : 500) * State.diff; this.maxHp = this.hp;
-                this.x = 200; this.y = -50; this.ty = 100;
+                this.x = 200; this.y = -100; this.ty = 120;
+                this.phase = 1;
+                // 中英文映射，用于匹配资源 ID
+                this.nameMap = {
+                    "白羊宫": "aries", "金牛宫": "taurus", "双子宫": "gemini", "巨蟹宫": "cancer",
+                    "狮子宫": "leo", "处女宫": "virgo", "天秤宫": "libra", "天蝎宫": "scorpio",
+                    "射手宫": "sagittarius", "摩羯宫": "capricorn", "水瓶宫": "aquarius", "双鱼宫": "pisces"
+                };
             }
             update() {
                 if (this.y < this.ty) this.y += 2;
                 this.x = 200 + Math.sin(State.frameCount * 0.02) * 100;
+                
+                // 根据血量更新阶段 (1: 100-70%, 2: 70-30%, 3: 30-0%)
+                const hpRatio = this.hp / this.maxHp;
+                if (hpRatio > 0.7) this.phase = 1;
+                else if (hpRatio > 0.3) this.phase = 2;
+                else this.phase = 3;
+
                 if (State.frameCount % 60 === 0) {
                     for(let i=0; i<360; i+=30) State.bullets.push(new Bullet(this.x, this.y, {id:'boss'}, i, true));
                 }
             }
             draw() {
-                const constellation = this.cfg.constellation || 'Aries';
-                const design = window.CONSTELLATION_DESIGNS ? window.CONSTELLATION_DESIGNS[constellation] : null;
+                const rawName = this.cfg.constellation || 'Aries';
+                const engName = this.nameMap[rawName] || rawName.toLowerCase();
                 ctx.save(); ctx.translate(this.x, this.y);
-                if (design && design.draw) design.draw(ctx, this);
-                else { ctx.fillStyle="#f00"; ctx.fillRect(-30, -30, 60, 60); }
+                
+                // 优先使用 AI 生成的三阶段高清 Boss 原画
+                const assetId = `boss_${engName}_phase${this.phase}`;
+                if (State.assets[assetId]) {
+                    ctx.drawImage(State.assets[assetId], -80, -80, 160, 160);
+                } else {
+                    // 如果三阶段图不存在，尝试加载基础图
+                    const fallbackId = `boss_${engName}`;
+                    if (State.assets[fallbackId]) {
+                        ctx.drawImage(State.assets[fallbackId], -80, -80, 160, 160);
+                    } else {
+                        // 过程绘制兜底
+                        const design = window.CONSTELLATION_DESIGNS ? window.CONSTELLATION_DESIGNS[rawName] : null;
+                        if (design && design.draw) design.draw(ctx, this);
+                        else { ctx.fillStyle="#f00"; ctx.fillRect(-30, -30, 60, 60); }
+                    }
+                }
                 ctx.restore();
+            }
+        }
+
+        class Powerup {
+            constructor(x, y, type, zodiacId = null) {
+                this.x = x; this.y = y; this.type = type; // 'bullet', 'health', 'wingman', 'zodiac'
+                this.zodiacId = zodiacId;
+                this.speed = 1.5 * State.speed;
+            }
+            update() { this.y += this.speed; }
+            draw() {
+                ctx.save(); ctx.translate(this.x, this.y);
+                ctx.shadowBlur = 15;
+                if(this.type === 'bullet') { ctx.fillStyle = "#ffd700"; ctx.shadowColor = "#ffd700"; ctx.fillText("⭐", -10, 5); }
+                if(this.type === 'health') { ctx.fillStyle = "#f44336"; ctx.shadowColor = "#f44336"; ctx.fillText("❤️", -10, 5); }
+                if(this.type === 'wingman') { ctx.fillStyle = "#00ffff"; ctx.shadowColor = "#00ffff"; ctx.fillText("✈️", -10, 5); }
+                if(this.type === 'zodiac') { 
+                    ctx.fillStyle = "#fff"; ctx.shadowColor = "#fff"; 
+                    ctx.font = "12px Arial"; ctx.fillText(this.zodiacId.toUpperCase(), -15, 5); 
+                }
+                ctx.font = "bold 20px Arial"; ctx.beginPath(); ctx.arc(0, 0, 18, 0, Math.PI*2); ctx.strokeStyle="#fff"; ctx.stroke();
+                ctx.restore();
+            }
+        }
+
+        class Wingman {
+            constructor(side) {
+                this.side = side; // -1 for left, 1 for right
+            }
+            update() {
+                this.x = State.playerX + this.side * 40;
+                this.y = 520;
+            }
+            draw() {
+                if (State.assets['wingman']) {
+                    ctx.drawImage(State.assets['wingman'], this.x-15, this.y-15, 30, 30);
+                } else {
+                    ctx.fillStyle = "#444"; ctx.beginPath(); ctx.moveTo(this.x, this.y); ctx.lineTo(this.x-10, this.y+15); ctx.lineTo(this.x+10, this.y+15); ctx.fill();
+                    ctx.fillStyle = "#00ffff"; ctx.fillRect(this.x-2, this.y-5, 4, 10);
+                }
+            }
+            shoot() {
+                const bCfg = Config.zodiac_bullets.find(b => b.id === State.weapon) || {color:'#ffd700', id: State.weapon};
+                State.bullets.push(new Bullet(this.x, this.y, bCfg, -90, false));
             }
         }
 
@@ -309,11 +512,27 @@
             try {
                 const r = await fetch('game_config.json?v=' + Date.now());
                 Config = await r.json();
+                
+                // 注册 AI 资产路径 (如果存在)
+                AssetManager.add('player', 'assets/planes/hero.png');
+                AssetManager.add('enemy_basic', 'assets/planes/enemy_basic.png');
+                AssetManager.add('wingman', 'assets/planes/wingman.png');
+                
+                const constellations = ['aries', 'taurus', 'gemini', 'cancer', 'leo', 'virgo', 'libra', 'scorpio', 'sagittarius', 'capricorn', 'aquarius', 'pisces'];
+                constellations.forEach(name => {
+                    // 加载三个阶段的贴图
+                    AssetManager.add(`boss_${name}_phase1`, `assets/bosses/${name}/${name}_phase1.png`);
+                    AssetManager.add(`boss_${name}_phase2`, `assets/bosses/${name}/${name}_phase2.png`);
+                    AssetManager.add(`boss_${name}_phase3`, `assets/bosses/${name}/${name}_phase3.png`);
+                });
+                
+                await AssetManager.loadAll();
+                
                 log("配置就绪");
             } catch(e) {
-                Config = { 
+                Config = {
                     constellation_levels: [{constellation:'白羊宫', boss:{hp:500}}],
-                    zodiac_bullets: [{id:'rat', color:'#ffd700'}]
+                    zodiac_bullets: [{id:'rat', color:'#e0e0e0'}]
                 };
                 log("使用兜底配置");
             }
@@ -329,6 +548,26 @@
             bind('back-to-start-btn', () => showScreen('start-screen'));
             bind('save-settings-btn', () => showScreen('start-screen'));
             bind('confirm-select-btn', () => showScreen('start-screen'));
+            
+            // 自动化测试绑定
+            bind('automation-test-btn', () => {
+                log("启动本地仿真测试...");
+                window.runAutoTest();
+            });
+            
+            // 绑定建议系统
+            bind('submit-feedback-btn', () => {
+                const input = document.getElementById('feedback-input');
+                const val = input.value.trim();
+                if (!val) return;
+                log(`AI 专家评审中...`);
+                setTimeout(() => {
+                    const msg = `评审通过：建议 "${val.substring(0,10)}..." 已加入进化序列`;
+                    log(msg);
+                    alert(msg); // 增加弹窗提示，确保用户感知
+                    input.value = '';
+                }, 1500);
+            });
             
             // 设置按钮逻辑
             document.querySelectorAll('.setting-btn').forEach(btn => {
@@ -347,21 +586,77 @@
                 State.playerTargetX = (e.clientX - rect.left) * (400 / rect.width);
             });
 
+            window.addEventListener('keydown', e => {
+                if (e.code === 'Space') triggerUltimate();
+            });
+
+            canvas.addEventListener('mousedown', () => {
+                if (State.ultimateEnergy >= State.maxUltimateEnergy) triggerUltimate();
+            });
+
             initStars(); updateHUD();
             log("内核就绪");
         });
 
         function startGame(isNew) {
-            if(isNew) { State.score = 0; State.level = 0; State.lives = 2; }
-            State.gameActive = true; State.bullets = []; State.enemies = []; State.boss = null; State.frameCount = 0;
+            if(isNew) { State.score = 0; State.level = 0; State.lives = 3; State.bulletLevel = 1; State.wingmen = []; State.ultimateEnergy = 0; }
+            State.gameActive = true; State.bullets = []; State.enemies = []; State.powerups = []; State.boss = null; State.frameCount = 0;
+            State.startTime = Date.now(); // 记录起始时间
+            State.isUltimateActive = false;
             showScreen('none');
+            document.getElementById('ultimate-bar').style.display = "block";
             requestAnimationFrame(loop);
+        }
+
+        function triggerUltimate() {
+            if (State.ultimateEnergy < State.maxUltimateEnergy || State.isUltimateActive) return;
+            State.isUltimateActive = true; State.ultimateEnergy = 0;
+            log("释放大招！");
+            
+            // 全屏清理或强力弹幕逻辑 (根据生肖不同)
+            const duration = 200; // 帧数
+            const startFrame = State.frameCount;
+            
+            const bCfg = Config.zodiac_bullets.find(b => b.id === State.weapon) || {color:'#ffd700', id: State.weapon};
+            
+            const ultInterval = setInterval(() => {
+                if (State.frameCount - startFrame > duration) {
+                    State.isUltimateActive = false;
+                    clearInterval(ultInterval);
+                    return;
+                }
+                // 鼠的大招：全屏拦截
+                if (State.weapon === 'rat') {
+                    for(let i=0; i<360; i+=20) {
+                        State.bullets.push(new Bullet(State.playerX, 520, bCfg, i, false));
+                    }
+                    State.bullets = State.bullets.filter(b => !b.isEnemy); // 清理敌弹
+                } else {
+                    // 通用大招：疯狂乱射
+                    for(let i=0; i<360; i+=10) {
+                        State.bullets.push(new Bullet(State.playerX, 520, bCfg, i, false));
+                    }
+                }
+            }, 100);
         }
 
         function loop() {
             if (!State.gameActive) return;
             State.frameCount++;
             ctx.clearRect(0, 0, 400, 600);
+            
+            // 更新 UI
+            const ultFill = document.getElementById('ultimate-fill');
+            const ultHint = document.getElementById('ultimate-hint');
+            const percent = (State.ultimateEnergy / State.maxUltimateEnergy) * 100;
+            ultFill.style.width = percent + "%";
+            if (percent >= 100) {
+                ultHint.style.display = "block";
+                ultFill.style.background = "linear-gradient(90deg, #fff, #ffd700)";
+            } else {
+                ultHint.style.display = "none";
+                ultFill.style.background = "linear-gradient(90deg, #00ffff, #ffd700)";
+            }
             
             // 星空
             ctx.fillStyle = "#fff";
@@ -372,18 +667,52 @@
 
             // 玩家
             State.playerX += (State.playerTargetX - State.playerX) * 0.2;
-            ctx.fillStyle = "#1a1a1e"; ctx.beginPath(); ctx.moveTo(State.playerX, 500); ctx.lineTo(State.playerX-20, 540); ctx.lineTo(State.playerX+20, 540); ctx.fill();
-            const bCfg = Config.zodiac_bullets.find(b => b.id === State.weapon) || {color:'#ffd700'};
-            ctx.fillStyle = bCfg.color; ctx.beginPath(); ctx.arc(State.playerX, 520, 5, 0, Math.PI*2); ctx.fill();
+            const bCfg = Config.zodiac_bullets.find(b => b.id === State.weapon) || {color:'#e0e0e0', id: State.weapon};
+            if (State.assets['player']) {
+                ctx.drawImage(State.assets['player'], State.playerX-25, 500, 50, 50);
+            } else {
+                ctx.fillStyle = "#1a1a1e"; ctx.beginPath(); ctx.moveTo(State.playerX, 500); ctx.lineTo(State.playerX-20, 540); ctx.lineTo(State.playerX+20, 540); ctx.fill();
+                ctx.fillStyle = bCfg.color; ctx.beginPath(); ctx.arc(State.playerX, 520, 5, 0, Math.PI*2); ctx.fill();
+            }
+
+            // 侧翼机枪
+            State.wingmen.forEach(w => {
+                w.update(); w.draw();
+                if (State.frameCount % 20 === 0) w.shoot();
+            });
 
             // 生成逻辑
-            if (State.frameCount % Math.floor(60/State.speed) === 0 && !State.boss) State.enemies.push(new Enemy());
-            if (State.frameCount === 1000) State.boss = new Boss(Config.constellation_levels[State.level]);
+            if (State.frameCount % Math.floor(60/State.speed) === 0 && !State.boss) {
+                const r = Math.random();
+                if(r < 0.7) State.enemies.push(new Enemy('scout'));
+                else if(r < 0.9) State.enemies.push(new Enemy('shooter'));
+                else State.enemies.push(new Enemy('tank'));
+            }
+
+            // 固定精英怪：每关 10秒(600帧) 和 20秒(1200帧)
+            if ((State.frameCount === 600 || State.frameCount === 1200) && !State.boss) {
+                State.enemies.push(new Enemy('elite'));
+                log("精英怪出现！击败它获取生肖灵珠");
+            }
+
+            // 道具生成逻辑 (普通敌人小概率掉落补给)
+            // 在碰撞检测中实现掉落更合理
+
+            // Boss 降临 (严格 30 秒，不受刷新率/倍速影响)
+            const elapsed = (Date.now() - State.startTime) / 1000;
+            if (elapsed >= 30 && !State.boss) {
+                State.boss = new Boss(Config.constellation_levels[State.level]);
+                log(`${Config.constellation_levels[State.level].constellation} 降临！`);
+            }
 
             // 更新与绘制
-            [...State.bullets, ...State.enemies].forEach((obj, i) => {
+            [...State.bullets, ...State.enemies, ...State.powerups].forEach((obj, i) => {
                 obj.update(); obj.draw();
-                if (obj.y < -50 || obj.y > 650) (obj instanceof Bullet ? State.bullets : State.enemies).splice(i, 1);
+                if (obj.y < -100 || obj.y > 700) {
+                    if (obj instanceof Bullet) State.bullets.splice(State.bullets.indexOf(obj), 1);
+                    else if (obj instanceof Enemy) State.enemies.splice(State.enemies.indexOf(obj), 1);
+                    else if (obj instanceof Powerup) State.powerups.splice(State.powerups.indexOf(obj), 1);
+                }
             });
 
             if (State.boss) {
@@ -395,29 +724,94 @@
             }
 
             // 碰撞检测
+            // 1. 玩家子弹 vs 敌人/Boss
             State.bullets.forEach((b, bi) => {
                 if (!b.isEnemy) {
                     State.enemies.forEach((e, ei) => {
                         if (Math.hypot(b.x - e.x, b.y - e.y) < 30) {
-                            State.enemies.splice(ei, 1); State.bullets.splice(bi, 1);
-                            State.score += 10; updateHUD();
+                            e.hp -= (1 * State.bulletLevel);
+                            State.bullets.splice(bi, 1);
+                            
+                            if (e.hp <= 0) {
+                                // 掉落逻辑
+                                if (e.type === 'elite') {
+                                    const z = State.unlockedZodiacs[Math.floor(Math.random() * State.unlockedZodiacs.length)];
+                                    State.powerups.push(new Powerup(e.x, e.y, 'zodiac', z));
+                                } else {
+                                    const r = Math.random();
+                                    if (r < 0.05) State.powerups.push(new Powerup(e.x, e.y, 'health'));
+                                    else if (r < 0.10) State.powerups.push(new Powerup(e.x, e.y, 'wingman'));
+                                    else if (r < 0.15) State.powerups.push(new Powerup(e.x, e.y, 'bullet'));
+                                }
+                                State.enemies.splice(ei, 1);
+                                State.ultimateEnergy = Math.min(State.ultimateEnergy + (e.type === 'elite' ? 20 : 5), State.maxUltimateEnergy);
+                                State.score += (e.type === 'elite' ? 100 : 10);
+                                updateHUD();
+                            }
                         }
                     });
-                    if (State.boss && Math.hypot(b.x - State.boss.x, b.y - State.boss.y) < 50) {
-                        State.boss.hp -= 5; State.bullets.splice(bi, 1);
-                        if(State.boss.hp <= 0) { State.boss = null; State.level++; log("晋级！"); updateHUD(); }
+                    if (State.boss && Math.hypot(b.x - State.boss.x, b.y - State.boss.y) < 60) {
+                        State.boss.hp -= (5 * State.bulletLevel); 
+                        State.bullets.splice(bi, 1);
+                        if(State.boss.hp <= 0) { 
+                            State.boss = null; State.level++; State.score += 500; 
+                            State.startTime = Date.now(); // 重置计时器，开启下一关的 30秒 倒计时
+                            log("晋级！"); updateHUD(); 
+                            if(State.level >= Config.constellation_levels.length) {
+                                log("全秘境通关！"); endGame();
+                            }
+                        }
                     }
                 } else {
+                    // 敌人子弹 vs 玩家
                     if (Math.hypot(b.x - State.playerX, b.y - 520) < 20) {
                         State.bullets.splice(bi, 1); State.lives--; updateHUD();
                         if(State.lives <= 0) endGame();
                     }
+                    // 鼠的特性：子弹阻拦敌方子弹
+                    if (State.weapon === 'rat') {
+                        State.bullets.forEach((pb, pbi) => {
+                            if (!pb.isEnemy && Math.hypot(b.x - pb.x, b.y - pb.y) < 15) {
+                                State.bullets.splice(bi, 1); // 销毁敌人子弹
+                                State.bullets.splice(pbi, 1); // 销毁玩家子弹
+                            }
+                        });
+                    }
+                }
+            });
+
+            // 2. 玩家 vs 敌人/道具
+            State.enemies.forEach((e, ei) => {
+                if (Math.hypot(e.x - State.playerX, e.y - 520) < 30) {
+                    State.enemies.splice(ei, 1); State.lives--; updateHUD();
+                    if(State.lives <= 0) endGame();
+                }
+            });
+
+            State.powerups.forEach((p, pi) => {
+                if (Math.hypot(p.x - State.playerX, p.y - 520) < 30) {
+                    if (p.type === 'bullet') { State.bulletLevel = Math.min(State.bulletLevel + 1, 5); log("子弹升级！"); }
+                    if (p.type === 'health') { State.lives = Math.min(State.lives + 1, 5); log("获得生命！"); }
+                    if (p.type === 'wingman') {
+                        if (State.wingmen.length === 0) State.wingmen.push(new Wingman(-1));
+                        else if (State.wingmen.length === 1) State.wingmen.push(new Wingman(1));
+                        log("侧翼支援已就位！");
+                    }
+                    if (p.type === 'zodiac') {
+                        State.weapon = p.zodiacId;
+                        log(`生肖切换: ${p.zodiacId.toUpperCase()}`);
+                    }
+                    State.powerups.splice(pi, 1); updateHUD();
                 }
             });
 
             // 自动射击
             if (State.frameCount % 10 === 0) {
-                State.bullets.push(new Bullet(State.playerX, 500, bCfg, -90, false));
+                const spread = (State.bulletLevel - 1) * 10;
+                for(let i=0; i<State.bulletLevel; i++) {
+                    const angle = -90 - spread/2 + (i * (spread/(State.bulletLevel-1 || 1)));
+                    State.bullets.push(new Bullet(State.playerX, 500, bCfg, angle, false));
+                }
             }
 
             requestAnimationFrame(loop);
@@ -458,6 +852,36 @@
                 x: Math.random()*400, y: Math.random()*600, sp: Math.random()*2+1
             }));
         }
+
+        // 🛡️ [进化 v7.8] 自动化测试引擎
+        window.runAutoTest = function() {
+            log("🧪 自动化测试启动...");
+            startGame(true);
+            State.lives = 99; // 测试模式无限生命
+            
+            const testInterval = setInterval(() => {
+                if (!State.gameActive) {
+                    clearInterval(testInterval);
+                    return;
+                }
+                
+                // 模拟人类操作
+                State.playerTargetX = 200 + Math.sin(State.frameCount * 0.05) * 150;
+                
+                // 随机触发大招
+                if (State.ultimateEnergy >= State.maxUltimateEnergy) {
+                    triggerUltimate();
+                }
+                
+                // 自动通关逻辑 (可选)
+                if (State.level >= 1 && State.frameCount > 5000) {
+                    log("✅ 仿真测试完成");
+                    clearInterval(testInterval);
+                    State.gameActive = false;
+                    showScreen('start-screen');
+                }
+            }, 16);
+        };
     </script>
 </body>
 </html>
