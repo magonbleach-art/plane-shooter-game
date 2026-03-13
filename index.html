@@ -146,7 +146,7 @@
             <div id="life">❤️x2</div>
         </div>
         <div id="boss-hp-bar"><div id="boss-hp-fill"></div></div>
-        <div id="version-tag" style="position:absolute; top:10px; right:10px; background:linear-gradient(135deg, #f00, #b00); color:#fff; font-size:12px; padding:4px 12px; z-index:9999; border-radius:20px; font-weight:bold; box-shadow:0 0 20px rgba(255,0,0,0.6); border:2px solid #fff;">VER: 7.9.3-LIVE</div>
+        <div id="version-tag" style="position:absolute; top:10px; right:10px; background:linear-gradient(135deg, #f00, #b00); color:#fff; font-size:12px; padding:4px 12px; z-index:9999; border-radius:20px; font-weight:bold; box-shadow:0 0 20px rgba(255,0,0,0.6); border:2px solid #fff;">VER: 7.9.4-LIVE</div>
         <div id="ultimate-bar">
             <div id="ultimate-hint">能量已满 - 点击屏幕释放大招</div>
             <div id="ultimate-fill"></div>
@@ -423,6 +423,7 @@
                 this.cfg = cfg; this.hp = (cfg.boss ? cfg.boss.hp : 500) * State.diff; this.maxHp = this.hp;
                 this.x = 200; this.y = -100; this.ty = 120;
                 this.phase = 1;
+                this.maxPhases = 12; // 扩展支持到 12 阶段
                 // 中英文映射，用于匹配资源 ID
                 this.nameMap = {
                     "白羊宫": "aries", "金牛宫": "taurus", "双子宫": "gemini", "巨蟹宫": "cancer",
@@ -434,11 +435,9 @@
                 if (this.y < this.ty) this.y += 2;
                 this.x = 200 + Math.sin(State.frameCount * 0.02) * 100;
                 
-                // 根据血量更新阶段 (1: 100-70%, 2: 70-30%, 3: 30-0%)
+                // 动态计算当前阶段 (支持多阶段平滑切换)
                 const hpRatio = this.hp / this.maxHp;
-                if (hpRatio > 0.7) this.phase = 1;
-                else if (hpRatio > 0.3) this.phase = 2;
-                else this.phase = 3;
+                this.phase = Math.max(1, Math.min(this.maxPhases, Math.ceil((1 - hpRatio) * this.maxPhases) + 1));
 
                 if (State.frameCount % 60 === 0) {
                     for(let i=0; i<360; i+=30) State.bullets.push(new Bullet(this.x, this.y, {id:'boss'}, i, true));
@@ -449,12 +448,12 @@
                 const engName = this.nameMap[rawName] || rawName.toLowerCase();
                 ctx.save(); ctx.translate(this.x, this.y);
                 
-                // 优先使用 AI 生成的三阶段高清 Boss 原画
+                // 优先使用 AI 生成的高清多阶段 Boss 原画
                 const assetId = `boss_${engName}_phase${this.phase}`;
-                const fallbackId = `boss_${engName}`;
+                const fallbackId = `boss_${engName}_phase1`;
                 
-                if (!safeDrawImage(State.assets[assetId], -80, -80, 160, 160) && 
-                    !safeDrawImage(State.assets[fallbackId], -80, -80, 160, 160)) {
+                if (!safeDrawImage(State.assets[assetId], -100, -100, 200, 200) && 
+                    !safeDrawImage(State.assets[fallbackId], -100, -100, 200, 200)) {
                     // 过程绘制兜底
                     const design = window.CONSTELLATION_DESIGNS ? window.CONSTELLATION_DESIGNS[rawName] : null;
                     if (design && design.draw) design.draw(ctx, this);
@@ -519,9 +518,10 @@
                 
                 const constellations = ['aries', 'taurus', 'gemini', 'cancer', 'leo', 'virgo', 'libra', 'scorpio', 'sagittarius', 'capricorn', 'aquarius', 'pisces'];
                 constellations.forEach(name => {
-                    AssetManager.add(`boss_${name}_phase1`, `assets/bosses/${name}/${name}_phase1.png`);
-                    AssetManager.add(`boss_${name}_phase2`, `assets/bosses/${name}/${name}_phase2.png`);
-                    AssetManager.add(`boss_${name}_phase3`, `assets/bosses/${name}/${name}_phase3.png`);
+                    // 动态注册 12 个阶段的贴图
+                    for(let i=1; i<=12; i++) {
+                        AssetManager.add(`boss_${name}_phase${i}`, `assets/bosses/${name}/${name}_phase${i}.png`);
+                    }
                 });
                 
                 // 🛡️ 核心修复：不再等待 AssetManager.loadAll() 阻塞主流程
