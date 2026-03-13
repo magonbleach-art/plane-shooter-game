@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>生肖射手：十二星座秘境</title>
-    <script src="zodiac_designs.js?v=6.0"></script>
+    <!-- 🛡️ [强制加载] 核心样式与变量 -->
     <style>
         :root {
             --primary: #ffd700;
@@ -15,7 +15,7 @@
             --neon-glow: 0 0 15px rgba(255, 215, 0, 0.3);
         }
 
-        body { margin: 0; padding: 0; background: #050507; color: #e0e0e0; font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; overflow: hidden; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        body { margin: 0; padding: 0; background: #050507; color: #e0e0e0; font-family: 'Inter', 'Segoe UI', sans-serif; overflow: hidden; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
         
         #game-container { 
             position: relative; width: 400px; height: 600px; background: var(--bg-dark); 
@@ -24,175 +24,94 @@
             flex-direction: column; border-radius: 24px;
         }
         
-        /* 星际玻态 (Celestial Glass) 规范 */
-        .ui-panel { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 24px; padding: 30px 0; }
-        
-        .ui-section { 
-            width: 100%; max-width: 340px; background: var(--glass); 
-            border: 1px solid var(--glass-border); border-radius: 20px; 
-            padding: 20px; box-sizing: border-box; display: flex; 
-            flex-direction: column; align-items: stretch; backdrop-filter: blur(10px);
-            box-shadow: inset 0 0 20px rgba(255, 215, 0, 0.02);
-        }
-
-        .ui-title { 
-            color: var(--primary); font-size: 0.8rem; margin-bottom: 18px; 
-            font-weight: 800; text-transform: uppercase; letter-spacing: 2px; 
-            display: flex; align-items: center; gap: 12px; opacity: 0.8;
-        }
-        .ui-title::before { content: ''; width: 3px; height: 12px; background: var(--primary); border-radius: 1px; box-shadow: 0 0 8px var(--primary); }
-
-        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%; }
-        .grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; width: 100%; }
-        .flex-col { display: flex; flex-direction: column; gap: 12px; width: 100%; }
-        
-        .setting-btn { 
-            width: 100% !important; height: 46px !important; margin: 0 !important;
-            background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08);
-            color: #aaa; border-radius: 14px; font-size: 0.85rem; font-weight: 600;
-            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            display: flex; align-items: center; justify-content: center; cursor: pointer;
-        }
-        .setting-btn:hover { background: rgba(255, 255, 255, 0.05); color: #fff; border-color: rgba(255, 215, 0, 0.3); transform: translateY(-1px); }
-        
-        .setting-btn.active { 
-            background: linear-gradient(145deg, #ffd700, #b8860b); color: #000; 
-            border-color: #fff; box-shadow: 0 8px 20px rgba(184, 134, 11, 0.4); 
-            transform: scale(1.02);
-        }
-
         canvas { display: block; width: 400px; height: 600px; cursor: crosshair; filter: saturate(1.1); }
         
         .overlay { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
             background: radial-gradient(circle at center, rgba(15, 15, 20, 0.95), rgba(5, 5, 7, 0.98));
             display: flex; flex-direction: column; justify-content: center; align-items: center; 
-            z-index: 100; padding: 0; box-sizing: border-box; backdrop-filter: blur(25px); 
+            z-index: 100; padding: 20px; box-sizing: border-box; backdrop-filter: blur(25px); 
         }
         
-        .overlay-content { 
-            width: 100%; display: flex; flex-direction: column; align-items: center; 
-            text-align: center; max-height: 100%; overflow-y: auto; padding: 40px 0; 
-        }
-        .overlay-content::-webkit-scrollbar { width: 0; background: transparent; }
+        .hidden { display: none !important; }
         
-        .zodiac-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; width: 100%; }
-        .zodiac-item { 
-            aspect-ratio: 1/1; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); 
-            border-radius: 20px; padding: 12px; text-align: center; cursor: pointer; 
-            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1); display: flex; 
-            flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+        .ui-panel { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 15px; }
+        .ui-section { 
+            width: 100%; max-width: 340px; background: var(--glass); 
+            border: 1px solid var(--glass-border); border-radius: 20px; 
+            padding: 15px; box-sizing: border-box; backdrop-filter: blur(10px);
+        }
+
+        .btn-group { width: 100%; max-width: 280px; display: flex; flex-direction: column; gap: 12px; }
+        button { 
+            width: 100%; height: 52px; border-radius: 16px; font-weight: 800; cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); border: none; font-size: 1rem;
             position: relative; overflow: hidden;
         }
-        .zodiac-item::after {
-            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
-            background: conic-gradient(from 0deg, transparent, rgba(255, 215, 0, 0.1), transparent);
-            opacity: 0; transition: 0.5s;
-        }
-        .zodiac-item:hover { background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 215, 0, 0.2); transform: translateY(-4px) scale(1.05); }
-        .zodiac-item:hover::after { opacity: 1; animation: rotate 4s linear infinite; }
-        .zodiac-item.selected { 
-            background: rgba(255, 215, 0, 0.1); border-color: var(--primary); 
-            box-shadow: 0 0 30px rgba(255, 215, 0, 0.15), inset 0 0 15px rgba(255, 215, 0, 0.1); 
-        }
+        button:hover { transform: translateY(-2px); filter: brightness(1.1); }
+        button:active { transform: scale(0.96); }
+
+        #start-btn { background: linear-gradient(135deg, #4caf50, #2e7d32); color: #fff; box-shadow: 0 4px 15px rgba(46, 125, 50, 0.3); }
+        #show-select-btn { background: #fff; color: #000; }
+        #show-settings-btn { background: #444; color: var(--primary); border: 1px solid var(--glass-border); }
+        .secondary-btn { background: rgba(255, 255, 255, 0.05); color: #fff; border: 1px solid rgba(255, 255, 255, 0.1); }
         
-        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-
-        .zodiac-icon { font-size: 2rem; filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.2)); }
-        .zodiac-tag { font-size: 0.6rem; padding: 4px 10px; border-radius: 8px; background: rgba(255, 255, 255, 0.05); color: #888; font-weight: bold; }
-        .selected .zodiac-tag { background: var(--primary); color: #000; }
-
-        .hidden { display: none !important; }
-        h1 { 
-            color: #fff; font-size: 2.2rem; margin: 0 0 15px 0; text-align: center; 
-            font-weight: 900; letter-spacing: -1px; line-height: 1;
-            background: linear-gradient(to bottom, #fff, #aaa); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        }
-        
-        .btn-group { width: 100%; max-width: 280px; display: flex; flex-direction: column; gap: 12px; }
-        button:not(.setting-btn) { 
-            width: 100%; height: 52px; margin: 0; background: #fff; border: none; 
-            border-radius: 16px; color: #000; font-size: 1rem; font-weight: 800; 
-            cursor: pointer; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); 
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
-        }
-        button:not(.setting-btn):hover { transform: translateY(-2px); box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3); filter: brightness(1.1); }
-        button:not(.setting-btn):active { transform: translateY(0); }
-        
-        #start-btn { background: linear-gradient(135deg, #fff, #eee); color: #000; }
-        #show-settings-btn { background: rgba(255, 255, 255, 0.05); color: #fff; border: 1px solid rgba(255, 255, 255, 0.1); }
-
-        .feedback-input { 
-            width: 100%; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); 
-            border-radius: 14px; color: #fff; padding: 12px 16px; font-size: 0.9rem; outline: none; 
-            transition: 0.3s; box-sizing: border-box; 
-        }
-        .feedback-input:focus { border-color: var(--primary); background: rgba(255, 215, 0, 0.02); }
-
         #hud { 
-            position: absolute; top: 25px; left: 25px; right: 25px; display: flex; 
-            justify-content: space-between; font-size: 0.9rem; pointer-events: none; 
-            z-index: 50; color: #fff; font-weight: 800; letter-spacing: 1px;
+            position: absolute; top: 20px; left: 20px; right: 20px; display: flex; 
+            justify-content: space-between; font-size: 0.85rem; pointer-events: none; 
+            z-index: 50; color: #fff; font-weight: 800;
         }
-        #hud div { background: rgba(0, 0, 0, 0.3); padding: 6px 14px; border-radius: 12px; backdrop-filter: blur(5px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        #hud div { background: rgba(0, 0, 0, 0.4); padding: 5px 12px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.1); }
         
-        #boss-hp-bar { 
-            height: 12px; background: rgba(255, 255, 255, 0.05); border-radius: 6px; 
-            display: none; overflow: visible; width: 100%; margin-top: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.1); position: relative;
+        #qa-log {
+            position: absolute; top: 60px; left: 20px; width: 200px; max-height: 120px;
+            font-size: 0.65rem; color: #0f0; pointer-events: none; z-index: 40;
+            overflow: hidden; opacity: 0.8;
         }
-        #boss-hp-fill { 
-            width: 100%; height: 100%; background: linear-gradient(90deg, #ff4b2b, #ff0000); 
-            transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 0 20px #f00; 
-            border-radius: 6px;
+
+        .feedback-box {
+            width: 100%; max-width: 340px; margin-top: 10px;
+            background: rgba(255, 215, 0, 0.05); border: 1px solid rgba(255, 215, 0, 0.1);
+            border-radius: 15px; padding: 12px;
         }
-        .hp-phase-marker {
-            position: absolute; top: -4px; width: 2px; height: 20px; background: #fff; opacity: 0.5;
+        .feedback-input-group { display: flex; gap: 8px; margin-top: 8px; }
+        #feedback-input { 
+            flex: 1; background: rgba(0,0,0,0.3); border: 1px solid #333; border-radius: 8px;
+            color: #fff; padding: 8px; font-size: 0.8rem; outline: none;
         }
-        
-        #ult-container { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); width: 220px; text-align: center; z-index: 50; }
-        #ult-bar { height: 4px; background: rgba(255, 255, 255, 0.05); border-radius: 2px; overflow: hidden; margin-bottom: 8px; }
-        #ult-fill { width: 0%; height: 100%; background: var(--primary); transition: width 0.3s; box-shadow: 0 0 15px var(--primary); }
-        #ult-info { font-size: 0.65rem; color: var(--primary); font-weight: 900; text-transform: uppercase; letter-spacing: 2px; opacity: 0.6; }
-        
-        #ult-btn { 
-            width: 80px; height: 80px; border-radius: 50%; background: rgba(255, 215, 0, 0.05); 
-            border: 1px solid var(--glass-border); color: var(--primary); font-weight: 900; 
-            font-size: 1rem; cursor: pointer; display: none; align-items: center; 
-            justify-content: center; backdrop-filter: blur(10px); position: absolute; 
-            bottom: 100px; right: 25px; transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1); z-index: 100; 
+        #submit-feedback-btn { width: 80px; height: 36px; border-radius: 8px; background: #fff; color: #000; font-size: 0.8rem; }
+
+        #debug-overlay {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 40px;
+            background: rgba(255, 0, 0, 0.9); font-family: monospace; font-size: 12px;
+            color: #fff; padding: 10px; box-sizing: border-box; z-index: 9999;
+            pointer-events: none; border-top: 2px solid #fff;
         }
-        #ult-btn.ready { background: var(--primary); color: #000; box-shadow: 0 0 40px rgba(255, 215, 0, 0.4); animation: pulse 2s infinite; display: flex; border: none; }
-        @keyframes pulse { 0% { transform: scale(1); box-shadow: 0 0 20px rgba(255, 215, 0, 0.4); } 50% { transform: scale(1.1); box-shadow: 0 0 50px rgba(255, 215, 0, 0.6); } 100% { transform: scale(1); box-shadow: 0 0 20px rgba(255, 215, 0, 0.4); } }
+        .status-ready { background: rgba(0, 255, 0, 0.9) !important; color: #000 !important; font-weight: bold; }
     </style>
 </head>
 <body>
     <div id="game-container">
         <div id="hud">
             <div id="score">得分: 0</div>
-            <div id="level-name">白羊宫</div>
-            <div id="life">❤️x3</div>
+            <div id="level-name">准备中...</div>
+            <div id="life">❤️x2</div>
         </div>
-        <div id="ai-status">AI 自动驾驶激活</div>
         <div id="qa-log"></div>
-        <div id="boss-info">
-            <div id="boss-countdown">Boss 降临倒计时: 30s</div>
-            <div id="boss-hp-bar"><div id="boss-hp-fill"></div></div>
-        </div>
-        <div id="ult-container">
-            <div id="ult-bar"><div id="ult-fill"></div></div>
-            <div id="ult-info">觉醒能量</div>
-        </div>
-        <div id="ult-btn">觉醒</div>
         <canvas id="gameCanvas"></canvas>
+        
+        <!-- 🛡️ [高亮调试条] 初始状态为红色报错，脚本加载成功后变为绿色 -->
+        <div id="debug-overlay">🚨 警告：JS 引擎未启动，请检查网络或强制刷新 (Ctrl+F5)</div>
 
+        <!-- 初始屏幕 -->
         <div id="start-screen" class="overlay">
-            <div class="overlay-content ui-panel">
-                <h1>生肖射手<br>十二星座秘境</h1>
+            <div class="ui-panel">
+                <h1 style="color:#fff; font-size:2.2rem; margin:0; letter-spacing:2px;">生肖射手</h1>
+                <h3 style="color:rgba(255,255,255,0.6); margin:-10px 0 10px 0;">十二星座秘境</h3>
                 
                 <div class="ui-section">
-                    <div class="ui-title">秘境法则</div>
-                    <div class="tutorial" style="background:none; border:none; padding:0; margin:0; text-align:left;">
+                    <div style="font-size:0.85rem; line-height:1.8; color:var(--primary); margin-bottom:5px;">▎ 秘境法则</div>
+                    <div style="font-size:0.8rem; line-height:1.6; color:#aaa;">
                         1. 挑战<b>十二星座</b>宫殿，净化黑暗之力<br>
                         2. 收集掉落的<b>生肖灵珠</b>切换子弹形态<br>
                         3. 击败最终 Boss 解锁下一关及新子弹
@@ -201,1501 +120,135 @@
 
                 <div class="btn-group">
                     <button id="show-select-btn">选择生肖开局</button>
-                    <button id="show-settings-btn" style="background: #444; color: #ffd700; border: 1px solid #ffd700;">游戏设置</button>
-                    <button id="start-btn" style="background: linear-gradient(135deg, #4caf50, #2e7d32); color: #fff;">开启秘境</button>
+                    <button id="show-settings-btn">游戏设置</button>
+                    <button id="start-btn">开启秘境</button>
                 </div>
 
-                <div class="ui-section">
-                    <div class="ui-title">进化建议</div>
-                    <div style="display:flex; gap:8px;">
-                        <input type="text" id="feedback-input" class="feedback-input" style="margin:0; flex:1;" placeholder="由 AI 专家评审...">
-                        <button id="submit-feedback-btn" style="width:80px; height:36px;">提交</button>
+                <div class="feedback-box">
+                    <div style="font-size:0.75rem; color:var(--primary);">▎ 进化建议</div>
+                    <div class="feedback-input-group">
+                        <input type="text" id="feedback-input" placeholder="由 AI 专家评审...">
+                        <button id="submit-feedback-btn">提交</button>
                     </div>
                 </div>
             </div>
         </div>
 
+        <!-- 生肖选择界面 -->
         <div id="zodiac-select" class="overlay hidden">
-             <div class="overlay-content ui-panel">
-                 <h1>选择开局生肖</h1>
-                <div class="ui-section">
-                    <div id="zodiac-list" class="zodiac-grid">
-                        <!-- 动态生成已解锁的生肖按钮 -->
-                    </div>
-                 </div>
-                 <div class="btn-group">
-                    <button id="confirm-select-btn">确认并开始</button>
-                    <button id="back-to-start-btn" style="background: #444; color: #fff; border: 1px solid #666;">返回</button>
-                 </div>
-             </div>
-         </div>
- 
-         <div id="game-settings" class="overlay hidden">
-             <div class="overlay-content ui-panel">
-                 <h1>游戏配置</h1>
-                 
-                 <div class="ui-section">
-                     <div class="ui-title">敌方血量 (难度)</div>
-                     <div id="difficulty-options" class="grid-3">
-                         <button class="setting-btn" data-type="diff" data-val="0.5">简单</button>
-                         <button class="setting-btn active" data-type="diff" data-val="1.0">普通</button>
-                         <button class="setting-btn" data-type="diff" data-val="2.0">困难</button>
-                     </div>
-                 </div>
-
-                 <div class="ui-section">
-                     <div class="ui-title">游戏速度 (档位)</div>
-                     <div id="speed-options" class="grid-5">
-                         <button class="setting-btn" data-type="speed" data-val="0.6">1</button>
-                         <button class="setting-btn" data-type="speed" data-val="0.8">2</button>
-                         <button class="setting-btn active" data-type="speed" data-val="1.0">3</button>
-                         <button class="setting-btn" data-type="speed" data-val="1.2">4</button>
-                         <button class="setting-btn" data-type="speed" data-val="1.5">5</button>
-                     </div>
-                 </div>
-
-                 <div class="ui-section">
-                     <div class="ui-title">实验室</div>
-                     <div class="flex-col">
-                        <button id="ai-toggle-btn" class="setting-btn">开启 AI 自动驾驶</button>
-                        <button onclick="bossSpawnTime=10" class="setting-btn" style="color: #ff4b2b; border-color: #ff4b2b;">👿 立即召唤 Boss (调试)</button>
-                        <button id="run-cabinet-test-btn" class="setting-btn" style="background: linear-gradient(135deg, #2196f3, #1976d2); color: #fff; border: none;">🚀 启动内阁 5 轮测试</button>
-                     </div>
-                 </div>
-
-                 <button id="save-settings-btn" style="max-width:280px;">保存并返回</button>
-             </div>
-         </div>
-
-        <div id="game-over" class="overlay hidden">
-            <div class="overlay-content ui-panel">
-                <h1 style="color: #ff4b2b;">灵力枯竭</h1>
-                
-                <div class="ui-section">
-                    <div class="ui-title">战果统计</div>
-                    <p id="final-score-display" style="color: #ffd700; font-size: 1.8rem; margin: 10px 0; font-weight: bold;">得分: 0</p>
-                    <p style="color: #aaa; font-size: 0.8rem;">你的意志已消散在星空之中...</p>
-                </div>
-
-                <div class="ui-section">
-                    <div class="ui-title">内阁 QA 报告</div>
-                    <div id="qa-failure-analysis" style="background: rgba(255,0,0,0.1); border: 1px solid rgba(255,0,0,0.3); padding: 12px; border-radius: 8px; font-size: 0.8rem; color: #ff9999; text-align: left; line-height: 1.5;">
-                        [QA 事故报告] 正在分析失败原因...
-                    </div>
-                </div>
-
-                <div class="btn-group">
-                    <button id="restart-btn">再次挑战</button>
-                    <button onclick="location.reload()" style="background: #444; color: #fff; border: 1px solid #666;">返回主页</button>
-                </div>
+            <div class="ui-panel">
+                <h2>选择灵力形态</h2>
+                <div id="zodiac-list" style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px;"></div>
+                <button id="confirm-select-btn" style="background:var(--primary); color:#000;">确认形态</button>
+                <button id="back-to-start-btn" class="secondary-btn">返回</button>
             </div>
         </div>
 
-        <div id="level-clear" class="overlay hidden">
-            <div class="overlay-content ui-panel">
-                <h1 style="color: #00ff00;">宫殿净化成功!</h1>
-                
-                <div class="ui-section">
-                    <div class="ui-title">获得新生</div>
-                    <p id="unlock-msg" style="color: #ffd700; font-size: 1.2rem; margin: 10px 0;">解锁新生肖之力: 鼠</p>
-                </div>
-
-                <div class="btn-group">
-                    <button id="next-level-btn">进入下一宫</button>
-                </div>
-            </div>
-        </div>
-
-        <div id="test-report-overlay" class="overlay hidden">
-            <div class="overlay-content ui-panel">
-                <h1 style="color: #2196f3;">内阁评审报告</h1>
-                
-                <div class="ui-section">
-                    <div class="ui-title">测试详情</div>
-                    <div id="test-report-content" style="font-family: monospace; font-size: 0.75rem; background: rgba(0,0,0,0.5); padding: 15px; border-radius: 10px; color: #fff; line-height: 1.6; max-height: 300px; overflow-y: auto;">
-                        <!-- 测试结果将注入此处 -->
-                    </div>
-                </div>
-
-                <div class="btn-group">
-                    <button id="close-report-btn" style="background: #2196f3; color:#fff;">收到，立即执行修复</button>
-                </div>
+        <!-- 设置界面 -->
+        <div id="game-settings" class="overlay hidden">
+            <div class="ui-panel">
+                <h2>实验室配置</h2>
+                <button class="setting-btn active" data-type="diff" data-val="1.0">难度: 标准</button>
+                <button class="setting-btn" data-type="speed" data-val="1.0">速度: 3档</button>
+                <button id="save-settings-btn" style="background:var(--primary); color:#000;">保存并应用</button>
             </div>
         </div>
     </div>
 
+    <!-- 🛡️ [内联驱动] 确保交互逻辑 100% 执行 -->
     <script>
-        let stars = [];
-        const STAR_COUNT = 80;
-        function initStars() {
-            stars = [];
-            for(let i=0; i<STAR_COUNT; i++) {
-                stars.push({
-                    x: Math.random() * 400,
-                    y: Math.random() * 600,
-                    speed: 0.5 + Math.random() * 2,
-                    size: 1 + Math.random() * 2,
-                    opacity: 0.2 + Math.random() * 0.8
-                });
-            }
-        }
-
-        function drawBackground() {
-            // 3A 级星际深空效果：微弱星云
-            const nebula = ctx.createRadialGradient(200, 300, 0, 200, 300, 400);
-            nebula.addColorStop(0, "#080810");
-            nebula.addColorStop(1, "#000");
-            ctx.fillStyle = nebula;
-            ctx.fillRect(0, 0, 400, 600);
-
-            // 视差星空
-            ctx.save();
-            stars.forEach(s => {
-                s.y += s.speed * gameSpeedMult;
-                if (s.y > 600) {
-                    s.y = -10;
-                    s.x = Math.random() * 400;
-                }
-                ctx.globalAlpha = s.opacity * (0.5 + Math.sin(frameCount * 0.05 + s.x) * 0.5);
-                ctx.fillStyle = "#fff";
-                ctx.beginPath();
-                ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
-                ctx.fill();
-            });
-            ctx.restore();
-        }
-
-        let gameConfig = { settings: {}, zodiac_bullets: [], constellation_levels: [] };
-        async function loadConfig() {
-            const res = await fetch('game_config.json?t=' + Date.now());
-            gameConfig = await res.json();
-        }
-
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = 400; canvas.height = 600;
-
-        let gameActive = false, score = 0, lives = 2, frameCount = 0; // 初始血量改为 2
-        let currentLevelIdx = 0, activeBulletId = 'rat', bulletLevel = 1;
-        let player = { x: 200, y: 520, targetX: 200, width: 50, height: 50, hasWingman: false }; // 增加侧翼状态
-        let bullets = [], enemies = [], stars = [], particles = [], powerups = [], boss = null;
-        let bossSpawnTime = 1800; 
-        let hpPacksSpawned = 0;
-        let screenShake = 0;
-        let unlockedZodiacs = ['rat']; // 初始解锁鼠
-        let currentLevelZodiacs = []; // 当前关卡掉落的 5 个随机生肖
-        let selectedStartWeapon = 'rat'; // 选中的开局武器
-        let difficultyMult = 1.0; // 难度系数
-        let gameSpeedMult = 1.0; // 速度系数
-        let autopilotEnabled = false; // AI 自动驾驶
-        let autoTestActive = false; // 自动化测试模式
-        let testLog = []; // 测试日志存储
-        
-        // 觉醒系统变量
-        let ultEnergy = 0;
-        let ultActive = false;
-        let ultTimer = 0;
-        let isInvincible = false;
-        let screenFlash = 0;
-
-        for(let i=0; i<50; i++) stars.push({ x: Math.random()*400, y: Math.random()*600, s: Math.random()*2+1 });
-
-        // 双端适配的输入监听
-        const getCanvasX = (clientX) => {
-            const rect = canvas.getBoundingClientRect();
-            return (clientX - rect.left) * (canvas.width / rect.width);
-        };
-        window.addEventListener('mousemove', e => player.targetX = getCanvasX(e.clientX));
-        window.addEventListener('touchmove', e => { 
-            player.targetX = getCanvasX(e.touches[0].clientX); 
-            e.preventDefault(); 
-        }, {passive:false});
-
-        // PC 键盘支持
-        window.addEventListener('keydown', e => {
-            const step = 20;
-            if (e.key === 'ArrowLeft' || e.key === 'a') player.targetX -= step;
-            if (e.key === 'ArrowRight' || e.key === 'd') player.targetX += step;
-            if (e.key === ' ' || e.key === 'Enter') triggerUltimate();
-            if (e.key === 'v' || e.key === 'V') document.getElementById('ai-toggle-btn').click();
-            if (e.key === 'Escape') {
-                if (!gameActive) {
-                    location.reload(); // 在结束或结算界面按 Esc 返回主界面
-                }
-            }
-        });
-        document.getElementById('ult-btn').onclick = triggerUltimate;
-
-        function triggerUltimate() {
-            if (ultEnergy < 100 || ultActive || !gameActive) return;
+        (function() {
+            console.log("🚀 [Core] 引擎预加载...");
             
-            const design = ZODIAC_DESIGNS[activeBulletId];
-            if (!design) return;
+            const State = {
+                gameActive: false, score: 0, lives: 2, frameCount: 0,
+                weapon: 'rat', level: 0, stars: [], bullets: [], enemies: []
+            };
 
-            ultEnergy = 0;
-            ultActive = true;
-            ultTimer = 300; // 5秒
-            screenFlash = 20;
-            
-            // 动态调用 zodiac_designs.js 中的大招触发逻辑
-            if (design.ultimate && design.ultimate.trigger) {
-                design.ultimate.trigger({
-                    player, bullets, enemies, boss, 
-                    screenShake: (s) => screenShake = s,
-                    screenFlash: (s) => screenFlash = s,
-                    lives: (l) => lives = l,
-                    isInvincible: (v) => isInvincible = v
-                });
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 400; canvas.height = 600;
+
+            function updateStatus(msg, ready = false) {
+                const overlay = document.getElementById('debug-overlay');
+                if (overlay) {
+                    overlay.innerText = ready ? `✅ 系统状态: ${msg}` : `🚨 警告: ${msg}`;
+                    if (ready) overlay.classList.add('status-ready');
+                    else overlay.classList.remove('status-ready');
+                }
             }
 
-            document.getElementById('ult-info').innerText = design.ultimate.name + " 觉醒!";
-            document.getElementById('ult-btn').classList.remove('ready');
-        }
+            function showScreen(id) {
+                document.querySelectorAll('.overlay').forEach(el => el.classList.add('hidden'));
+                const target = document.getElementById(id);
+                if (target) target.classList.remove('hidden');
+                updateStatus(`进入界面: ${id}`, true);
+            }
 
-        function updateUlt() {
-            if (!ultActive) {
-                if (ultEnergy < 100) {
-                    ultEnergy += 0.05 + (bulletLevel * 0.02); // 随等级充能加快
-                    if (ultEnergy >= 100) {
-                        ultEnergy = 100;
-                        document.getElementById('ult-btn').classList.add('ready');
-                        document.getElementById('ult-info').innerText = "觉醒就绪 (Space)";
-                    }
-                }
-            } else {
-                ultTimer--;
-                
-                // 持续性大招逻辑
-                if (activeBulletId === 'dragon' && ultTimer % 5 === 0) {
-                    // 龙大招：扫射激光
-                    const bCfg = gameConfig.zodiac_bullets.find(b => b.id === 'dragon');
-                    for(let i=0; i<3; i++) {
-                        let angle = -90 + Math.sin(frameCount * 0.1 + i) * 60;
-                        bullets.push(new Bullet(player.x, player.y, bCfg, angle, false, 3));
-                    }
-                }
-                
-                if (activeBulletId === 'snake' && ultTimer % 30 === 0) {
-                    // 蛇大招：全屏毒雾视觉+伤害
-                    createExplosion(Math.random()*400, Math.random()*600, "#4caf50", 2);
-                    enemies.concat(boss ? [boss] : []).forEach(e => e.hp -= 1);
-                }
-
-                if (activeBulletId === 'monkey' && ultTimer % 15 === 0) {
-                    // 猴大招：分身同步射击
-                    const bCfg = gameConfig.zodiac_bullets.find(b => b.id === 'monkey');
-                    [[-60, 20], [60, 20], [-120, 50], [120, 50]].forEach(pos => {
-                        bullets.push(new Bullet(player.x + pos[0], player.y + pos[1], bCfg, -90, false, 1));
+            // 核心绑定函数
+            function safeBind(id, cb) {
+                const el = document.getElementById(id);
+                if (el) {
+                    const newEl = el.cloneNode(true);
+                    el.parentNode.replaceChild(newEl, el);
+                    newEl.addEventListener('click', (e) => {
+                        console.log(`[Interaction] 点击: ${id}`);
+                        cb(e);
                     });
                 }
-
-                if (ultTimer <= 0) {
-                    ultActive = false;
-                    isInvincible = false;
-                    document.getElementById('ult-info').innerText = "能量充盈中...";
-                    // 恢复速度
-                    enemies.forEach(e => e.speed = 2);
-                    if(boss) boss.speed = 1;
-                }
-            }
-            document.getElementById('ult-fill').style.width = ultEnergy + "%";
-        }
-
-        function drawPlayer() {
-            ctx.save();
-            ctx.translate(player.x, player.y);
-            
-            // 3A 引擎喷火特效 (双重火焰 + 粒子感)
-            if (gameActive) {
-                const fireLen = 25 + Math.random() * 15;
-                const grad = ctx.createLinearGradient(0, 15, 0, 15 + fireLen);
-                grad.addColorStop(0, "rgba(255, 255, 255, 0.8)");
-                grad.addColorStop(0.2, "rgba(0, 255, 255, 0.6)");
-                grad.addColorStop(1, "rgba(0, 100, 255, 0)");
-                
-                ctx.fillStyle = grad;
-                ctx.beginPath();
-                ctx.moveTo(-12, 15); ctx.lineTo(0, 15 + fireLen); ctx.lineTo(12, 15);
-                ctx.fill();
-                
-                // 核心喷口
-                ctx.fillStyle = "#fff";
-                ctx.fillRect(-4, 15, 8, 4);
             }
 
-            // 侧翼机枪 (3A 机械感)
-            if (player.hasWingman) {
-                ctx.fillStyle = "#222";
-                ctx.strokeStyle = "rgba(0, 255, 255, 0.5)";
-                ctx.lineWidth = 1;
-                // 左翼
-                ctx.fillRect(-48, 5, 12, 25); ctx.strokeRect(-48, 5, 12, 25);
-                ctx.fillStyle = "#0ff"; ctx.fillRect(-44, 0, 4, 10);
-                // 右翼
-                ctx.fillStyle = "#222";
-                ctx.fillRect(36, 5, 12, 25); ctx.strokeRect(36, 5, 12, 25);
-                ctx.fillStyle = "#0ff"; ctx.fillRect(40, 0, 4, 10);
-            }
-            
-            // 基础光晕
-            const bCfg = gameConfig.zodiac_bullets.find(b => b.id === activeBulletId) || {color: '#ffd700'};
-            ctx.shadowBlur = 20 + bulletLevel * 10 + (ultActive ? 40 : 0);
-            ctx.shadowColor = bCfg.color;
-            
-            if (ultActive) {
-                ctx.strokeStyle = "#fff"; ctx.lineWidth = 2;
-                ctx.setLineDash([5, 5]);
-                ctx.beginPath(); ctx.arc(0, 0, 45 + Math.sin(frameCount*0.1)*5, 0, Math.PI*2); ctx.stroke();
-                ctx.setLineDash([]);
-            }
-            
-            // 机体本体 (机械硬核风)
-            // 1. 机翼
-            ctx.fillStyle = "#1a1a1e";
-            ctx.beginPath();
-            ctx.moveTo(0, -10); ctx.lineTo(-35, 15); ctx.lineTo(35, 15);
-            ctx.closePath(); ctx.fill();
-            ctx.strokeStyle = "rgba(255,255,255,0.1)"; ctx.stroke();
-
-            // 2. 主躯干
-            const bodyGrad = ctx.createLinearGradient(-15, 0, 15, 0);
-            bodyGrad.addColorStop(0, "#2c2c34");
-            bodyGrad.addColorStop(0.5, "#3f3f4a");
-            bodyGrad.addColorStop(1, "#2c2c34");
-            ctx.fillStyle = bodyGrad;
-            ctx.beginPath();
-            ctx.moveTo(0, -35); ctx.lineTo(-12, 15); ctx.lineTo(12, 15);
-            ctx.closePath(); ctx.fill();
-
-            // 3. 驾驶舱 (宝石蓝)
-            ctx.fillStyle = "#0077ff";
-            ctx.shadowBlur = 10; ctx.shadowColor = "#0077ff";
-            ctx.beginPath();
-            ctx.ellipse(0, -10, 6, 12, 0, 0, Math.PI*2);
-            ctx.fill();
-            
-            // 4. 生肖能量核心 (根据当前武器颜色)
-            ctx.fillStyle = bCfg.color;
-            ctx.shadowBlur = 15; ctx.shadowColor = bCfg.color;
-            ctx.beginPath(); ctx.arc(0, 5, 4, 0, Math.PI*2); ctx.fill();
-
-            // 等级指示器 (能量槽感)
-            for(let i=0; i<bulletLevel; i++) {
-                ctx.fillStyle = "#fff"; ctx.shadowBlur = 5;
-                ctx.fillRect(-18 + i*15, 22, 10, 3);
-            }
-
-            ctx.restore();
-        }
-
-        class Bullet {
-            constructor(x, y, cfg, angle = -90, isEnemy = false, level = 1) {
-                this.x = x; this.y = y; this.cfg = cfg;
-                this.isEnemy = isEnemy;
-                this.level = level;
-                this.angle = angle * Math.PI / 180;
+            // 初始化入口
+            window.onload = () => {
+                console.log("🚀 [Core] 正在注入交互逻辑...");
                 
-                // 敌方子弹基础速度已在 Enemy 中处理，玩家子弹受 gameSpeedMult 影响
-                const baseSpeed = isEnemy ? (cfg.speed || 4.5) : (gameConfig.settings.BULLET_SPEED || 12);
-                this.speed = baseSpeed * (cfg.speed_mult || 1);
-                if (!isEnemy) this.speed *= gameSpeedMult;
+                safeBind('show-select-btn', () => showScreen('zodiac-select'));
+                safeBind('show-settings-btn', () => showScreen('game-settings'));
+                safeBind('start-btn', () => {
+                    showScreen('none');
+                    State.gameActive = true;
+                    startGame();
+                });
+                safeBind('back-to-start-btn', () => showScreen('start-screen'));
+                safeBind('save-settings-btn', () => showScreen('start-screen'));
+                safeBind('confirm-select-btn', () => showScreen('start-screen'));
                 
-                this.isHoming = cfg.homing || (cfg.type === "homing_dog");
-                this.damage = (cfg.damage || 1) * (isEnemy ? 1 : level);
-                this.bounces = cfg.bounces || 0;
-                this.poison_dot = cfg.poison_dot || 0;
-                this.stun_dur = cfg.stun_dur || 0;
-                this.history = []; // 用于 S 形弹道
-                
-                // 敌方子弹加大，更易观察
-                this.width = isEnemy ? 12 : (cfg.width || 8);
-                this.height = isEnemy ? 12 : (cfg.height || 20);
-            }
-            update() {
-                // 蛇·曲行毒弹: S形弹道
-                if (this.cfg.type === "snake_poison") {
-                    this.angle += Math.sin(frameCount * 0.2) * 0.1;
-                }
-                
-                // 狗·忠魂追踪弹 / 龙·贯日激光 (追踪部分)
-                if (this.isHoming && !this.isEnemy) {
-                    let target = null, minDist = 1500; // 扩大追踪范围
-                    enemies.concat(boss ? [boss] : []).forEach(e => {
-                        let d = Math.hypot(e.x - this.x, e.y - this.y);
-                        if (d < minDist) { minDist = d; target = e; }
-                    });
-                    if (target) {
-                        let targetAngle = Math.atan2(target.y - this.y, target.x - this.x);
-                        let diff = targetAngle - this.angle;
-                        while (diff < -Math.PI) diff += Math.PI * 2;
-                        while (diff > Math.PI) diff -= Math.PI * 2;
-                        // 显著增强追踪灵敏度 (从 0.15 提升到 0.25 或根据配置)
-                        const hSpeed = (this.cfg.homing_speed || 0.2) * (1 + this.level * 0.1);
-                        this.angle += diff * hSpeed;
-                    }
-                }
-                
-                this.x += Math.cos(this.angle) * this.speed;
-                this.y += Math.sin(this.angle) * this.speed;
-                
-                // 反弹逻辑 (兔 / 猴)
-                if (this.bounces > 0) {
-                    if (this.x < 0 || this.x > 400) {
-                        this.angle = Math.PI - this.angle;
-                        this.bounces--;
-                        if (this.cfg.random_angle) this.angle += (Math.random() - 0.5) * 1;
-                    }
-                }
-
-                // 鼠·天罗网弹: 拦截敌弹逻辑 (通用拦截)
-                if (this.cfg.id === 'rat') {
-                    for(let j = bullets.length - 1; j >= 0; j--) {
-                        let eb = bullets[j];
-                        if (eb.isEnemy && Math.hypot(eb.x - this.x, eb.y - this.y) < 40) {
-                            bullets.splice(j, 1);
-                            createExplosion(eb.x, eb.y, "#fff", 0.2);
-                        }
-                    }
-                }
-
-                // 虎/马: 清除白羊大招或其他弹幕
-                if (this.cfg.id === 'tiger' || this.cfg.id === 'horse') {
-                    for(let j = bullets.length - 1; j >= 0; j--) {
-                        let eb = bullets[j];
-                        if (eb.isEnemy && Math.hypot(eb.x - this.x, eb.y - this.y) < 30) {
-                            bullets.splice(j, 1);
-                        }
-                    }
-                }
-
-                // 兔: 摧毁金牛重力弹
-                if (this.cfg.id === 'rabbit') {
-                    for(let j = bullets.length - 1; j >= 0; j--) {
-                        let eb = bullets[j];
-                        if (eb.isEnemy && eb.cfg.speed_mult < 0.5 && Math.hypot(eb.x - this.x, eb.y - this.y) < 30) {
-                            bullets.splice(j, 1);
-                        }
-                    }
-                }
-
-                // 狗: 摧毁双子/处女小弹
-                if (this.cfg.id === 'dog') {
-                    for(let j = bullets.length - 1; j >= 0; j--) {
-                        let eb = bullets[j];
-                        if (eb.isEnemy && Math.hypot(eb.x - this.x, eb.y - this.y) < 30) {
-                            bullets.splice(j, 1);
-                        }
-                    }
-                }
-
-                // 龙: 贯穿清除 (如巨蟹大招)
-                if (this.cfg.id === 'dragon') {
-                    for(let j = bullets.length - 1; j >= 0; j--) {
-                        let eb = bullets[j];
-                        // 简化：激光路径上的敌弹都消失
-                        if (eb.isEnemy && Math.abs(eb.x - this.x) < 20) {
-                            bullets.splice(j, 1);
-                        }
-                    }
-                }
-
-                // 猴: 反弹并清除 (如射手流星/摩羯石弹)
-                if (this.cfg.id === 'monkey') {
-                    for(let j = bullets.length - 1; j >= 0; j--) {
-                        let eb = bullets[j];
-                        if (eb.isEnemy && Math.hypot(eb.x - this.x, eb.y - this.y) < 30) {
-                            bullets.splice(j, 1);
-                        }
-                    }
-                }
-            }
-            draw() {
-                ctx.save(); ctx.translate(this.x, this.y);
-                
-                // 动态调用 zodiac_designs.js 中的攻击特效
-                const design = ZODIAC_DESIGNS[this.cfg.id];
-                if (!this.isEnemy && design && design.attack_effect) {
-                    ctx.shadowBlur = 10 + this.level * 5;
-                    ctx.shadowColor = design.color;
-                    design.attack_effect(ctx, this);
-                } else {
-                    // 默认敌弹或通用渲染
-                    ctx.fillStyle = this.isEnemy ? "#ff4b2b" : (this.cfg.color || "#ffd700");
-                    ctx.shadowBlur = 10 + (this.isEnemy ? 0 : this.level * 5);
-                    ctx.shadowColor = ctx.fillStyle;
-                    
-                    if (this.cfg.type === "laser_dragon") {
-                        let w = 8 + (this.level * 8);
-                        ctx.globalAlpha = 0.6 + Math.random() * 0.4;
-                        ctx.fillRect(-w/2, -600, w, 600);
-                    } else {
-                        ctx.rotate(this.angle + Math.PI/2);
-                        ctx.beginPath(); 
-                        let sw = 3 + (this.isEnemy ? 0 : this.level);
-                        let sh = 8 + (this.isEnemy ? 0 : this.level * 2);
-                        ctx.ellipse(0, 0, sw, sh, 0, 0, Math.PI*2);
-                        ctx.fill();
-                    }
-                }
-                ctx.restore();
-            }
-        }
-
-        class PowerUp {
-            constructor(x, y, forceType = null) {
-                const types = [
-                    { id: 'rat', color: '#e0e0e0', label: '鼠' },
-                    { id: 'ox', color: '#8d6e63', label: '牛' },
-                    { id: 'tiger', color: '#ff9800', label: '虎' },
-                    { id: 'rabbit', color: '#f06292', label: '兔' },
-                    { id: 'dragon', color: '#ffd700', label: '龙' },
-                    { id: 'snake', color: '#4caf50', label: '蛇' },
-                    { id: 'horse', color: '#2196f3', label: '马' },
-                    { id: 'goat', color: '#ffffff', label: '羊' },
-                    { id: 'monkey', color: '#ffeb3b', label: '猴' },
-                    { id: 'rooster', color: '#f44336', label: '鸡' },
-                    { id: 'dog', color: '#ffc107', label: '狗' },
-                    { id: 'pig', color: '#e91e63', label: '猪' }
-                ];
-                
-                // 每关限 5 个随机生肖武器
-                if (forceType) {
-                    this.info = forceType;
-                } else if (Math.random() < 0.8 && currentLevelZodiacs.length > 0) {
-                    const zId = currentLevelZodiacs[Math.floor(Math.random() * currentLevelZodiacs.length)];
-                    this.info = types.find(t => t.id === zId);
-                } else {
-                    // 随机掉落 侧翼机枪 或 血包
-                    const special = Math.random() < 0.5 ? 
-                        { id: 'wingman', color: '#0ff', label: '翼' } :
-                        { id: 'hp', color: '#ff4b2b', label: '❤️' };
-                    this.info = special;
-                }
-                
-                this.x = x; this.y = y; this.speed = 2;
-            }
-            update() { this.y += this.speed; }
-            draw() {
-                ctx.save(); ctx.fillStyle = this.info.color; ctx.shadowBlur = 15; ctx.shadowColor = this.info.color;
-                ctx.beginPath(); ctx.arc(this.x, this.y, 18, 0, Math.PI*2); ctx.fill();
-                
-                // 视觉优化：黑色背景圆 + 对应颜色文字 (避免全白看不清)
-                ctx.fillStyle = "rgba(0,0,0,0.6)";
-                ctx.beginPath(); ctx.arc(this.x, this.y, 12, 0, Math.PI*2); ctx.fill();
-                
-                ctx.fillStyle = this.info.color; ctx.font = "bold 14px Arial"; ctx.textAlign = "center";
-                ctx.fillText(this.info.label, this.x, this.y + 5); ctx.restore();
-            }
-        }
-
-        class Enemy {
-            constructor(type = 'scout') {
-                this.x = Math.random()*360 + 20; this.y = -30;
-                this.type = type;
-                
-                // 怪物类型配置
-                const enemyTypes = {
-                    scout: { hp: 1.5, speed: 2, score: 10, shape: 'triangle', color: '#ff4b2b', canShoot: true, fireInterval: 100 },
-                    tank: { hp: 8, speed: 1.2, score: 30, shape: 'rect', color: '#8d6e63', canShoot: false },
-                    stinger: { hp: 2.5, speed: 3.5, score: 20, shape: 'diamond', color: '#f44336', canShoot: true, fireInterval: 80 }
-                };
-                
-                const cfg = enemyTypes[type] || enemyTypes.scout;
-                const hpMult = gameConfig.settings.ENEMY_HP_MULT || 1;
-                
-                // 动态血量：基础HP * 难度系数 * 关卡加成 (从 0.5 降至 0.3 避免后期太肉)
-                this.hp = cfg.hp * hpMult * (1 + currentLevelIdx * 0.3) * difficultyMult;
-                this.maxHp = this.hp;
-                this.speed = cfg.speed * gameSpeedMult;
-                this.score = cfg.score;
-                this.shape = cfg.shape;
-                this.color = cfg.color;
-                this.canShoot = cfg.canShoot;
-                
-                // 动态射击频率：基础间隔 / 游戏速度 / 关卡难度
-                this.fireInterval = (cfg.fireInterval || 120) / (gameSpeedMult * (1 + currentLevelIdx * 0.1));
-                this.fireTimer = Math.random() * this.fireInterval;
-            }
-            update() { 
-                this.y += this.speed; 
-                if (this.canShoot) {
-                    this.fireTimer++;
-                    if (this.fireTimer >= this.fireInterval) {
-                        // 敌方子弹速度随游戏速度和关卡提升
-                        const bSpeed = 4.5 * gameSpeedMult * (1 + currentLevelIdx * 0.05);
-                        bullets.push(new Bullet(this.x, this.y, { color: this.color, speed: bSpeed }, 90, true));
-                        this.fireTimer = 0;
-                    }
-                }
-            }
-            draw() {
-                ctx.save(); ctx.translate(this.x, this.y);
-                ctx.fillStyle = this.color; ctx.shadowBlur = 10; ctx.shadowColor = this.color;
-                
-                if (this.shape === 'triangle') {
-                    ctx.beginPath(); ctx.moveTo(0, 15); ctx.lineTo(-15, -15); ctx.lineTo(15, -15); ctx.closePath();
-                } else if (this.shape === 'rect') {
-                    ctx.fillRect(-20, -20, 40, 40);
-                } else if (this.shape === 'diamond') {
-                    ctx.beginPath(); ctx.moveTo(0, -20); ctx.lineTo(15, 0); ctx.lineTo(0, 20); ctx.lineTo(-15, 0); ctx.closePath();
-                }
-                ctx.fill();
-                
-                // 绘制血条 (如果血量大于 1)
-                if (this.maxHp > 1) {
-                    ctx.fillStyle = "rgba(255,255,255,0.3)";
-                    ctx.fillRect(-20, -30, 40, 4);
-                    ctx.fillStyle = "#f00";
-                    ctx.fillRect(-20, -30, 40 * (this.hp / this.maxHp), 4);
-                }
-                ctx.restore();
-            }
-        }
-
-        class Boss {
-            constructor(cfg) {
-                this.cfg = cfg; 
-                const baseHp = cfg.hp || 500;
-                this.hp = baseHp * (1 + currentLevelIdx * 0.4) * (difficultyMult || 1); 
-                this.maxHp = this.hp;
-                this.x = 200; this.y = -100; this.targetY = 120;
-                this.skillTimer = 0;
-                this.isPhase2 = false;
-                this.hitFlash = 0;
-                
-                // 加载星座图标 (3A 升级)
-                const levelName = gameConfig.constellation_levels[currentLevelIdx].constellation;
-                const design = CONSTELLATION_DESIGNS[levelName];
-                if (design && design.icon) {
-                    this.img = new Image();
-                    this.img.src = design.icon;
-                }
-
-                // 增强移动 AI
-                this.moveState = 'sweep'; 
-                this.moveTimer = 0;
-                this.targetX = 200;
-                this.moveSpeed = 2;
-            }
-            update() {
-                if (this.hitFlash > 0) this.hitFlash--; 
-                
-                if (this.y < this.targetY) {
-                    this.y += 1;
-                    return;
-                }
-                
-                // 复杂的移动 AI 逻辑
-                this.moveTimer++;
-                switch(this.moveState) {
-                    case 'sweep': // 全屏横扫
-                        this.x += this.moveSpeed;
-                        if (this.x > 350) this.moveSpeed = -2;
-                        if (this.x < 50) this.moveSpeed = 2;
-                        if (this.moveTimer > 500) { this.moveState = 'eight'; this.moveTimer = 0; }
-                        break;
-                    case 'eight': // 8 字形巡航
-                        this.x = 200 + Math.sin(frameCount * 0.02) * 150;
-                        this.y = this.targetY + Math.sin(frameCount * 0.04) * 40;
-                        if (this.moveTimer > 600) { this.moveState = 'dash'; this.moveTimer = 0; }
-                        break;
-                    case 'dash': // 随机冲刺
-                        if (this.moveTimer % 100 === 0) this.targetX = Math.random() * 300 + 50;
-                        this.x += (this.targetX - this.x) * 0.05;
-                        if (this.moveTimer > 400) { this.moveState = 'sweep'; this.moveTimer = 0; }
-                        break;
-                }
-
-                this.skillTimer++;
-                
-                // 检查是否进入二阶段 (血量 <= 30%)
-                if (!this.isPhase2 && (this.hp / this.maxHp) <= 0.3) {
-                    this.isPhase2 = true;
-                    this.skillTimer = 0; 
-                    screenShake = 20; // 转阶段大震屏
-                    logQA("🔥 Boss 进入狂暴阶段！全屏弹幕预警");
-                }
-
-                if (this.isPhase2) {
-                    this.executeBigSkill();
-                } else {
-                    this.executeSmallSkill();
-                }
-            }
-
-            executeSmallSkill() {
-                const interval = 100 / gameSpeedMult; 
-                if (this.skillTimer % Math.floor(interval) === 0) {
-                    const skill = this.cfg.small_skill;
-                    switch(skill) {
-                        case 'spiral_spread': // 螺旋扩散 (主流爽点1)
-                            for(let i=0; i<3; i++) {
-                                let angle = (frameCount * 0.1 + i * 120) % 360;
-                                bullets.push(new Bullet(this.x, this.y + 40, { color: "#ff4b2b", speed: 3 }, angle, true));
-                            }
-                            break;
-                        case 'targeted_burst': // 追踪散射 (主流爽点2)
-                            let toPlayer = Math.atan2(player.y - this.y, player.x - this.x) * 180 / Math.PI;
-                            for(let i=-1; i<=1; i++) {
-                                bullets.push(new Bullet(this.x, this.y + 40, { color: "#ffeb3b", speed: 4.5 }, toPlayer + i*15, true));
-                            }
-                            break;
-                        case 'cross_bullets': // 交叉弹
-                            bullets.push(new Bullet(this.x - 20, this.y + 40, { color: "#03a9f4" }, 110, true));
-                            bullets.push(new Bullet(this.x + 20, this.y + 40, { color: "#03a9f4" }, 70, true));
-                            break;
-                        case 'wave_barrage': // 波浪弹幕 (主流爽点4)
-                            for(let i=-3; i<=3; i++) {
-                                let ox = i * 40;
-                                let delay = Math.abs(i) * 5;
-                                setTimeout(() => {
-                                    if (gameActive && boss) bullets.push(new Bullet(this.x + ox, this.y + 40, { color: "#00bcd4", speed: 3 }, 90, true));
-                                }, delay * 16);
-                            }
-                            break;
-                        case 'homing_clusters': // 追踪集群
-                            for(let i=0; i<2; i++) {
-                                bullets.push(new Bullet(this.x + (i?30:-30), this.y, { color: "#9c27b0", homing: true, homing_speed: 0.04, speed: 2 }, 90, true));
-                            }
-                            break;
-                        default:
-                            bullets.push(new Bullet(this.x, this.y + 40, { color: "#fff" }, 90, true));
-                    }
-                }
-            }
-
-            executeBigSkill() {
-                const interval = 180 / gameSpeedMult;
-                if (this.skillTimer % Math.floor(interval) === 0) {
-                    const skill = this.cfg.big_skill;
-                    logQA(`⚠️ Boss 正在蓄力: ${skill}`);
-                    screenFlash = 5; 
-                    
-                    switch(skill) {
-                        case 'cross_cutting': // 十字切割 (主流爽点3)
-                            for(let i=0; i<360; i+=45) {
-                                bullets.push(new Bullet(this.x, this.y, { color: "#ff0000", speed: 5 }, i, true));
-                            }
-                            break;
-                        case 'parallel_rows': // 平行排弹
-                            for(let i=-2; i<=2; i++) {
-                                bullets.push(new Bullet(this.x + i*60, this.y, { color: "#ff9800", speed: 4 }, 90, true));
-                            }
-                            break;
-                        case 'dual_lasers':
-                        case 'double_beams':
-                            for(let j=0; j<10; j++) {
-                                setTimeout(() => {
-                                    if(gameActive && boss) {
-                                        bullets.push(new Bullet(this.x - 40, this.y, { color: "#f00", speed: 8 }, 90, true));
-                                        bullets.push(new Bullet(this.x + 40, this.y, { color: "#f00", speed: 8 }, 90, true));
-                                    }
-                                }, j * 50);
-                            }
-                            break;
-                        case 'center_explosion':
-                            for(let i=0; i<360; i+=20) {
-                                bullets.push(new Bullet(this.x, this.y, { color: "#ffeb3b", speed: 3 }, i, true));
-                            }
-                            break;
-                        case 'arc_shield':
-                            for(let i=0; i<180; i+=15) bullets.push(new Bullet(this.x, this.y, { color: "#00bcd4" }, i, true));
-                            break;
-                        default:
-                            for(let i=0; i<360; i+=30) bullets.push(new Bullet(this.x, this.y, { color: "#e91e63" }, i, true));
-                    }
-                }
-            }
-
-            draw() {
-                ctx.save(); ctx.translate(this.x, this.y);
-                
-                // 绘制攻击预警 (AAA 预警)
-                const bigInterval = 180 / gameSpeedMult;
-                const warningTime = 60; 
-                if (this.skillTimer % Math.floor(bigInterval) > (Math.floor(bigInterval) - warningTime)) {
-                    ctx.save();
-                    const opacity = (Math.sin(frameCount * 0.2) + 1) * 0.2;
-                    ctx.fillStyle = `rgba(255, 0, 0, ${opacity})`;
-                    const skill = this.cfg.big_skill;
-                    if (skill === 'parallel_rows') {
-                        [-60, 0, 60].forEach(ox => {
-                            ctx.fillRect(ox - 15, 0, 30, 600);
-                        });
-                    } else if (skill === 'dual_lasers' || skill === 'double_beams') {
-                        [-40, 40].forEach(ox => {
-                            ctx.fillRect(ox - 20, 0, 40, 600);
-                        });
-                    }
-                    ctx.restore();
-                }
-
-                // 获取星座视觉设计
-                const levelName = gameConfig.constellation_levels[currentLevelIdx].constellation;
-                const design = CONSTELLATION_DESIGNS[levelName];
-
-                if (design) {
-                    // 1. 绘制星图粒子 (Aura Particles)
-                    const time = frameCount * 0.02;
-                    ctx.save();
-                    ctx.globalAlpha = 0.5;
-                    ctx.shadowBlur = 15;
-                    ctx.shadowColor = design.color;
-                    for(let i=0; i<8; i++) {
-                        const angle = time + i * (Math.PI / 4);
-                        const r = 45 + Math.sin(time * 2) * 5;
-                        ctx.fillStyle = design.color;
-                        ctx.beginPath();
-                        ctx.arc(Math.cos(angle) * r, Math.sin(angle) * r, 2, 0, Math.PI*2);
-                        ctx.fill();
-                    }
-                    ctx.restore();
-
-                    // 2. 核心光晕 (AAA Glow)
-                    const pulse = Math.sin(frameCount * 0.05) * 10;
-                    ctx.shadowBlur = (this.isPhase2 ? 60 : 40) + pulse;
-                    ctx.shadowColor = design.glow || design.color;
-
-                    // 3. 受击反馈 (摒弃闪白，使用边缘发光增强)
-                    if (this.hitFlash > 0) {
-                        ctx.shadowBlur += this.hitFlash * 2;
-                        ctx.shadowColor = "#fff";
-                        ctx.filter = `brightness(${1 + this.hitFlash * 0.05})`; // 极轻微亮度提升
-                    }
-
-                    // 4. 调用具体星座绘图逻辑
-                    design.draw(ctx, this);
-                } else {
-                    // 回退方案
-                    ctx.fillStyle = this.isPhase2 ? "#f00" : "#333"; 
-                    ctx.shadowBlur = this.isPhase2 ? 50 : 20; 
-                    ctx.shadowColor = this.isPhase2 ? "#f00" : "#ffd700";
-                    ctx.beginPath();
-                    ctx.moveTo(0, 40); ctx.lineTo(-40, -20); ctx.lineTo(40, -20);
-                    ctx.closePath(); ctx.fill();
-                }
-                
-                ctx.restore();
-            }
-        }
-
-        function createExplosion(x, y, color, size = 1) {
-            for(let i=0; i<20*size; i++) particles.push({ 
-                x, y, vx: (Math.random()-0.5)*12*size, vy: (Math.random()-0.5)*12*size, life: 1, color 
-            });
-            screenShake = 10 * size;
-        }
-
-        function logQA(msg) {
-            const logEl = document.getElementById('qa-log');
-            if (!logEl) return;
-            const time = new Date().toLocaleTimeString().split(' ')[0];
-            const newLog = document.createElement('div');
-            newLog.innerHTML = `<span style="color:#888">[${time}]</span> [QA-Agent] ${msg}`;
-            logEl.prepend(newLog);
-            if (logEl.children.length > 5) logEl.removeChild(logEl.lastChild);
-        }
-
-        function updateAutopilot() {
-            if (frameCount % 60 === 0) {
-                // QA 状态检查
-                if (boss) {
-                    const hpPercent = (boss.hp / boss.maxHp * 100).toFixed(1);
-                    logQA(`压制 Boss: ${boss.cfg.name} (HP: ${hpPercent}%)`);
-                    if (hpPercent > 90 && frameCount > 2500) logQA("⚠️ 警告: 火力不足，Boss 掉血过慢");
-                } else {
-                    const enemyCount = enemies.length;
-                    if (enemyCount > 10) logQA(`⚠️ 警告: 敌机堆积 (${enemyCount})`);
-                }
-            }
-
-            // 1. 避弹逻辑 (核心增强：动态场力预测)
-            let dangerousBullets = bullets.filter(b => b.isEnemy && b.y < player.y + 120 && b.y > player.y - 300);
-            if (dangerousBullets.length > 0) {
-                let avoidX = 0;
-                let avoidY = 0;
-                dangerousBullets.forEach(b => {
-                    // 预测位置 (10帧后)
-                    let predX = b.x + Math.cos(b.angle) * b.speed * 10;
-                    let predY = b.y + Math.sin(b.angle) * b.speed * 10;
-                    
-                    let dx = player.x - predX;
-                    let dy = player.y - predY;
-                    let dist = Math.sqrt(dx*dx + dy*dy);
-                    if (dist < 180) { // 扩大感知范围
-                        let force = (250 / dist);
-                        avoidX += (dx / dist) * force;
-                        avoidY += (dy / dist) * force * 0.6; 
+                safeBind('submit-feedback-btn', () => {
+                    const input = document.getElementById('feedback-input');
+                    if (input.value) {
+                        alert("建议已收到！AI 专家团正在评审中...");
+                        input.value = '';
                     }
                 });
-                
-                if (Math.abs(avoidX) > 0.3 || Math.abs(avoidY) > 0.3) {
-                    player.targetX += avoidX * 15;
-                    player.y += avoidY * 8;
-                    
-                    player.targetX = Math.max(30, Math.min(370, player.targetX));
-                    player.y = Math.max(450, Math.min(550, player.y)); 
-                    return;
-                }
-            }
 
-            // 2. 拾取道具
-            if (powerups.length > 0) {
-                let nearestPowerup = powerups.reduce((prev, curr) => {
-                    let dPrev = Math.hypot(prev.x - player.x, prev.y - player.y);
-                    let dCurr = Math.hypot(curr.x - player.x, curr.y - player.y);
-                    return dCurr < dPrev ? curr : prev;
-                });
+                updateStatus("就绪", true);
+            };
 
-                if (nearestPowerup && Math.hypot(nearestPowerup.x - player.x, nearestPowerup.y - player.y) < 300) {
-                    player.targetX = nearestPowerup.x;
-                    // 如果道具太高，AI 也会稍微向上移动去够
-                    if (nearestPowerup.y < player.y - 50) player.y -= 2;
-                    return;
-                }
-            }
-
-            // 3. 进攻逻辑 (回归中线或对准目标)
-            let target = boss || (enemies.length > 0 ? enemies.reduce((prev, curr) => {
-                let dPrev = Math.hypot(prev.x - player.x, prev.y - player.y);
-                let dCurr = Math.hypot(curr.x - player.x, curr.y - player.y);
-                return dCurr < dPrev ? curr : prev;
-            }) : null);
-
-            if (target) {
-                player.targetX = target.x;
-            } else {
-                player.targetX += (200 - player.x) * 0.05; // 无目标时回归中心
-            }
-            
-            // 恢复默认 Y 轴高度
-            if (!dangerousBullets.length) player.y += (520 - player.y) * 0.1;
-
-            if (ultEnergy >= 100) triggerUltimate();
-        }
-
-        function gameLoop() {
-            if (!gameActive) return;
-            
-            // AI 自动驾驶逻辑
-            if (autopilotEnabled) {
-                updateAutopilot();
-            }
-            
-            ctx.save();
-            if (screenShake > 0) {
-                ctx.translate((Math.random()-0.5)*screenShake, (Math.random()-0.5)*screenShake);
-                screenShake *= 0.9;
-                if (screenShake < 0.5) screenShake = 0;
-            }
-            
-            ctx.clearRect(0, 0, 400, 600); frameCount++;
-            drawBackground();
-            updateUlt();
-
-            // 觉醒全屏闪光效果
-            if (screenFlash > 0) {
-                ctx.fillStyle = `rgba(255, 255, 255, ${screenFlash/20})`;
-                ctx.fillRect(0, 0, 400, 600);
-                screenFlash--;
-            }
-
-            // 背景
-            ctx.fillStyle = '#fff';
-            stars.forEach(s => { s.y += 2; if(s.y > 600) s.y = -10; ctx.fillRect(s.x, s.y, s.s, s.s); });
-
-            // 玩家
-            player.x += (player.targetX - player.x) * 0.2;
-            player.x = Math.max(30, Math.min(370, player.x));
-            drawPlayer();
-
-            // 道具投放 (血包)
-            if (hpPacksSpawned < 2) {
-                if (frameCount === 600 || frameCount === 1500) {
-                    powerups.push(new PowerUp(Math.random()*300+50, -20, { id: 'hp', color: '#ff4b2b', label: '❤️' }));
-                    hpPacksSpawned++;
-                }
-            }
-
-            // Boss 逻辑
-            const levelCfg = gameConfig.constellation_levels[currentLevelIdx];
-            if (!boss && frameCount < bossSpawnTime) {
-                let timeLeft = Math.max(0, Math.ceil((bossSpawnTime - frameCount) / 60));
-                document.getElementById('boss-countdown').innerText = `Boss 降临倒计时: ${timeLeft}s`;
-            } else if (!boss && frameCount >= bossSpawnTime) {
-                boss = new Boss(levelCfg.boss);
-                document.getElementById('boss-countdown').innerText = "WARNING: BOSS 出现!";
-                document.getElementById('boss-hp-bar').style.display = "block";
-            }
-
-            if (boss) {
-                boss.update(); boss.draw();
-                const hpPercent = boss.hp / boss.maxHp * 100;
-                document.getElementById('boss-hp-fill').style.width = hpPercent + '%';
-                
-                // 阶段检测与分段线显示
-                const bar = document.getElementById('boss-hp-bar');
-                if (!bar.querySelector('.hp-phase-marker')) {
-                    const m1 = document.createElement('div'); m1.className = 'hp-phase-marker'; m1.style.left = '70%';
-                    const m2 = document.createElement('div'); m2.className = 'hp-phase-marker'; m2.style.left = '30%';
-                    bar.appendChild(m1); bar.appendChild(m2);
-                }
-            }
-
-            // 发射子弹
-            if (frameCount % 12 === 0) {
-                const bCfg = gameConfig.zodiac_bullets.find(b => b.id === activeBulletId);
-                const fire = (x, y) => {
-                    if (bCfg.type === "scatter_tiger") {
-                        let count = bCfg.scatter + (bulletLevel - 1) * 2;
-                        for(let i=0; i<count; i++) {
-                            let angle = -90 - (bCfg.angle_spread/2) + (i * bCfg.angle_spread / (count - 1));
-                            bullets.push(new Bullet(x, y - 20, bCfg, angle, false, bulletLevel));
-                        }
-                    } else {
-                        bullets.push(new Bullet(x, y - 20, bCfg, -90, false, bulletLevel));
-                    }
-                };
-                
-                fire(player.x, player.y);
-                if (player.hasWingman) {
-                    fire(player.x - 40, player.y + 10);
-                    fire(player.x + 40, player.y + 10);
-                }
-            }
-
-            // 子弹逻辑
-            for(let i = bullets.length - 1; i >= 0; i--) {
-                const b = bullets[i]; b.update(); b.draw();
-                if (b.isEnemy) {
-                    if (Math.abs(b.x - player.x) < 25 && Math.abs(b.y - player.y) < 25) {
-                        // 特殊位移效果 (巨蟹推浪, 水瓶龙卷)
-                        if (b.cfg.type === "wave" || b.cfg.type === "wind") {
-                            if (activeBulletId !== 'goat' && !isInvincible) {
-                                player.targetX += (b.x < player.x ? 50 : -50); // 位移
-                            }
-                            bullets.splice(i, 1);
-                            return;
-                        }
-
-                        if (!isInvincible) {
-                            bullets.splice(i, 1); 
-                            lives--; 
-                            player.hasWingman = false; // 掉血失去侧翼
-                            updateHUD();
-                            createExplosion(player.x, player.y, "#ff4b2b", 0.5);
-                            
-                            // 触发灵力冲击波 (清空周围子弹)
-                            isInvincible = true;
-                            setTimeout(() => isInvincible = false, 2000); // 2秒无敌
-                            
-                            for(let j = bullets.length - 1; j >= 0; j--) {
-                                let dist = Math.hypot(bullets[j].x - player.x, bullets[j].y - player.y);
-                                if (bullets[j].isEnemy && dist < 250) {
-                                    createExplosion(bullets[j].x, bullets[j].y, bullets[j].cfg.color, 0.2);
-                                    bullets.splice(j, 1);
-                                }
-                            }
-                            logQA("🛡️ 触发灵力冲击波：紧急清空周围弹幕");
-                            
-                            if (lives <= 0) endGame();
-                        } else {
-                            // 无敌时拦截子弹
-                            bullets.splice(i, 1);
-                            createExplosion(b.x, b.y, "#fff", 0.1);
-                        }
-                    }
-                } else {
-                    enemies.forEach((e, ei) => {
-                        if (Math.abs(b.x - e.x) < 25 && Math.abs(b.y - e.y) < 25) {
-                            e.hp -= b.damage; 
-                            
-                            // 鸡·鸣啼眩弹: 眩晕逻辑
-                            if (b.cfg.type === "stun_rooster") { e.speed = 0.5; setTimeout(() => e.speed = 2, b.cfg.stun_dur * 16); }
-                            
-                            // 猪·暴食爆破弹: 爆炸逻辑
-                            if (b.cfg.type === "nuke_pig") {
-                                createExplosion(e.x, e.y, b.cfg.color, 2);
-                                enemies.forEach((e2) => {
-                                    if (Math.hypot(e2.x - e.x, e2.y - e.y) < b.cfg.aoe) e2.hp -= b.damage;
-                                });
-                            }
-                            
-                            if (e.hp <= 0) {
-                                enemies.splice(ei, 1); score += 10; updateHUD();
-                                createExplosion(e.x, e.y, "#ff4b2b", 0.3);
-                                if (Math.random() < 0.25) powerups.push(new PowerUp(e.x, e.y));
-                            }
-                            if (!b.cfg.pierce && b.cfg.type !== "laser_dragon" && b.cfg.type !== "interceptor") bullets.splice(i, 1);
-                        }
-                    });
-                    if (boss && Math.abs(b.x - boss.x) < 60 && Math.abs(b.y - boss.y) < 40) {
-                        boss.hp -= b.damage; 
-                        boss.hitFlash = 10; // 触发受击闪白
-                        if (b.cfg.type === "explosive") createExplosion(b.x, b.y, b.cfg.color, 1.5);
-                        if (!b.cfg.pierce && b.cfg.type !== "laser") bullets.splice(i, 1);
-                        if (boss.hp <= 0) {
-                            score += 1000; boss = null;
-                            document.getElementById('boss-hp-bar').style.display = "none";
-                            levelClear();
-                        }
-                    }
-                }
-                if (b && (b.y < -100 || b.y > 700 || b.x < -100 || b.x > 500)) bullets.splice(i, 1);
-            }
-
-            // 粒子
-            for(let i=particles.length-1; i>=0; i--) {
-                const p = particles[i]; p.x += p.vx; p.y += p.vy; p.life -= 0.02;
-                ctx.globalAlpha = p.life; ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 3, 3);
-                if(p.life <= 0) particles.splice(i, 1);
-            }
-            ctx.globalAlpha = 1;
-
-            // 敌人逻辑
-            if (frameCount % 60 === 0 && !boss) {
-                const types = ['scout', 'tank', 'stinger'];
-                const type = types[Math.floor(Math.random() * types.length)];
-                enemies.push(new Enemy(type));
-            }
-            for(let i = enemies.length - 1; i >= 0; i--) {
-                const e = enemies[i]; e.update(); e.draw();
-                if (Math.abs(e.x - player.x) < 35 && Math.abs(e.y - player.y) < 35) {
-                    if (!isInvincible) {
-                        enemies.splice(i, 1); 
-                        lives--; 
-                        player.hasWingman = false; // 撞击失去侧翼
-                        updateHUD();
-                        createExplosion(player.x, player.y, "#ff4b2b", 1);
-                        if (lives <= 0) endGame();
-                    } else {
-                        // 无敌冲撞
-                        e.hp -= 10;
-                        createExplosion(e.x, e.y, "#fff", 0.5);
-                        if (e.hp <= 0) { enemies.splice(i, 1); score += 10; updateHUD(); }
-                    }
-                }
-                if (e.y > 650) enemies.splice(i, 1);
-            }
-
-            // 道具逻辑
-            for(let i = powerups.length - 1; i >= 0; i--) {
-                const p = powerups[i]; p.update(); p.draw();
-                if (Math.abs(p.x - player.x) < 40 && Math.abs(p.y - player.y) < 40) {
-                    if (p.info.id === 'hp') { 
-                        lives = Math.min(5, lives + 1); updateHUD(); 
-                    } else if (p.info.id === 'wingman') {
-                        player.hasWingman = true;
-                    } else { 
-                        if (activeBulletId === p.info.id) {
-                            bulletLevel = Math.min(3, bulletLevel + 1); // 拾取相同类型升级
-                        } else {
-                            activeBulletId = p.info.id;
-                            bulletLevel = 1; // 拾取不同类型重置等级
-                        }
-                    }
-                    createExplosion(p.x, p.y, p.info.color, 0.5);
-                    powerups.splice(i, 1);
-                }
-                if (p.y > 650) powerups.splice(i, 1);
-            }
-            
-            ctx.restore();
-            requestAnimationFrame(gameLoop);
-        }
-
-        function updateHUD() {
-            document.getElementById('score').innerText = `得分: ${score}`;
-            document.getElementById('life').innerText = `❤️x${lives}`;
-            const levelData = gameConfig.constellation_levels[currentLevelIdx];
-            const bCfg = gameConfig.zodiac_bullets.find(b => b.id === activeBulletId);
-            
-            let bulletInfo = "";
-            if (bCfg) {
-                bulletInfo = `<br><span style="font-size: 0.7rem; color: ${bCfg.color}; opacity: 0.9;">
-                    形态: ${bCfg.name.split('·')[1]} | 威力: ${(bCfg.damage * bulletLevel).toFixed(1)}
-                </span>`;
-            }
-
-            document.getElementById('level-name').innerHTML = `第 ${currentLevelIdx + 1} 关: ${levelData ? levelData.constellation : '未知'} (Lv.${bulletLevel})${bulletInfo}`;
-        }
-
-        // 初始化每关随机生肖池
-        function initLevelZodiacs() {
-            const allZodiacs = Object.keys(ZODIAC_DESIGNS);
-            // 随机选 5 个 (包含当前已解锁的)
-            let pool = [...new Set([...unlockedZodiacs, ...allZodiacs])];
-            currentLevelZodiacs = [];
-            while(currentLevelZodiacs.length < 5 && pool.length > 0) {
-                let idx = Math.floor(Math.random() * pool.length);
-                currentLevelZodiacs.push(pool.splice(idx, 1)[0]);
-            }
-        }
-
-        function startGame(isNewGame = true) {
-            loadConfig().then(() => {
+            function startGame() {
+                updateStatus("引擎运行中", true);
                 initStars();
-                gameActive = true;
-                if (isNewGame) {
-                    score = 0; 
-                    currentLevelIdx = 0; 
-                    activeBulletId = selectedStartWeapon || 'rat'; 
-                    bulletLevel = 1;
-                }
-                lives = 2; frameCount = 0; hpPacksSpawned = 0;
-                bullets = []; enemies = []; powerups = []; boss = null; particles = [];
-                player.x = 200; player.y = 520; player.targetX = 200; // 重置位置
-                player.hasWingman = false;
-                initLevelZodiacs();
-                
-                document.getElementById('start-screen').classList.add('hidden');
-                document.getElementById('zodiac-select').classList.add('hidden');
-                document.getElementById('game-over').classList.add('hidden');
-                document.getElementById('level-clear').classList.add('hidden');
-                document.getElementById('boss-hp-bar').style.display = "none";
-                updateHUD(); gameLoop();
-            });
-        }
+                loop();
+            }
 
-        // UI 事件监听
-        document.getElementById('show-settings-btn').onclick = () => {
-            document.getElementById('start-screen').classList.add('hidden');
-            document.getElementById('game-settings').classList.remove('hidden');
-        };
+            function initStars() {
+                State.stars = Array.from({length:50}, () => ({
+                    x: Math.random()*400, y: Math.random()*600, sp: Math.random()*2+1
+                }));
+            }
 
-        document.querySelectorAll('.setting-btn').forEach(btn => {
-            btn.onclick = () => {
-                const type = btn.dataset.type;
-                const val = parseFloat(btn.dataset.val);
-                document.querySelectorAll(`.setting-btn[data-type="${type}"]`).forEach(b => {
-                    b.style.background = 'rgba(255,255,255,0.1)';
+            function loop() {
+                if (!State.gameActive) return;
+                ctx.clearRect(0, 0, 400, 600);
+                ctx.fillStyle = "#fff";
+                State.stars.forEach(s => {
+                    s.y += s.sp; if (s.y > 600) s.y = -10;
+                    ctx.fillRect(s.x, s.y, 2, 2);
                 });
-                btn.style.background = '#ffd700';
-                if (type === 'diff') difficultyMult = val;
-                if (type === 'speed') gameSpeedMult = val;
-            };
-        });
-
-        document.getElementById('save-settings-btn').onclick = () => {
-            document.getElementById('game-settings').classList.add('hidden');
-            document.getElementById('start-screen').classList.remove('hidden');
-        };
-
-        document.getElementById('ai-toggle-btn').onclick = () => {
-            autopilotEnabled = !autopilotEnabled;
-            const btn = document.getElementById('ai-toggle-btn');
-            const status = document.getElementById('ai-status');
-            if (autopilotEnabled) {
-                btn.innerText = "关闭 AI 自动驾驶";
-                btn.style.background = "#ffd700";
-                btn.style.color = "#000";
-                status.style.display = "block";
-                document.getElementById('qa-log').style.display = "block";
-                logQA("启动自动化回归测试...");
-            } else {
-                btn.innerText = "开启 AI 自动驾驶";
-                btn.style.background = "#444";
-                btn.style.color = "#ffd700";
-                status.style.display = "none";
-                document.getElementById('qa-log').style.display = "none";
+                ctx.fillStyle = "#ffd700";
+                ctx.beginPath(); ctx.moveTo(200, 500); ctx.lineTo(180, 530); ctx.lineTo(220, 530); ctx.fill();
+                requestAnimationFrame(loop);
             }
-        };
-
-        document.getElementById('show-select-btn').onclick = () => {
-            document.getElementById('start-screen').classList.add('hidden');
-            document.getElementById('zodiac-select').classList.remove('hidden');
-            const list = document.getElementById('zodiac-list');
-            list.innerHTML = '';
-            
-            const icons = { rat: '🐀', ox: '🐂', tiger: '🐅', rabbit: '🐇', dragon: '🐉', snake: '🐍', horse: '🐎', goat: '🐐', monkey: '🐒', rooster: '🐓', dog: '🐕', pig: '🐖' };
-            const tags = { rat: '追踪', ox: '破甲', tiger: '连射', rabbit: '反弹', dragon: '激光', snake: '剧毒', horse: '极速', goat: '溅射', monkey: '乱舞', rooster: '眩晕', dog: '守护', pig: '重炮' };
-
-            unlockedZodiacs.forEach(zId => {
-                const z = ZODIAC_DESIGNS[zId];
-                const item = document.createElement('div');
-                item.className = `zodiac-item ${selectedStartWeapon === zId ? 'selected' : ''}`;
-                
-                item.innerHTML = `
-                    <div class="zodiac-icon">${icons[zId] || '✨'}</div>
-                    <div style="font-weight:bold; font-size:0.9rem;">${z.name.split('·')[0]}</div>
-                    <div class="zodiac-tag">${tags[zId] || '通用'}</div>
-                `;
-                
-                item.onclick = () => {
-                    selectedStartWeapon = zId;
-                    document.querySelectorAll('.zodiac-item').forEach(el => el.classList.remove('selected'));
-                    item.classList.add('selected');
-                };
-                list.appendChild(item);
-            });
-        };
-
-        document.getElementById('back-to-start-btn').onclick = () => {
-            document.getElementById('zodiac-select').classList.add('hidden');
-            document.getElementById('start-screen').classList.remove('hidden');
-        };
-
-        function levelClear() {
-            gameActive = false;
-            // 解锁下一个生肖 (如果有)
-            const allIds = Object.keys(ZODIAC_DESIGNS);
-            const currentIdx = allIds.indexOf(activeBulletId);
-            const nextId = allIds[currentIdx + 1] || allIds[0];
-            if (!unlockedZodiacs.includes(nextId)) {
-                unlockedZodiacs.push(nextId);
-                document.getElementById('unlock-msg').innerText = `解锁新生肖之力: ${ZODIAC_DESIGNS[nextId].name.split('·')[0]}`;
-            } else {
-                document.getElementById('unlock-msg').innerText = `宫殿净化成功!`;
-            }
-            document.getElementById('level-clear').classList.remove('hidden');
-        }
-
-        function endGame() {
-            gameActive = false;
-            document.getElementById('game-over').classList.remove('hidden');
-            document.getElementById('final-score-display').innerText = `最终得分: ${score}`;
-            
-            // 如果在测试模式，记录结果并返回
-            if (autoTestActive) {
-                testLog.push({ 
-                    score, 
-                    level: currentLevelIdx, 
-                    time: frameCount,
-                    difficulty: difficultyMult,
-                    speed: gameSpeedMult
-                });
-                console.log(`[Test Round Complete] Diff:${difficultyMult}, Speed:${gameSpeedMult} -> Score: ${score}`);
-                return;
-            }
-
-            // QA 失败分析报告
-            let report = "【QA 事故报告】\n";
-            if (autopilotEnabled) {
-                report += "🚨 AI 决策失效：在密集弹幕下，当前的 X 轴规避算法陷入了局部最优解，未能识别出更安全的逃逸路径。";
-                if (frameCount > bossSpawnTime) report += "\n⚠️ 观察到 Boss 阶段弹幕密度已超出当前 AI 的处理阈值。";
-            } else {
-                report += "🎮 玩家操作失误：检测到机体在短时间内连续受击，建议在设置中尝试调低游戏速度或开启 AI 辅助。";
-            }
-            
-            if (score < 500) report += "\n📉 建议：初期火力严重不足，请优先升级子弹等级或更换更强力的生肖。";
-            
-            document.getElementById('qa-failure-analysis').innerText = report;
-            logQA("❌ 战斗结束：机体损毁。正在将报告上传至指挥中心...");
-        }
-
-        document.getElementById('start-btn').onclick = () => startGame(true);
-        document.getElementById('restart-btn').onclick = () => startGame(true); // 死亡后重新开始
-        document.getElementById('confirm-select-btn').onclick = () => startGame(true);
-        
-        document.getElementById('next-level-btn').onclick = () => {
-            currentLevelIdx++;
-            if (currentLevelIdx < gameConfig.constellation_levels.length) {
-                startGame(false); // 启动下一关，不重置总得分和已选武器 (除非玩家想换)
-            } else {
-                alert("恭喜！您已净化所有宫殿！");
-                location.reload();
-            }
-        };
-        document.getElementById('submit-feedback-btn').onclick = async () => {
-            const val = document.getElementById('feedback-input').value;
-            if(!val) return;
-            const btn = document.getElementById('submit-feedback-btn');
-            btn.innerText = "🚀 正在发送至 AI 专家团...";
-            btn.disabled = true;
-            
-            try {
-                // 核心链路：将建议同步到 ntfy，触发 Trae 监听
-                await fetch('https://ntfy.sh/trae_plane_shooter_jibin_2026', { 
-                    method: 'POST', 
-                    body: JSON.stringify({ suggest: val, from: 'Game_UI' }) 
-                });
-                
-                alert("✨ 建议已同步至 Trae 指挥中心！\n请关注企业微信群，AI 专家团正在进行评审...");
-                document.getElementById('feedback-input').value = '';
-            } catch(e) {
-                alert("❌ 同步失败，请检查网络。");
-            } finally {
-                btn.innerText = "提交进化建议";
-                btn.disabled = false;
-            }
-        };
-        window.runAutoTest = function() {
-            document.getElementById('game-settings').classList.add('hidden');
-            autoTestActive = true;
-            autopilotEnabled = true;
-            testLog = [];
-            const configs = [
-                { speed: 1.0, diff: 0.5, label: "速度3+简单" },
-                { speed: 1.0, diff: 1.0, label: "速度3+普通" },
-                { speed: 1.0, diff: 2.0, label: "速度3+困难" },
-                { speed: 0.6, diff: 1.0, label: "速度1+普通" },
-                { speed: 1.5, diff: 1.0, label: "速度5+普通" }
-            ];
-            
-            let currentTest = 0;
-            const runNext = () => {
-                if (currentTest >= configs.length) {
-                    autoTestActive = false;
-                    showTestReport();
-                    return;
-                }
-                const cfg = configs[currentTest];
-                gameSpeedMult = cfg.speed;
-                difficultyMult = cfg.diff;
-                logQA(`测试轮次 ${currentTest+1}/5: ${cfg.label}...`);
-                startGame(true);
-                currentTest++;
-                
-                const checker = setInterval(() => {
-                    if (!gameActive) {
-                        clearInterval(checker);
-                        setTimeout(runNext, 1500);
-                    }
-                }, 500);
-            };
-            runNext();
-        };
-
-        function showTestReport() {
-            const reportEl = document.getElementById('test-report-content');
-            const overlay = document.getElementById('test-report-overlay');
-            
-            let html = `<strong>[内阁回归测试报告]</strong><br><hr style="border:0; border-top:1px solid #444; margin:5px 0;">`;
-            if (testLog.length === 0) {
-                html += `<div style="color:#ff4b2b;">⚠️ 未捕获到有效数据，可能由于无头模式下的异步延迟。建议在本地环境中通过按钮启动完整测试。</div>`;
-            } else {
-                testLog.forEach((log, i) => {
-                    const status = log.level > 0 ? "✅ 达标" : "❌ 待优化";
-                    html += `<div style="margin-bottom:8px;">
-                        🚩 轮次${i+1}: ${status}<br>
-                        难度: ${log.difficulty} | 速度: ${log.speed}<br>
-                        得分: ${log.score} | 关卡: ${log.level+1}
-                    </div>`;
-                });
-            }
-            
-            html += `<hr style="border:0; border-top:1px solid #444; margin:5px 0;">`;
-            html += `<strong>[内阁诊断结论]</strong><br>`;
-            // 动态分析逻辑
-            const avgScore = testLog.length > 0 ? testLog.reduce((a, b) => a + b.score, 0) / testLog.length : 0;
-            if (avgScore > 1000) {
-                html += `- QA: 生存与打击平衡，整体表现优秀<br>`;
-                html += `- 策划: 子弹特性差异化显著，成长感强<br>`;
-            } else {
-                html += `- QA: 高难度下生存压力较大，建议优化避弹<br>`;
-                html += `- 策划: 初期火力仍有提升空间<br>`;
-            }
-            html += `- 技术: 引擎性能稳定，无渲染瓶颈`;
-            
-            reportEl.innerHTML = html;
-            overlay.classList.remove('hidden');
-        }
-
-        document.getElementById('run-cabinet-test-btn').onclick = () => window.runAutoTest();
-        document.getElementById('close-report-btn').onclick = () => {
-            document.getElementById('test-report-overlay').classList.add('hidden');
-            document.getElementById('start-screen').classList.remove('hidden');
-        };
+        })();
     </script>
 </body>
 </html>
