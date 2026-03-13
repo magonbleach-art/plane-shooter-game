@@ -146,7 +146,7 @@
             <div id="life">❤️x2</div>
         </div>
         <div id="boss-hp-bar"><div id="boss-hp-fill"></div></div>
-        <div id="version-tag" style="position:absolute; top:10px; right:10px; background:linear-gradient(135deg, #f00, #b00); color:#fff; font-size:12px; padding:4px 12px; z-index:9999; border-radius:20px; font-weight:bold; box-shadow:0 0 20px rgba(255,0,0,0.6); border:2px solid #fff;">VER: 7.8.9-LIVE</div>
+        <div id="version-tag" style="position:absolute; top:10px; right:10px; background:linear-gradient(135deg, #f00, #b00); color:#fff; font-size:12px; padding:4px 12px; z-index:9999; border-radius:20px; font-weight:bold; box-shadow:0 0 20px rgba(255,0,0,0.6); border:2px solid #fff;">VER: 7.9.1-LIVE</div>
         <div id="ultimate-bar">
             <div id="ultimate-hint">能量已满 - 点击屏幕释放大招</div>
             <div id="ultimate-fill"></div>
@@ -340,6 +340,15 @@
             if (target) target.classList.remove('hidden');
         }
 
+        // 🛡️ 资源渲染助手：确保 broken 状态的图片不会导致引擎崩溃
+        function safeDrawImage(img, x, y, w, h) {
+            if (img && img.complete && img.naturalWidth > 0) {
+                ctx.drawImage(img, x, y, w, h);
+                return true;
+            }
+            return false;
+        }
+
         // --- 核心类定义 ---
         class Bullet {
             constructor(x, y, cfg, angle, isEnemy) {
@@ -355,9 +364,7 @@
                 ctx.save(); ctx.translate(this.x, this.y);
                 // 优先使用精灵图资源
                 const assetId = `bullet_${this.cfg.id}`;
-                if (State.assets[assetId]) {
-                    ctx.drawImage(State.assets[assetId], -10, -10, 20, 20);
-                } else {
+                if (!safeDrawImage(State.assets[assetId], -10, -10, 20, 20)) {
                     const design = window.ZODIAC_DESIGNS ? window.ZODIAC_DESIGNS[this.cfg.id] : null;
                     if (!this.isEnemy && design && design.attack_effect) {
                         design.attack_effect(ctx, this);
@@ -397,9 +404,7 @@
             draw() {
                 ctx.save(); ctx.translate(this.x, this.y);
                 const assetId = `enemy_${this.type}`;
-                if (State.assets[assetId]) {
-                    ctx.drawImage(State.assets[assetId], -20, -20, 40, 40);
-                } else {
+                if (!safeDrawImage(State.assets[assetId], -20, -20, 40, 40)) {
                     ctx.shadowBlur = 10;
                     if(this.type === 'tank') { ctx.fillStyle = "#ffc107"; ctx.fillRect(-20, -20, 40, 40); }
                     else if(this.type === 'elite') { ctx.fillStyle = "#9c27b0"; ctx.beginPath(); ctx.arc(0,0,30,0,Math.PI*2); ctx.fill(); }
@@ -446,19 +451,14 @@
                 
                 // 优先使用 AI 生成的三阶段高清 Boss 原画
                 const assetId = `boss_${engName}_phase${this.phase}`;
-                if (State.assets[assetId]) {
-                    ctx.drawImage(State.assets[assetId], -80, -80, 160, 160);
-                } else {
-                    // 如果三阶段图不存在，尝试加载基础图
-                    const fallbackId = `boss_${engName}`;
-                    if (State.assets[fallbackId]) {
-                        ctx.drawImage(State.assets[fallbackId], -80, -80, 160, 160);
-                    } else {
-                        // 过程绘制兜底
-                        const design = window.CONSTELLATION_DESIGNS ? window.CONSTELLATION_DESIGNS[rawName] : null;
-                        if (design && design.draw) design.draw(ctx, this);
-                        else { ctx.fillStyle="#f00"; ctx.fillRect(-30, -30, 60, 60); }
-                    }
+                const fallbackId = `boss_${engName}`;
+                
+                if (!safeDrawImage(State.assets[assetId], -80, -80, 160, 160) && 
+                    !safeDrawImage(State.assets[fallbackId], -80, -80, 160, 160)) {
+                    // 过程绘制兜底
+                    const design = window.CONSTELLATION_DESIGNS ? window.CONSTELLATION_DESIGNS[rawName] : null;
+                    if (design && design.draw) design.draw(ctx, this);
+                    else { ctx.fillStyle="#f00"; ctx.fillRect(-30, -30, 60, 60); }
                 }
                 ctx.restore();
             }
@@ -495,9 +495,7 @@
                 this.y = 520;
             }
             draw() {
-                if (State.assets['wingman']) {
-                    ctx.drawImage(State.assets['wingman'], this.x-15, this.y-15, 30, 30);
-                } else {
+                if (!safeDrawImage(State.assets['wingman'], this.x-15, this.y-15, 30, 30)) {
                     ctx.fillStyle = "#444"; ctx.beginPath(); ctx.moveTo(this.x, this.y); ctx.lineTo(this.x-10, this.y+15); ctx.lineTo(this.x+10, this.y+15); ctx.fill();
                     ctx.fillStyle = "#00ffff"; ctx.fillRect(this.x-2, this.y-5, 4, 10);
                 }
