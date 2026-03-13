@@ -146,7 +146,7 @@
             <div id="life">❤️x2</div>
         </div>
         <div id="boss-hp-bar"><div id="boss-hp-fill"></div></div>
-        <div id="version-tag" style="position:absolute; top:10px; right:10px; background:linear-gradient(135deg, #f00, #b00); color:#fff; font-size:12px; padding:4px 12px; z-index:9999; border-radius:20px; font-weight:bold; box-shadow:0 0 20px rgba(255,0,0,0.6); border:2px solid #fff;">VER: 7.8.8-LIVE</div>
+        <div id="version-tag" style="position:absolute; top:10px; right:10px; background:linear-gradient(135deg, #f00, #b00); color:#fff; font-size:12px; padding:4px 12px; z-index:9999; border-radius:20px; font-weight:bold; box-shadow:0 0 20px rgba(255,0,0,0.6); border:2px solid #fff;">VER: 7.8.9-LIVE</div>
         <div id="ultimate-bar">
             <div id="ultimate-hint">能量已满 - 点击屏幕释放大招</div>
             <div id="ultimate-fill"></div>
@@ -656,6 +656,7 @@
                     const elapsed = Math.floor((Date.now() - State.startTime) / 1000);
                     log(`战斗中 - 计时: ${elapsed}s | 帧率: 稳定`);
                 }
+                const ultFill = document.getElementById('ultimate-fill');
                 const ultHint = document.getElementById('ultimate-hint');
                 if (ultFill && ultHint) {
                     const percent = (State.ultimateEnergy / State.maxUltimateEnergy) * 100;
@@ -867,11 +868,17 @@
         // 🛡️ [进化 v7.8] 自动化测试引擎
         window.runAutoTest = function() {
             log("🧪 自动化测试启动...");
+            window.autoTestActive = true; // 暴露给无头测试工具
             startGame(true);
             State.lives = 99; // 测试模式无限生命
             
             const testInterval = setInterval(() => {
+                // 同步状态给 window 以供无头浏览器读取
+                window.score = State.score;
+                window.currentLevelIdx = State.level;
+
                 if (!State.gameActive) {
+                    window.autoTestActive = false;
                     clearInterval(testInterval);
                     return;
                 }
