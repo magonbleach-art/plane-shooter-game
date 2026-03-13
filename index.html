@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>生肖射手：十二星座秘境</title>
-    <!-- 🛡️ [强制加载] 核心样式与变量 -->
+    <script src="zodiac_designs.js?v=7.7"></script>
     <style>
         :root {
             --primary: #ffd700;
@@ -56,6 +56,12 @@
         #show-settings-btn { background: #444; color: var(--primary); border: 1px solid var(--glass-border); }
         .secondary-btn { background: rgba(255, 255, 255, 0.05); color: #fff; border: 1px solid rgba(255, 255, 255, 0.1); }
         
+        .setting-btn { 
+            height: 40px; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #aaa; border-radius: 10px; cursor: pointer; margin-bottom: 5px;
+        }
+        .setting-btn.active { background: var(--primary); color: #000; border-color: #fff; font-weight: bold; }
+
         #hud { 
             position: absolute; top: 20px; left: 20px; right: 20px; display: flex; 
             justify-content: space-between; font-size: 0.85rem; pointer-events: none; 
@@ -63,11 +69,12 @@
         }
         #hud div { background: rgba(0, 0, 0, 0.4); padding: 5px 12px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.1); }
         
-        #qa-log {
-            position: absolute; top: 60px; left: 20px; width: 200px; max-height: 120px;
-            font-size: 0.65rem; color: #0f0; pointer-events: none; z-index: 40;
-            overflow: hidden; opacity: 0.8;
+        #boss-hp-bar { 
+            position: absolute; top: 60px; left: 50%; transform: translateX(-50%);
+            width: 250px; height: 8px; background: rgba(255, 255, 255, 0.1); border-radius: 4px; 
+            display: none; z-index: 50;
         }
+        #boss-hp-fill { width: 100%; height: 100%; background: #f00; border-radius: 4px; box-shadow: 0 0 10px #f00; }
 
         .feedback-box {
             width: 100%; max-width: 340px; margin-top: 10px;
@@ -82,12 +89,21 @@
         #submit-feedback-btn { width: 80px; height: 36px; border-radius: 8px; background: #fff; color: #000; font-size: 0.8rem; }
 
         #debug-overlay {
-            position: absolute; bottom: 0; left: 0; width: 100%; height: 40px;
-            background: rgba(255, 0, 0, 0.9); font-family: monospace; font-size: 12px;
-            color: #fff; padding: 10px; box-sizing: border-box; z-index: 9999;
-            pointer-events: none; border-top: 2px solid #fff;
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 30px;
+            background: rgba(0,0,0,0.8); font-family: monospace; font-size: 10px;
+            color: #0f0; padding: 8px; box-sizing: border-box; z-index: 200;
+            pointer-events: none; border-top: 1px solid #333;
         }
-        .status-ready { background: rgba(0, 255, 0, 0.9) !important; color: #000 !important; font-weight: bold; }
+        .status-ready { background: rgba(0, 255, 0, 0.9) !important; color: #000 !important; }
+
+        .zodiac-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%; }
+        .zodiac-item { 
+            aspect-ratio: 1/1; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); 
+            border-radius: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            cursor: pointer; transition: 0.3s;
+        }
+        .zodiac-item.selected { background: rgba(255, 215, 0, 0.15); border-color: var(--primary); }
+        .zodiac-icon { font-size: 1.5rem; }
     </style>
 </head>
 <body>
@@ -97,11 +113,9 @@
             <div id="level-name">准备中...</div>
             <div id="life">❤️x2</div>
         </div>
-        <div id="qa-log"></div>
+        <div id="boss-hp-bar"><div id="boss-hp-fill"></div></div>
         <canvas id="gameCanvas"></canvas>
-        
-        <!-- 🛡️ [高亮调试条] 初始状态为红色报错，脚本加载成功后变为绿色 -->
-        <div id="debug-overlay">🚨 警告：JS 引擎未启动，请检查网络或强制刷新 (Ctrl+F5)</div>
+        <div id="debug-overlay">系统状态: 就绪</div>
 
         <!-- 初始屏幕 -->
         <div id="start-screen" class="overlay">
@@ -138,9 +152,13 @@
         <div id="zodiac-select" class="overlay hidden">
             <div class="ui-panel">
                 <h2>选择灵力形态</h2>
-                <div id="zodiac-list" style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px;"></div>
-                <button id="confirm-select-btn" style="background:var(--primary); color:#000;">确认形态</button>
-                <button id="back-to-start-btn" class="secondary-btn">返回</button>
+                <div class="ui-section">
+                    <div id="zodiac-list" class="zodiac-grid"></div>
+                </div>
+                <div class="btn-group">
+                    <button id="confirm-select-btn" style="background:var(--primary); color:#000;">确认形态</button>
+                    <button id="back-to-start-btn" class="secondary-btn">返回</button>
+                </div>
             </div>
         </div>
 
@@ -148,107 +166,298 @@
         <div id="game-settings" class="overlay hidden">
             <div class="ui-panel">
                 <h2>实验室配置</h2>
-                <button class="setting-btn active" data-type="diff" data-val="1.0">难度: 标准</button>
-                <button class="setting-btn" data-type="speed" data-val="1.0">速度: 3档</button>
-                <button id="save-settings-btn" style="background:var(--primary); color:#000;">保存并应用</button>
+                <div class="ui-section">
+                    <div style="margin-bottom:10px; font-size:0.8rem; color:var(--primary);">敌方强度</div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;">
+                        <button class="setting-btn" data-type="diff" data-val="0.5">低</button>
+                        <button class="setting-btn active" data-type="diff" data-val="1.0">中</button>
+                        <button class="setting-btn" data-type="diff" data-val="2.0">高</button>
+                    </div>
+                </div>
+                <div class="ui-section">
+                    <div style="margin-bottom:10px; font-size:0.8rem; color:var(--primary);">模拟速度</div>
+                    <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:10px;">
+                        <button class="setting-btn" data-type="speed" data-val="0.6">1档</button>
+                        <button class="setting-btn active" data-type="speed" data-val="1.0">3档</button>
+                        <button class="setting-btn" data-type="speed" data-val="1.5">5档</button>
+                    </div>
+                </div>
+                <div class="btn-group">
+                    <button id="save-settings-btn" style="background:var(--primary); color:#000;">保存并应用</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 游戏结束 -->
+        <div id="game-over" class="overlay hidden">
+            <div class="ui-panel">
+                <h1 style="color:#f44336;">灵力散尽</h1>
+                <div id="final-score-display" style="font-size:1.5rem; color:var(--primary);">得分: 0</div>
+                <div class="btn-group">
+                    <button id="restart-btn">重聚灵力</button>
+                    <button onclick="location.reload()" class="secondary-btn">回到原点</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- 🛡️ [内联驱动] 确保交互逻辑 100% 执行 -->
     <script>
-        (function() {
-            console.log("🚀 [Core] 引擎预加载...");
+        /**
+         * 🛡️ [进化 v7.7] 全逻辑闭环引擎
+         */
+        const State = {
+            gameActive: false, score: 0, lives: 2, frameCount: 0,
+            weapon: 'rat', level: 0, diff: 1.0, speed: 1.0,
+            stars: [], bullets: [], enemies: [], boss: null,
+            playerX: 200, playerTargetX: 200,
+            unlockedZodiacs: ['rat', 'ox', 'tiger', 'rabbit', 'dragon', 'snake', 'horse', 'goat', 'monkey', 'rooster', 'dog', 'pig']
+        };
+
+        let Config = { constellation_levels: [], zodiac_bullets: [] };
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 400; canvas.height = 600;
+
+        function log(msg) {
+            const el = document.getElementById('debug-overlay');
+            if (el) {
+                el.innerText = `系统状态: ${msg}`;
+                el.classList.add('status-ready');
+            }
+            console.log(`[OpenClaw] ${msg}`);
+        }
+
+        // 🛡️ 核心修复：克隆节点以确保唯一监听器
+        function bind(id, callback) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            const newBtn = el.cloneNode(true);
+            el.parentNode.replaceChild(newBtn, el);
+            newBtn.addEventListener('click', (e) => {
+                log(`触发: ${id}`);
+                callback(e);
+            });
+        }
+
+        function showScreen(id) {
+            document.querySelectorAll('.overlay').forEach(el => el.classList.add('hidden'));
+            const target = document.getElementById(id);
+            if (target) target.classList.remove('hidden');
+        }
+
+        // --- 核心类定义 ---
+        class Bullet {
+            constructor(x, y, cfg, angle, isEnemy) {
+                this.x = x; this.y = y; this.cfg = cfg; this.isEnemy = isEnemy;
+                this.angle = angle * Math.PI / 180;
+                this.speed = (isEnemy ? 4 : 12) * State.speed;
+            }
+            update() {
+                this.x += Math.cos(this.angle) * this.speed;
+                this.y += Math.sin(this.angle) * this.speed;
+            }
+            draw() {
+                ctx.save(); ctx.translate(this.x, this.y);
+                const design = window.ZODIAC_DESIGNS ? window.ZODIAC_DESIGNS[this.cfg.id] : null;
+                if (!this.isEnemy && design && design.attack_effect) {
+                    design.attack_effect(ctx, this);
+                } else {
+                    ctx.fillStyle = this.isEnemy ? "#f44336" : (this.cfg.color || "#fff");
+                    ctx.beginPath(); ctx.arc(0, 0, 4, 0, Math.PI*2); ctx.fill();
+                }
+                ctx.restore();
+            }
+        }
+
+        class Enemy {
+            constructor() {
+                this.x = Math.random()*360+20; this.y = -30;
+                this.hp = 2 * State.diff * (1 + State.level*0.2);
+                this.speed = (1.5 + Math.random()) * State.speed;
+            }
+            update() { this.y += this.speed; }
+            draw() {
+                ctx.fillStyle = "#ff4b2b"; ctx.shadowBlur = 10; ctx.shadowColor = "#ff4b2b";
+                ctx.beginPath(); ctx.moveTo(this.x, this.y+15); ctx.lineTo(this.x-15, this.y-15); ctx.lineTo(this.x+15, this.y-15); ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        class Boss {
+            constructor(cfg) {
+                this.cfg = cfg; this.hp = (cfg.boss ? cfg.boss.hp : 500) * State.diff; this.maxHp = this.hp;
+                this.x = 200; this.y = -50; this.ty = 100;
+            }
+            update() {
+                if (this.y < this.ty) this.y += 2;
+                this.x = 200 + Math.sin(State.frameCount * 0.02) * 100;
+                if (State.frameCount % 60 === 0) {
+                    for(let i=0; i<360; i+=30) State.bullets.push(new Bullet(this.x, this.y, {id:'boss'}, i, true));
+                }
+            }
+            draw() {
+                const constellation = this.cfg.constellation || 'Aries';
+                const design = window.CONSTELLATION_DESIGNS ? window.CONSTELLATION_DESIGNS[constellation] : null;
+                ctx.save(); ctx.translate(this.x, this.y);
+                if (design && design.draw) design.draw(ctx, this);
+                else { ctx.fillStyle="#f00"; ctx.fillRect(-30, -30, 60, 60); }
+                ctx.restore();
+            }
+        }
+
+        async function load() {
+            try {
+                const r = await fetch('game_config.json?v=' + Date.now());
+                Config = await r.json();
+                log("配置就绪");
+            } catch(e) {
+                Config = { 
+                    constellation_levels: [{constellation:'白羊宫', boss:{hp:500}}],
+                    zodiac_bullets: [{id:'rat', color:'#ffd700'}]
+                };
+                log("使用兜底配置");
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            await load();
             
-            const State = {
-                gameActive: false, score: 0, lives: 2, frameCount: 0,
-                weapon: 'rat', level: 0, stars: [], bullets: [], enemies: []
-            };
+            bind('show-select-btn', () => { showScreen('zodiac-select'); renderList(); });
+            bind('show-settings-btn', () => showScreen('game-settings'));
+            bind('start-btn', () => startGame(true));
+            bind('restart-btn', () => startGame(true));
+            bind('back-to-start-btn', () => showScreen('start-screen'));
+            bind('save-settings-btn', () => showScreen('start-screen'));
+            bind('confirm-select-btn', () => showScreen('start-screen'));
+            
+            // 设置按钮逻辑
+            document.querySelectorAll('.setting-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const t = btn.dataset.type, v = parseFloat(btn.dataset.val);
+                    document.querySelectorAll(`.setting-btn[data-type="${t}"]`).forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    if(t === 'diff') State.diff = v;
+                    if(t === 'speed') State.speed = v;
+                    log(`设定: ${t}=${v}`);
+                });
+            });
 
-            const canvas = document.getElementById('gameCanvas');
-            const ctx = canvas.getContext('2d');
-            canvas.width = 400; canvas.height = 600;
+            window.addEventListener('mousemove', e => {
+                const rect = canvas.getBoundingClientRect();
+                State.playerTargetX = (e.clientX - rect.left) * (400 / rect.width);
+            });
 
-            function updateStatus(msg, ready = false) {
-                const overlay = document.getElementById('debug-overlay');
-                if (overlay) {
-                    overlay.innerText = ready ? `✅ 系统状态: ${msg}` : `🚨 警告: ${msg}`;
-                    if (ready) overlay.classList.add('status-ready');
-                    else overlay.classList.remove('status-ready');
-                }
+            initStars(); updateHUD();
+            log("内核就绪");
+        });
+
+        function startGame(isNew) {
+            if(isNew) { State.score = 0; State.level = 0; State.lives = 2; }
+            State.gameActive = true; State.bullets = []; State.enemies = []; State.boss = null; State.frameCount = 0;
+            showScreen('none');
+            requestAnimationFrame(loop);
+        }
+
+        function loop() {
+            if (!State.gameActive) return;
+            State.frameCount++;
+            ctx.clearRect(0, 0, 400, 600);
+            
+            // 星空
+            ctx.fillStyle = "#fff";
+            State.stars.forEach(s => {
+                s.y += s.sp * State.speed; if (s.y > 600) s.y = -10;
+                ctx.fillRect(s.x, s.y, 2, 2);
+            });
+
+            // 玩家
+            State.playerX += (State.playerTargetX - State.playerX) * 0.2;
+            ctx.fillStyle = "#1a1a1e"; ctx.beginPath(); ctx.moveTo(State.playerX, 500); ctx.lineTo(State.playerX-20, 540); ctx.lineTo(State.playerX+20, 540); ctx.fill();
+            const bCfg = Config.zodiac_bullets.find(b => b.id === State.weapon) || {color:'#ffd700'};
+            ctx.fillStyle = bCfg.color; ctx.beginPath(); ctx.arc(State.playerX, 520, 5, 0, Math.PI*2); ctx.fill();
+
+            // 生成逻辑
+            if (State.frameCount % Math.floor(60/State.speed) === 0 && !State.boss) State.enemies.push(new Enemy());
+            if (State.frameCount === 1000) State.boss = new Boss(Config.constellation_levels[State.level]);
+
+            // 更新与绘制
+            [...State.bullets, ...State.enemies].forEach((obj, i) => {
+                obj.update(); obj.draw();
+                if (obj.y < -50 || obj.y > 650) (obj instanceof Bullet ? State.bullets : State.enemies).splice(i, 1);
+            });
+
+            if (State.boss) {
+                State.boss.update(); State.boss.draw();
+                document.getElementById('boss-hp-bar').style.display = "block";
+                document.getElementById('boss-hp-fill').style.width = (State.boss.hp / State.boss.maxHp * 100) + "%";
+            } else {
+                document.getElementById('boss-hp-bar').style.display = "none";
             }
 
-            function showScreen(id) {
-                document.querySelectorAll('.overlay').forEach(el => el.classList.add('hidden'));
-                const target = document.getElementById(id);
-                if (target) target.classList.remove('hidden');
-                updateStatus(`进入界面: ${id}`, true);
-            }
-
-            // 核心绑定函数
-            function safeBind(id, cb) {
-                const el = document.getElementById(id);
-                if (el) {
-                    const newEl = el.cloneNode(true);
-                    el.parentNode.replaceChild(newEl, el);
-                    newEl.addEventListener('click', (e) => {
-                        console.log(`[Interaction] 点击: ${id}`);
-                        cb(e);
+            // 碰撞检测
+            State.bullets.forEach((b, bi) => {
+                if (!b.isEnemy) {
+                    State.enemies.forEach((e, ei) => {
+                        if (Math.hypot(b.x - e.x, b.y - e.y) < 30) {
+                            State.enemies.splice(ei, 1); State.bullets.splice(bi, 1);
+                            State.score += 10; updateHUD();
+                        }
                     });
-                }
-            }
-
-            // 初始化入口
-            window.onload = () => {
-                console.log("🚀 [Core] 正在注入交互逻辑...");
-                
-                safeBind('show-select-btn', () => showScreen('zodiac-select'));
-                safeBind('show-settings-btn', () => showScreen('game-settings'));
-                safeBind('start-btn', () => {
-                    showScreen('none');
-                    State.gameActive = true;
-                    startGame();
-                });
-                safeBind('back-to-start-btn', () => showScreen('start-screen'));
-                safeBind('save-settings-btn', () => showScreen('start-screen'));
-                safeBind('confirm-select-btn', () => showScreen('start-screen'));
-                
-                safeBind('submit-feedback-btn', () => {
-                    const input = document.getElementById('feedback-input');
-                    if (input.value) {
-                        alert("建议已收到！AI 专家团正在评审中...");
-                        input.value = '';
+                    if (State.boss && Math.hypot(b.x - State.boss.x, b.y - State.boss.y) < 50) {
+                        State.boss.hp -= 5; State.bullets.splice(bi, 1);
+                        if(State.boss.hp <= 0) { State.boss = null; State.level++; log("晋级！"); updateHUD(); }
                     }
-                });
+                } else {
+                    if (Math.hypot(b.x - State.playerX, b.y - 520) < 20) {
+                        State.bullets.splice(bi, 1); State.lives--; updateHUD();
+                        if(State.lives <= 0) endGame();
+                    }
+                }
+            });
 
-                updateStatus("就绪", true);
-            };
-
-            function startGame() {
-                updateStatus("引擎运行中", true);
-                initStars();
-                loop();
+            // 自动射击
+            if (State.frameCount % 10 === 0) {
+                State.bullets.push(new Bullet(State.playerX, 500, bCfg, -90, false));
             }
 
-            function initStars() {
-                State.stars = Array.from({length:50}, () => ({
-                    x: Math.random()*400, y: Math.random()*600, sp: Math.random()*2+1
-                }));
-            }
+            requestAnimationFrame(loop);
+        }
 
-            function loop() {
-                if (!State.gameActive) return;
-                ctx.clearRect(0, 0, 400, 600);
-                ctx.fillStyle = "#fff";
-                State.stars.forEach(s => {
-                    s.y += s.sp; if (s.y > 600) s.y = -10;
-                    ctx.fillRect(s.x, s.y, 2, 2);
-                });
-                ctx.fillStyle = "#ffd700";
-                ctx.beginPath(); ctx.moveTo(200, 500); ctx.lineTo(180, 530); ctx.lineTo(220, 530); ctx.fill();
-                requestAnimationFrame(loop);
-            }
-        })();
+        function endGame() {
+            State.gameActive = false;
+            document.getElementById('game-over').classList.remove('hidden');
+            document.getElementById('final-score-display').innerText = `得分: ${State.score}`;
+        }
+
+        function updateHUD() {
+            document.getElementById('score').innerText = `得分: ${State.score}`;
+            document.getElementById('life').innerText = `❤️x${State.lives}`;
+            const lv = Config.constellation_levels[State.level];
+            document.getElementById('level-name').innerText = lv ? lv.constellation : "终焉秘境";
+        }
+
+        function renderList() {
+            const list = document.getElementById('zodiac-list');
+            list.innerHTML = '';
+            const icons = { rat: '🐀', ox: '🐂', tiger: '🐅', rabbit: '🐇', dragon: '🐉', snake: '🐍', horse: '🐎', goat: '🐐', monkey: '🐒', rooster: '🐓', dog: '🐕', pig: '🐖' };
+            State.unlockedZodiacs.forEach(zId => {
+                const item = document.createElement('div');
+                item.className = `zodiac-item ${State.weapon === zId ? 'selected' : ''}`;
+                item.innerHTML = `<div class="zodiac-icon">${icons[zId]}</div><div style="font-size:10px;">${zId}</div>`;
+                item.onclick = () => {
+                    State.weapon = zId;
+                    document.querySelectorAll('.zodiac-item').forEach(el => el.classList.remove('selected'));
+                    item.classList.add('selected');
+                };
+                list.appendChild(item);
+            });
+        }
+
+        function initStars() {
+            State.stars = Array.from({length:50}, () => ({
+                x: Math.random()*400, y: Math.random()*600, sp: Math.random()*2+1
+            }));
+        }
     </script>
 </body>
 </html>
