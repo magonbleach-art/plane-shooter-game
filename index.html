@@ -146,7 +146,7 @@
             <div id="life">❤️x2</div>
         </div>
         <div id="boss-hp-bar"><div id="boss-hp-fill"></div></div>
-        <div id="version-tag" style="position:absolute; top:10px; right:10px; background:linear-gradient(135deg, #f00, #b00); color:#fff; font-size:12px; padding:4px 12px; z-index:9999; border-radius:20px; font-weight:bold; box-shadow:0 0 20px rgba(255,0,0,0.6); border:2px solid #fff;">VER: 7.9.4-LIVE</div>
+        <div id="version-tag" style="position:absolute; top:10px; right:10px; background:linear-gradient(135deg, #f00, #b00); color:#fff; font-size:12px; padding:4px 12px; z-index:9999; border-radius:20px; font-weight:bold; box-shadow:0 0 20px rgba(255,0,0,0.6); border:2px solid #fff;">VER: 7.9.5-LIVE</div>
         <div id="ultimate-bar">
             <div id="ultimate-hint">能量已满 - 点击屏幕释放大招</div>
             <div id="ultimate-fill"></div>
@@ -472,15 +472,18 @@
             update() { this.y += this.speed; }
             draw() {
                 ctx.save(); ctx.translate(this.x, this.y);
-                ctx.shadowBlur = 15;
-                if(this.type === 'bullet') { ctx.fillStyle = "#ffd700"; ctx.shadowColor = "#ffd700"; ctx.fillText("⭐", -10, 5); }
-                if(this.type === 'health') { ctx.fillStyle = "#f44336"; ctx.shadowColor = "#f44336"; ctx.fillText("❤️", -10, 5); }
-                if(this.type === 'wingman') { ctx.fillStyle = "#00ffff"; ctx.shadowColor = "#00ffff"; ctx.fillText("✈️", -10, 5); }
-                if(this.type === 'zodiac') { 
-                    ctx.fillStyle = "#fff"; ctx.shadowColor = "#fff"; 
-                    ctx.font = "12px Arial"; ctx.fillText(this.zodiacId.toUpperCase(), -15, 5); 
+                const assetId = `item_${this.type}`;
+                if (!safeDrawImage(State.assets[assetId], -20, -20, 40, 40)) {
+                    ctx.shadowBlur = 15;
+                    if(this.type === 'bullet') { ctx.fillStyle = "#ffd700"; ctx.shadowColor = "#ffd700"; ctx.fillText("⭐", -10, 5); }
+                    if(this.type === 'health') { ctx.fillStyle = "#f44336"; ctx.shadowColor = "#f44336"; ctx.fillText("❤️", -10, 5); }
+                    if(this.type === 'wingman') { ctx.fillStyle = "#00ffff"; ctx.shadowColor = "#00ffff"; ctx.fillText("✈️", -10, 5); }
+                    if(this.type === 'zodiac') { 
+                        ctx.fillStyle = "#fff"; ctx.shadowColor = "#fff"; 
+                        ctx.font = "12px Arial"; ctx.fillText(this.zodiacId.toUpperCase(), -15, 5); 
+                    }
+                    ctx.font = "bold 20px Arial"; ctx.beginPath(); ctx.arc(0, 0, 18, 0, Math.PI*2); ctx.strokeStyle="#fff"; ctx.stroke();
                 }
-                ctx.font = "bold 20px Arial"; ctx.beginPath(); ctx.arc(0, 0, 18, 0, Math.PI*2); ctx.strokeStyle="#fff"; ctx.stroke();
                 ctx.restore();
             }
         }
@@ -515,6 +518,22 @@
                 // 注册 AI 资产路径
                 AssetManager.add('player', 'assets/planes/hero.png');
                 AssetManager.add('wingman', 'assets/planes/wingman.png');
+                
+                // 敌机类
+                ['scout', 'shooter', 'tank', 'elite'].forEach(t => {
+                    AssetManager.add(`enemy_${t}`, `assets/planes/enemy_${t}.png`);
+                });
+
+                // 子弹类
+                const zodiacs = ['rat', 'ox', 'tiger', 'rabbit', 'dragon', 'snake', 'horse', 'goat', 'monkey', 'rooster', 'dog', 'pig'];
+                zodiacs.forEach(z => AssetManager.add(`bullet_${z}`, `assets/bullets/bullet_${z}.png`));
+                AssetManager.add('bullet_enemy', 'assets/bullets/bullet_enemy.png');
+                AssetManager.add('bullet_boss', 'assets/bullets/bullet_boss.png');
+
+                // 道具类
+                ['bullet', 'health', 'wingman', 'zodiac'].forEach(t => {
+                    AssetManager.add(`item_${t}`, `assets/items/item_${t}.png`);
+                });
                 
                 const constellations = ['aries', 'taurus', 'gemini', 'cancer', 'leo', 'virgo', 'libra', 'scorpio', 'sagittarius', 'capricorn', 'aquarius', 'pisces'];
                 constellations.forEach(name => {
