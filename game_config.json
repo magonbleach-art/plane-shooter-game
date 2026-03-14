@@ -3,12 +3,18 @@
     "version": "7.8.1-Asset-Integrated",
     "settings": {
         "PLAYER_SPEED": 6,
-        "INITIAL_LIVES": 2,
+        "INITIAL_LIVES": 3,
         "MAX_LIVES": 5,
         "BULLET_SPEED": 12,
         "ACTIVE_ZODIAC_BULLET": "rat",
-        "ENEMY_HP_MULT": 0.9,
-        "ENEMY_SPAWN_RATE": 0.09
+        "ENEMY_HP_MULT": 1.0,
+        "ENEMY_SPAWN_RATE": 0.09,
+        "ENEMY_BASE_HP": {
+            "scout": 2,
+            "shooter": 6,
+            "tank": 20,
+            "elite": 50
+        }
     },
     "zodiac_bullets": [
         {
@@ -17,7 +23,8 @@
             "color": "#e0e0e0",
             "type": "interceptor",
             "description": "拦截敌弹，缠绕伤害",
-            "damage": 5.0,
+            "damage": 10.0,
+            "fire_rate": 10,
             "speed_mult": 0.8,
             "homing": true,
             "homing_speed": 0.15,
@@ -34,7 +41,8 @@
             "color": "#8d6e63",
             "type": "heavy_pierce",
             "description": "高伤破防，硬直击退",
-            "damage": 12,
+            "damage": 25,
+            "fire_rate": 20,
             "speed_mult": 0.5,
             "knockback": 20,
             "pierce": true,
@@ -51,7 +59,8 @@
             "color": "#ff9800",
             "type": "scatter_tiger",
             "description": "扇形扩散，近战霸主",
-            "damage": 1.2,
+            "damage": 8,
+            "fire_rate": 15,
             "scatter": 7,
             "angle_spread": 60,
             "ultimate": {
@@ -65,7 +74,8 @@
             "color": "#f06292",
             "type": "bounce_rabbit",
             "description": "边缘反弹，穿梭敌群",
-            "damage": 1.5,
+            "damage": 12,
+            "fire_rate": 12,
             "bounces": 4,
             "speed_mult": 1.2,
             "ultimate": {
@@ -79,7 +89,8 @@
             "color": "#ffd700",
             "type": "laser_dragon",
             "description": "全屏贯穿，瞬发瞬中",
-            "damage": 0.8,
+            "damage": 6,
+            "fire_rate": 5,
             "is_continuous": true,
             "ultimate": {
                 "name": "九龙吐息",
@@ -92,8 +103,9 @@
             "color": "#4caf50",
             "type": "snake_poison",
             "description": "S形蜿蜒，持续毒伤",
-            "damage": 1,
-            "poison_dot": 0.5,
+            "damage": 10,
+            "fire_rate": 12,
+            "poison_dot": 3.0,
             "poison_dur": 180,
             "ultimate": {
                 "name": "万毒归宗",
@@ -106,7 +118,8 @@
             "color": "#2196f3",
             "type": "swift_pierce",
             "description": "极速穿刺，远距精准",
-            "damage": 2,
+            "damage": 15,
+            "fire_rate": 8,
             "speed_mult": 2.5,
             "pierce": true,
             "ultimate": {
@@ -120,8 +133,9 @@
             "color": "#ffffff",
             "type": "holy_support",
             "description": "命中回血，攻防兼备",
-            "damage": 0.5,
-            "heal": 0.1,
+            "damage": 8,
+            "fire_rate": 15,
+            "heal": 1.0,
             "shield_prob": 0.2,
             "ultimate": {
                 "name": "神羊祈福",
@@ -134,7 +148,8 @@
             "color": "#ffeb3b",
             "type": "random_bounce",
             "description": "无规律反弹，全屏乱战",
-            "damage": 1.2,
+            "damage": 10,
+            "fire_rate": 10,
             "bounces": 6,
             "random_angle": true,
             "ultimate": {
@@ -148,7 +163,8 @@
             "color": "#f44336",
             "type": "stun_rooster",
             "description": "金光眩晕，控制核心",
-            "damage": 1.2,
+            "damage": 12,
+            "fire_rate": 15,
             "stun_dur": 120,
             "ultimate": {
                 "name": "金鸡报晓",
@@ -161,7 +177,8 @@
             "color": "#ffc107",
             "type": "homing_dog",
             "description": "灵活绕障，自动锁敌",
-            "damage": 1.5,
+            "damage": 15,
+            "fire_rate": 12,
             "homing_speed": 0.2,
             "ultimate": {
                 "name": "群犬逐日",
@@ -174,9 +191,10 @@
             "color": "#e91e63",
             "type": "nuke_pig",
             "description": "范围爆破，碎片飞溅",
-            "damage": 3,
-            "aoe": 80,
-            "fragments": 5,
+            "damage": 25,
+            "fire_rate": 25,
+            "aoe": 120,
+            "fragments": 10,
             "ultimate": {
                 "name": "饕餮之怒",
                 "desc": "引发一场吞噬星空的终极核爆"
@@ -190,7 +208,7 @@
             "unlock_bullet": "rat",
             "boss": {
                 "name": "白羊 BOSS",
-                "hp": 500,
+                "hp": 800,
                 "small_skill": "spiral_spread",
                 "big_skill": "parallel_rows",
                 "counter_bullet": "rat",
@@ -203,7 +221,7 @@
             "unlock_bullet": "ox",
             "boss": {
                 "name": "金牛 BOSS",
-                "hp": 600,
+                "hp": 1200,
                 "small_skill": "targeted_burst",
                 "big_skill": "cross_cutting",
                 "counter_bullet": "rabbit",
@@ -216,7 +234,7 @@
             "unlock_bullet": "tiger",
             "boss": {
                 "name": "双子 BOSS",
-                "hp": 700,
+                "hp": 1800,
                 "small_skill": "cross_bullets",
                 "big_skill": "dual_lasers",
                 "counter_bullet": "dog",
@@ -229,7 +247,7 @@
             "unlock_bullet": "rabbit",
             "boss": {
                 "name": "巨蟹 BOSS",
-                "hp": 800,
+                "hp": 2500,
                 "small_skill": "wave_barrage",
                 "big_skill": "arc_shield",
                 "counter_bullet": "goat",
@@ -242,7 +260,7 @@
             "unlock_bullet": "dragon",
             "boss": {
                 "name": "狮子 BOSS",
-                "hp": 1000,
+                "hp": 3500,
                 "small_skill": "fan_scatter",
                 "big_skill": "center_explosion",
                 "counter_bullet": "tiger",
@@ -255,7 +273,7 @@
             "unlock_bullet": "snake",
             "boss": {
                 "name": "处女 BOSS",
-                "hp": 1200,
+                "hp": 4800,
                 "small_skill": "homing_clusters",
                 "big_skill": "cross_laser",
                 "counter_bullet": "dog",
@@ -268,7 +286,7 @@
             "unlock_bullet": "horse",
             "boss": {
                 "name": "天秤 BOSS",
-                "hp": 500,
+                "hp": 6500,
                 "small_skill": "balance_shot",
                 "big_skill": "double_beams",
                 "counter_bullet": "rat",
@@ -281,7 +299,7 @@
             "unlock_bullet": "goat",
             "boss": {
                 "name": "天蝎 BOSS",
-                "hp": 500,
+                "hp": 8500,
                 "small_skill": "poison_dart",
                 "big_skill": "blackhole_pull",
                 "counter_bullet": "snake",
@@ -294,7 +312,7 @@
             "unlock_bullet": "monkey",
             "boss": {
                 "name": "射手 BOSS",
-                "hp": 500,
+                "hp": 11000,
                 "small_skill": "meteor_arrow",
                 "big_skill": "star_lock",
                 "counter_bullet": "monkey",
@@ -307,7 +325,7 @@
             "unlock_bullet": "rooster",
             "boss": {
                 "name": "摩羯 BOSS",
-                "hp": 500,
+                "hp": 14000,
                 "small_skill": "bounce_rock",
                 "big_skill": "screen_rubble",
                 "counter_bullet": "monkey",
@@ -320,7 +338,7 @@
             "unlock_bullet": "dog",
             "boss": {
                 "name": "水瓶 BOSS",
-                "hp": 500,
+                "hp": 18000,
                 "small_skill": "tornado_wind",
                 "big_skill": "ice_beams",
                 "counter_bullet": "goat",
@@ -333,7 +351,7 @@
             "unlock_bullet": "pig",
             "boss": {
                 "name": "双鱼 BOSS",
-                "hp": 500,
+                "hp": 25000,
                 "small_skill": "ghost_bubble",
                 "big_skill": "ring_expansion",
                 "counter_bullet": "dragon",
