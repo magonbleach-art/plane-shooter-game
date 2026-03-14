@@ -146,7 +146,7 @@
             <div id="life">❤️x2</div>
         </div>
         <div id="boss-hp-bar"><div id="boss-hp-fill"></div></div>
-        <div id="version-tag" style="position:absolute; top:10px; right:10px; background:linear-gradient(135deg, #f00, #b00); color:#fff; font-size:12px; padding:4px 12px; z-index:9999; border-radius:20px; font-weight:bold; box-shadow:0 0 20px rgba(255,0,0,0.6); border:2px solid #fff;">VER: 7.9.5-LIVE</div>
+        <div id="version-tag" style="position:absolute; top:10px; right:10px; background:linear-gradient(135deg, #f00, #b00); color:#fff; font-size:12px; padding:4px 12px; z-index:9999; border-radius:20px; font-weight:bold; box-shadow:0 0 20px rgba(255,0,0,0.6); border:2px solid #fff;">VER: 8.0.0-Zodiac-Evo</div>
         <div id="ultimate-bar">
             <div id="ultimate-hint">能量已满 - 点击屏幕释放大招</div>
             <div id="ultimate-fill"></div>
@@ -248,59 +248,69 @@
     </div>
 
     <script>
-        console.log("%c OpenClaw v7.8.5 Loaded %c", "background:#f00; color:#fff; font-weight:bold;", "");
+        console.log("%c OpenClaw v7.9.9 Loaded %c", "background:#f00; color:#fff; font-weight:bold;", "");
         
-        /**
-         * 🛡️ [进化 v7.8.5] AI 分工与精灵引擎
-         */
         const State = {
             gameActive: false, score: 0, lives: 3, frameCount: 0,
-            startTime: 0, // 记录游戏开始时间，用于 Boss 30秒计时
-            weapon: 'rat', bulletLevel: 1, wingmen: [], powerups: [],
+            startTime: 0, weapon: 'rat', bulletLevel: 1, wingmen: [], powerups: [],
             ultimateEnergy: 0, maxUltimateEnergy: 100, isUltimateActive: false,
             level: 0, diff: 1.0, speed: 1.0,
-            stars: [], bullets: [], enemies: [], boss: null,
-            playerX: 200, playerTargetX: 200,
-            unlockedZodiacs: ['rat', 'ox', 'tiger', 'rabbit', 'dragon', 'snake', 'horse', 'goat', 'monkey', 'rooster', 'dog', 'pig'],
-            assets: {} // 存放加载的精灵图
+            stars: [], bullets: [], enemies: [], boss: null, particles: [],
+            playerX: 200, playerTargetX: 200, playerHitFlash: 0,
+            unlockedZodiacs: ['rat'],
+            assets: {}
         };
 
-        // 🛡️ 资源管理器：支持动态加载 AI 生成的专业原画
+        function createExplosion(x, y, color, count = 10) {
+            for (let i = 0; i < count; i++) {
+                State.particles.push({
+                    x: x, y: y,
+                    vx: (Math.random() - 0.5) * 10,
+                    vy: (Math.random() - 0.5) * 10,
+                    life: 1.0,
+                    color: color,
+                    size: Math.random() * 4 + 2
+                });
+            }
+        }
+
         const AssetManager = {
-            queue: [],
-            total: 0,
-            loaded: 0,
-            add(id, src) {
-                this.queue.push({id, src});
-                this.total++;
-            },
+            queue: [], total: 0, loaded: 0,
+            add(id, src) { this.queue.push({id, src}); this.total++; },
             async loadAll() {
                 if (this.total === 0) return;
                 document.getElementById('loading-screen').classList.remove('hidden');
-                
-                // 设置总加载超时 5 秒，防止资源缺失卡死
-                const timeout = new Promise(resolve => setTimeout(() => {
-                    log("部分资源加载超时，跳过...");
-                    resolve();
-                }, 5000));
-
+                const timeout = new Promise(resolve => setTimeout(resolve, 5000));
                 const loadAssets = async () => {
-                    for (let item of this.queue) {
-                        try {
-                            const img = new Image();
-                            const loadPromise = new Promise((resolve) => {
-                                img.onload = resolve;
-                                img.onerror = resolve;
-                            });
-                            img.src = item.src + "?v=" + Date.now();
-                            await loadPromise;
-                            State.assets[item.id] = img;
-                            this.loaded++;
-                            document.getElementById('loading-fill').style.width = (this.loaded / this.total * 100) + "%";
-                        } catch(e) { console.warn(`Asset ${item.id} fail`, e); }
-                    }
+                    // 并行加载资源以提高速度
+                    const loadPromises = this.queue.map(item => {
+                        return new Promise(resolve => {
+                            try {
+                                const img = new Image();
+                                img.onload = () => {
+                                    State.assets[item.id] = img;
+                                    this.loaded++;
+                                    document.getElementById('loading-fill').style.width = (this.loaded / this.total * 100) + "%";
+                                    resolve();
+                                };
+                                img.onerror = () => {
+                                    // 资源加载失败时使用默认绘制
+                                    console.log(`Resource ${item.src} failed to load, using fallback`);
+                                    this.loaded++;
+                                    document.getElementById('loading-fill').style.width = (this.loaded / this.total * 100) + "%";
+                                    resolve();
+                                };
+                                img.src = item.src + "?v=" + Date.now();
+                            } catch(e) {
+                                console.error(`Error loading ${item.src}:`, e);
+                                this.loaded++;
+                                document.getElementById('loading-fill').style.width = (this.loaded / this.total * 100) + "%";
+                                resolve();
+                            }
+                        });
+                    });
+                    await Promise.all(loadPromises);
                 };
-
                 await Promise.race([loadAssets(), timeout]);
                 setTimeout(() => document.getElementById('loading-screen').classList.add('hidden'), 500);
             }
@@ -319,19 +329,14 @@
                 <button onclick="location.reload(true)" style="width:60px; height:20px; font-size:9px; background:#444; color:#fff; border:1px solid #666; margin-left:10px; cursor:pointer;">强制刷新</button>`;
                 el.classList.add('status-ready');
             }
-            console.log(`[OpenClaw] ${msg}`);
         }
 
-        // 🛡️ 核心修复：克隆节点以确保唯一监听器
         function bind(id, callback) {
             const el = document.getElementById(id);
             if (!el) return;
             const newBtn = el.cloneNode(true);
             el.parentNode.replaceChild(newBtn, el);
-            newBtn.addEventListener('click', (e) => {
-                log(`触发: ${id}`);
-                callback(e);
-            });
+            newBtn.addEventListener('click', callback);
         }
 
         function showScreen(id) {
@@ -340,79 +345,143 @@
             if (target) target.classList.remove('hidden');
         }
 
-        // 🛡️ 资源渲染助手：确保 broken 状态的图片不会导致引擎崩溃
         function safeDrawImage(img, x, y, w, h) {
-            if (img && img.complete && img.naturalWidth > 0) {
-                ctx.drawImage(img, x, y, w, h);
-                return true;
-            }
+            if (img && img.complete && img.naturalWidth > 0) { ctx.drawImage(img, x, y, w, h); return true; }
             return false;
         }
 
-        // --- 核心类定义 ---
         class Bullet {
             constructor(x, y, cfg, angle, isEnemy) {
                 this.x = x; this.y = y; this.cfg = cfg; this.isEnemy = isEnemy;
                 this.angle = angle * Math.PI / 180;
-                this.speed = (isEnemy ? 4 : 12) * State.speed;
+                this.baseSpeed = (isEnemy ? 4 : 12) * State.speed;
+                this.speed = this.baseSpeed;
+                this.frameCount = 0;
+                this.target = null;
+                this.isDead = false;
+                this.pierceCount = 0;
+                this.isSplit = false;
+                this.lifeTime = 0;
+                this.maxLifeTime = 120;
             }
             update() {
+                this.frameCount++;
+                this.lifeTime++;
+                if (!this.isEnemy) {
+                    const id = this.cfg.id;
+                    // --- 12生肖双特性逻辑核心实现 ---
+                    switch(id) {
+                        case 'rat': // 特性1：拦截(在碰撞逻辑处理) | 特性2：分裂
+                            if (!this.isSplit && this.lifeTime === 30) {
+                                for(let i=-1; i<=1; i+=2) {
+                                    let b = new Bullet(this.x, this.y, this.cfg, (this.angle*180/Math.PI) + i*20, false);
+                                    b.isSplit = true; b.speed = this.speed * 1.2; State.bullets.push(b);
+                                }
+                                this.isDead = true;
+                            }
+                            break;
+                        case 'ox': // 特性1：击退(碰撞逻辑) | 特性2：重型慢速
+                            this.speed = this.baseSpeed * 0.7;
+                            break;
+                        case 'tiger': // 特性1：体型增长 | 特性2：威力随距离增加
+                            this.speed = this.baseSpeed * 1.1;
+                            break;
+                        case 'rabbit': // 特性1：反弹 | 特性2：灵活穿透
+                            if (this.x < 10 || this.x > 390) { this.angle = Math.PI - this.angle; this.speed *= 1.1; }
+                            break;
+                        case 'dragon': // 特性1：极速 | 特性2：贯穿龙息(不消失)
+                            this.speed = this.baseSpeed * 1.8;
+                            break;
+                        case 'snake': // 特性1：蛇形走位 | 特性2：剧毒标记(碰撞逻辑)
+                            this.x += Math.sin(this.frameCount * 0.15) * 12;
+                            break;
+                        case 'horse': // 特性1：持续加速 | 特性2：冲锋陷阵
+                            this.speed += 0.2;
+                            break;
+                        case 'goat': // 特性1：治疗反馈 | 特性2：神圣力场(范围减速)
+                            State.enemies.forEach(e => {
+                                if (Math.hypot(this.x - e.x, this.y - e.y) < 60) e.speed *= 0.95;
+                            });
+                            break;
+                        case 'monkey': // 特性1：幻影分身 | 特性2：随机暴击
+                            if (this.frameCount % 20 === 0) {
+                                let shadow = new Bullet(this.x, this.y, this.cfg, (this.angle*180/Math.PI), false);
+                                shadow.isDead = true; shadow.isShadow = true; State.bullets.push(shadow);
+                            }
+                            break;
+                        case 'rooster': // 特性1：扇形散弹 | 特性2：高频连发
+                            this.speed = this.baseSpeed * 1.3;
+                            break;
+                        case 'dog': // 特性1：精准追踪 | 特性2：锁定加速
+                            if (!this.target || this.target.hp <= 0) {
+                                let minDist = 800;
+                                [...State.enemies, State.boss].filter(e => e && e.hp > 0).forEach(e => {
+                                    let d = Math.hypot(e.x - this.x, e.y - this.y);
+                                    if (d < minDist) { minDist = d; this.target = e; }
+                                });
+                            }
+                            if (this.target) {
+                                let targetAngle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
+                                let diff = targetAngle - this.angle;
+                                while (diff < -Math.PI) diff += Math.PI * 2;
+                                while (diff > Math.PI) diff -= Math.PI * 2;
+                                this.angle += diff * 0.12;
+                                this.speed += 0.15;
+                            }
+                            break;
+                        case 'pig': // 特性1：范围核爆 | 特性2：体型压制
+                            this.speed = this.baseSpeed * 0.6;
+                            break;
+                    }
+                }
                 this.x += Math.cos(this.angle) * this.speed;
                 this.y += Math.sin(this.angle) * this.speed;
             }
             draw() {
+                if (this.isShadow) { ctx.globalAlpha = 0.3; }
                 ctx.save(); ctx.translate(this.x, this.y);
-                // 优先使用精灵图资源
                 const assetId = `bullet_${this.cfg.id}`;
-                if (!safeDrawImage(State.assets[assetId], -10, -10, 20, 20)) {
-                    const design = window.ZODIAC_DESIGNS ? window.ZODIAC_DESIGNS[this.cfg.id] : null;
-                    if (!this.isEnemy && design && design.attack_effect) {
-                        design.attack_effect(ctx, this);
-                    } else {
-                        ctx.fillStyle = this.isEnemy ? "#f44336" : (this.cfg.color || "#fff");
-                        ctx.beginPath(); ctx.arc(0, 0, 4, 0, Math.PI*2); ctx.fill();
-                    }
+                // 优先使用 ZODIAC_DESIGNS 的矢量绘制以保证视觉差异化，如果不存在则使用贴图
+                if (window.ZODIAC_DESIGNS && window.ZODIAC_DESIGNS[this.cfg.id]) {
+                    window.ZODIAC_DESIGNS[this.cfg.id].attack_effect(ctx, this);
+                } else if (!safeDrawImage(State.assets[assetId], -10, -10, 20, 20)) {
+                    ctx.fillStyle = this.isEnemy ? "#f44336" : (this.cfg.color || "#fff");
+                    ctx.beginPath(); ctx.arc(0, 0, 4, 0, Math.PI*2); ctx.fill();
                 }
                 ctx.restore();
+                ctx.globalAlpha = 1.0;
             }
         }
 
         class Enemy {
-            constructor(type = 'scout') {
-                this.type = type; // 'scout', 'shooter', 'tank', 'elite'
-                this.x = Math.random()*360+20; this.y = -40;
+            constructor(type) {
+                this.type = type; this.isDead = false; this.hitFlash = 0;
+                this.x = Math.random() * 360 + 20; this.y = -50;
+                const cfg = (Config.enemies || {})[type] || {hp:10, speed:2};
+                this.hp = cfg.hp * State.diff; this.maxHp = this.hp;
+                this.speed = cfg.speed * State.speed;
                 this.frameCount = 0;
-                
-                if(type === 'scout') { this.hp = 1 * State.diff; this.speed = (2 + Math.random()) * State.speed; }
-                if(type === 'shooter') { this.hp = 3 * State.diff; this.speed = 1.2 * State.speed; }
-                if(type === 'tank') { this.hp = 10 * State.diff; this.speed = 0.8 * State.speed; }
-                if(type === 'elite') { this.hp = 25 * State.diff; this.speed = 0.5 * State.speed; this.x = 200; }
             }
             update() {
-                this.y += this.speed;
-                this.frameCount++;
-                
-                // 射击型敌人发弹
-                if (this.type === 'shooter' && this.frameCount % 120 === 0) {
+                this.frameCount++; this.y += this.speed;
+                if (this.type === 'shooter' && this.frameCount % 100 === 0) {
                     State.bullets.push(new Bullet(this.x, this.y, {id:'enemy'}, 90, true));
-                }
-                // 精英怪发弹
-                if (this.type === 'elite' && this.frameCount % 60 === 0) {
-                    for(let i=0; i<360; i+=60) State.bullets.push(new Bullet(this.x, this.y, {id:'enemy'}, i, true));
                 }
             }
             draw() {
                 ctx.save(); ctx.translate(this.x, this.y);
-                const assetId = `enemy_${this.type}`;
-                if (!safeDrawImage(State.assets[assetId], -20, -20, 40, 40)) {
-                    ctx.shadowBlur = 10;
-                    if(this.type === 'tank') { ctx.fillStyle = "#ffc107"; ctx.fillRect(-20, -20, 40, 40); }
-                    else if(this.type === 'elite') { ctx.fillStyle = "#9c27b0"; ctx.beginPath(); ctx.arc(0,0,30,0,Math.PI*2); ctx.fill(); }
-                    else {
-                        ctx.fillStyle = this.type === 'shooter' ? "#2196f3" : "#ff4b2b";
-                        ctx.shadowColor = ctx.fillStyle;
-                        ctx.beginPath(); ctx.moveTo(0, 15); ctx.lineTo(-15, -15); ctx.lineTo(15, -15); ctx.fill();
-                    }
+                if (this.hitFlash > 0) { this.hitFlash--; ctx.filter = "brightness(3)"; }
+                
+                // 渲染优先级：关卡特定图片 (enemy_L_T) -> 通用图片 (enemy_T) -> 几何占位
+                const levelAssetId = `enemy_${State.level}_${this.type}`;
+                const commonAssetId = `enemy_${this.type}`;
+                
+                let size = this.type === 'tank' ? 60 : (this.type === 'elite' ? 80 : 40);
+                
+                if (!safeDrawImage(State.assets[levelAssetId], -size/2, -size/2, size, size) &&
+                    !safeDrawImage(State.assets[commonAssetId], -size/2, -size/2, size, size)) {
+                    ctx.fillStyle = this.type === 'elite' ? "#9c27b0" : (this.type === 'tank' ? "#5d4037" : "#333");
+                    ctx.beginPath(); ctx.moveTo(0, size/2); ctx.lineTo(-size/2, -size/2); ctx.lineTo(size/2, -size/2); ctx.closePath(); ctx.fill();
                 }
                 ctx.restore();
             }
@@ -421,24 +490,15 @@
         class Boss {
             constructor(cfg) {
                 this.cfg = cfg; this.hp = (cfg.boss ? cfg.boss.hp : 500) * State.diff; this.maxHp = this.hp;
-                this.x = 200; this.y = -100; this.ty = 120;
-                this.phase = 1;
-                this.maxPhases = 12; // 扩展支持到 12 阶段
-                // 中英文映射，用于匹配资源 ID
-                this.nameMap = {
-                    "白羊宫": "aries", "金牛宫": "taurus", "双子宫": "gemini", "巨蟹宫": "cancer",
-                    "狮子宫": "leo", "处女宫": "virgo", "天秤宫": "libra", "天蝎宫": "scorpio",
-                    "射手宫": "sagittarius", "摩羯宫": "capricorn", "水瓶宫": "aquarius", "双鱼宫": "pisces"
-                };
+                this.x = 200; this.y = -100; this.ty = 120; this.phase = 1; this.maxPhases = 12; this.hitFlash = 0;
+                this.nameMap = { "白羊宫": "aries", "金牛宫": "taurus", "双子宫": "gemini", "巨蟹宫": "cancer", "狮子宫": "leo", "处女宫": "virgo", "天秤宫": "libra", "天蝎宫": "scorpio", "射手宫": "sagittarius", "摩羯宫": "capricorn", "水瓶宫": "aquarius", "双鱼宫": "pisces" };
             }
             update() {
                 if (this.y < this.ty) this.y += 2;
                 this.x = 200 + Math.sin(State.frameCount * 0.02) * 100;
-                
-                // 动态计算当前阶段 (支持多阶段平滑切换)
+                if (this.hitFlash > 0) this.hitFlash--;
                 const hpRatio = this.hp / this.maxHp;
                 this.phase = Math.max(1, Math.min(this.maxPhases, Math.ceil((1 - hpRatio) * this.maxPhases) + 1));
-
                 if (State.frameCount % 60 === 0) {
                     for(let i=0; i<360; i+=30) State.bullets.push(new Bullet(this.x, this.y, {id:'boss'}, i, true));
                 }
@@ -447,61 +507,43 @@
                 const rawName = this.cfg.constellation || 'Aries';
                 const engName = this.nameMap[rawName] || rawName.toLowerCase();
                 ctx.save(); ctx.translate(this.x, this.y);
+                if (this.hitFlash > 0) ctx.filter = "brightness(3) grayscale(1)";
                 
-                // 优先使用 AI 生成的高清多阶段 Boss 原画
                 const assetId = `boss_${engName}_phase${this.phase}`;
                 const fallbackId = `boss_${engName}_phase1`;
                 
+                // 渲染优先级：当前阶段 PNG -> 第一阶段 PNG -> CONSTELLATION_DESIGNS 矢量绘制 -> 红色方块兜底
                 if (!safeDrawImage(State.assets[assetId], -100, -100, 200, 200) && 
                     !safeDrawImage(State.assets[fallbackId], -100, -100, 200, 200)) {
-                    // 过程绘制兜底
-                    const design = window.CONSTELLATION_DESIGNS ? window.CONSTELLATION_DESIGNS[rawName] : null;
-                    if (design && design.draw) design.draw(ctx, this);
-                    else { ctx.fillStyle="#f00"; ctx.fillRect(-30, -30, 60, 60); }
+                    
+                    if (window.CONSTELLATION_DESIGNS && (window.CONSTELLATION_DESIGNS[rawName] || window.CONSTELLATION_DESIGNS[engName])) {
+                        const design = window.CONSTELLATION_DESIGNS[rawName] || window.CONSTELLATION_DESIGNS[engName];
+                        design.draw(ctx, this);
+                    } else {
+                        ctx.fillStyle="#f00"; ctx.fillRect(-30, -30, 60, 60);
+                    }
                 }
                 ctx.restore();
             }
         }
 
         class Powerup {
-            constructor(x, y, type, zodiacId = null) {
-                this.x = x; this.y = y; this.type = type; // 'bullet', 'health', 'wingman', 'zodiac'
-                this.zodiacId = zodiacId;
-                this.speed = 1.5 * State.speed;
-            }
+            constructor(x, y, type, zodiacId = null) { this.x = x; this.y = y; this.type = type; this.zodiacId = zodiacId; this.speed = 1.5 * State.speed; }
             update() { this.y += this.speed; }
             draw() {
                 ctx.save(); ctx.translate(this.x, this.y);
                 const assetId = `item_${this.type}`;
                 if (!safeDrawImage(State.assets[assetId], -20, -20, 40, 40)) {
-                    ctx.shadowBlur = 15;
-                    if(this.type === 'bullet') { ctx.fillStyle = "#ffd700"; ctx.shadowColor = "#ffd700"; ctx.fillText("⭐", -10, 5); }
-                    if(this.type === 'health') { ctx.fillStyle = "#f44336"; ctx.shadowColor = "#f44336"; ctx.fillText("❤️", -10, 5); }
-                    if(this.type === 'wingman') { ctx.fillStyle = "#00ffff"; ctx.shadowColor = "#00ffff"; ctx.fillText("✈️", -10, 5); }
-                    if(this.type === 'zodiac') { 
-                        ctx.fillStyle = "#fff"; ctx.shadowColor = "#fff"; 
-                        ctx.font = "12px Arial"; ctx.fillText(this.zodiacId.toUpperCase(), -15, 5); 
-                    }
-                    ctx.font = "bold 20px Arial"; ctx.beginPath(); ctx.arc(0, 0, 18, 0, Math.PI*2); ctx.strokeStyle="#fff"; ctx.stroke();
+                    ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(0, 0, 18, 0, Math.PI*2); ctx.stroke();
                 }
                 ctx.restore();
             }
         }
 
         class Wingman {
-            constructor(side) {
-                this.side = side; // -1 for left, 1 for right
-            }
-            update() {
-                this.x = State.playerX + this.side * 40;
-                this.y = 520;
-            }
-            draw() {
-                if (!safeDrawImage(State.assets['wingman'], this.x-15, this.y-15, 30, 30)) {
-                    ctx.fillStyle = "#444"; ctx.beginPath(); ctx.moveTo(this.x, this.y); ctx.lineTo(this.x-10, this.y+15); ctx.lineTo(this.x+10, this.y+15); ctx.fill();
-                    ctx.fillStyle = "#00ffff"; ctx.fillRect(this.x-2, this.y-5, 4, 10);
-                }
-            }
+            constructor(side) { this.side = side; }
+            update() { this.x = State.playerX + this.side * 40; this.y = 520; }
+            draw() { if (!safeDrawImage(State.assets['wingman'], this.x-15, this.y-15, 30, 30)) { ctx.fillStyle = "#444"; ctx.fillRect(this.x-10, this.y, 20, 20); } }
             shoot() {
                 const bCfg = Config.zodiac_bullets.find(b => b.id === State.weapon) || {color:'#ffd700', id: State.weapon};
                 State.bullets.push(new Bullet(this.x, this.y, bCfg, -90, false));
@@ -509,58 +551,44 @@
         }
 
         async function load() {
-            log("正在同步星际配置...");
             try {
                 const r = await fetch('game_config.json?v=' + Date.now());
-                if (!r.ok) throw new Error("配置获取失败");
                 Config = await r.json();
                 
-                // 注册 AI 资产路径
+                // 基础资产
                 AssetManager.add('player', 'assets/planes/hero.png');
                 AssetManager.add('wingman', 'assets/planes/wingman.png');
-                
-                // 敌机类
-                ['scout', 'shooter', 'tank', 'elite'].forEach(t => {
-                    AssetManager.add(`enemy_${t}`, `assets/planes/enemy_${t}.png`);
-                });
-
-                // 子弹类
-                const zodiacs = ['rat', 'ox', 'tiger', 'rabbit', 'dragon', 'snake', 'horse', 'goat', 'monkey', 'rooster', 'dog', 'pig'];
-                zodiacs.forEach(z => AssetManager.add(`bullet_${z}`, `assets/bullets/bullet_${z}.png`));
                 AssetManager.add('bullet_enemy', 'assets/bullets/bullet_enemy.png');
                 AssetManager.add('bullet_boss', 'assets/bullets/bullet_boss.png');
-
-                // 道具类
-                ['bullet', 'health', 'wingman', 'zodiac'].forEach(t => {
-                    AssetManager.add(`item_${t}`, `assets/items/item_${t}.png`);
-                });
                 
+                // 关卡特定小怪图片 (支持 12 关 x 4 种类型)
+                const enemyTypes = ['scout', 'shooter', 'tank', 'elite'];
+                for (let l = 0; l < 12; l++) {
+                    enemyTypes.forEach(t => {
+                        AssetManager.add(`enemy_${l}_${t}`, `assets/planes/enemy_${l}_${t}.png`);
+                    });
+                }
+                // 通用小怪图片 (兜底)
+                enemyTypes.forEach(t => AssetManager.add(`enemy_${t}`, `assets/planes/enemy_${t}.png`));
+                
+                // 生肖子弹与道具
+                ['rat', 'ox', 'tiger', 'rabbit', 'dragon', 'snake', 'horse', 'goat', 'monkey', 'rooster', 'dog', 'pig'].forEach(z => {
+                    AssetManager.add(`bullet_${z}`, `assets/bullets/bullet_${z}.png`);
+                });
+                ['bullet', 'health', 'wingman', 'zodiac'].forEach(t => AssetManager.add(`item_${t}`, `assets/items/item_[type].png`));
+                
+                // Boss 多阶段图片
                 const constellations = ['aries', 'taurus', 'gemini', 'cancer', 'leo', 'virgo', 'libra', 'scorpio', 'sagittarius', 'capricorn', 'aquarius', 'pisces'];
                 constellations.forEach(name => {
-                    // 动态注册 12 个阶段的贴图
-                    for(let i=1; i<=12; i++) {
-                        AssetManager.add(`boss_${name}_phase${i}`, `assets/bosses/${name}/${name}_phase${i}.png`);
-                    }
+                    for(let i=1; i<=12; i++) AssetManager.add(`boss_${name}_phase${i}`, `assets/bosses/${name}/${name}_phase${i}.png`);
                 });
                 
-                // 🛡️ 核心修复：不再等待 AssetManager.loadAll() 阻塞主流程
-                // 我们让它在后台加载，loop 中会检查 State.assets
-                AssetManager.loadAll().then(() => log("全量资源注入完成")).catch(e => log("资源加载有缺失，使用 Canvas 渲染"));
-                
-                log("内核配置就绪");
-            } catch(e) {
-                console.error("Load Error:", e);
-                Config = {
-                    constellation_levels: [{constellation:'白羊宫', boss:{hp:500}}],
-                    zodiac_bullets: [{id:'rat', color:'#e0e0e0'}]
-                };
-                log("使用本地备份内核");
-            }
+                AssetManager.loadAll().then(() => log("资源就绪"));
+            } catch(e) { log("配置加载失败"); }
         }
 
         window.addEventListener('DOMContentLoaded', async () => {
             await load();
-            
             bind('show-select-btn', () => { showScreen('zodiac-select'); renderList(); });
             bind('show-settings-btn', () => showScreen('game-settings'));
             bind('start-btn', () => startGame(true));
@@ -568,97 +596,43 @@
             bind('back-to-start-btn', () => showScreen('start-screen'));
             bind('save-settings-btn', () => showScreen('start-screen'));
             bind('confirm-select-btn', () => showScreen('start-screen'));
-            
-            // 自动化测试绑定
-            bind('automation-test-btn', () => {
-                log("启动本地仿真测试...");
-                window.runAutoTest();
-            });
-            
-            // 绑定建议系统
-            bind('submit-feedback-btn', () => {
-                const input = document.getElementById('feedback-input');
-                const val = input.value.trim();
-                if (!val) return;
-                log(`AI 专家评审中...`);
-                setTimeout(() => {
-                    const msg = `评审通过：建议 "${val.substring(0,10)}..." 已加入进化序列`;
-                    log(msg);
-                    alert(msg); // 增加弹窗提示，确保用户感知
-                    input.value = '';
-                }, 1500);
-            });
-            
-            // 设置按钮逻辑
+            bind('automation-test-btn', () => { log("仿真启动..."); window.runAutoTest(); });
+            bind('submit-feedback-btn', () => { log("建议已收录"); document.getElementById('feedback-input').value = ''; });
             document.querySelectorAll('.setting-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const t = btn.dataset.type, v = parseFloat(btn.dataset.val);
                     document.querySelectorAll(`.setting-btn[data-type="${t}"]`).forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
-                    if(t === 'diff') State.diff = v;
-                    if(t === 'speed') State.speed = v;
-                    log(`设定: ${t}=${v}`);
+                    if(t === 'diff') State.diff = v; if(t === 'speed') State.speed = v;
                 });
             });
-
-            window.addEventListener('mousemove', e => {
-                const rect = canvas.getBoundingClientRect();
-                State.playerTargetX = (e.clientX - rect.left) * (400 / rect.width);
-            });
-
-            window.addEventListener('keydown', e => {
-                if (e.code === 'Space') triggerUltimate();
-            });
-
-            canvas.addEventListener('mousedown', () => {
-                if (State.ultimateEnergy >= State.maxUltimateEnergy) triggerUltimate();
-            });
-
+            window.addEventListener('mousemove', e => { const rect = canvas.getBoundingClientRect(); State.playerTargetX = (e.clientX - rect.left) * (400 / rect.width); });
+            window.addEventListener('keydown', e => { if (e.code === 'Space') triggerUltimate(); });
+            canvas.addEventListener('mousedown', () => { if (State.ultimateEnergy >= State.maxUltimateEnergy) triggerUltimate(); });
             initStars(); updateHUD();
-            log("内核就绪");
         });
 
         let gameLoopId = null;
         function startGame(isNew) {
-            if(isNew) { State.score = 0; State.level = 0; State.lives = 3; State.bulletLevel = 1; State.wingmen = []; State.ultimateEnergy = 0; }
-            State.gameActive = true; State.bullets = []; State.enemies = []; State.powerups = []; State.boss = null; State.frameCount = 0;
-            State.startTime = Date.now(); // 记录起始时间
-            State.isUltimateActive = false;
-            showScreen('none');
-            document.getElementById('ultimate-bar').style.display = "block";
+            if(isNew) { 
+                State.score = 0; State.level = 0; State.lives = 3; State.bulletLevel = 1; 
+                State.wingmen = []; State.ultimateEnergy = 0; 
+                State.unlockedZodiacs = ['rat']; State.weapon = 'rat';
+            }
+            State.gameActive = true; State.bullets = []; State.enemies = []; State.powerups = []; State.boss = null; State.frameCount = 0; State.startTime = Date.now();
+            showScreen('none'); document.getElementById('ultimate-bar').style.display = "block";
             if (gameLoopId) cancelAnimationFrame(gameLoopId);
             gameLoopId = requestAnimationFrame(loop);
         }
 
         function triggerUltimate() {
             if (State.ultimateEnergy < State.maxUltimateEnergy || State.isUltimateActive) return;
-            State.isUltimateActive = true; State.ultimateEnergy = 0;
-            log("释放大招！");
-            
-            // 全屏清理或强力弹幕逻辑 (根据生肖不同)
-            const duration = 200; // 帧数
-            const startFrame = State.frameCount;
-            
+            State.isUltimateActive = true; State.ultimateEnergy = 0; log("释放大招！");
+            const duration = 200; const startFrame = State.frameCount;
             const bCfg = Config.zodiac_bullets.find(b => b.id === State.weapon) || {color:'#ffd700', id: State.weapon};
-            
             const ultInterval = setInterval(() => {
-                if (State.frameCount - startFrame > duration) {
-                    State.isUltimateActive = false;
-                    clearInterval(ultInterval);
-                    return;
-                }
-                // 鼠的大招：全屏拦截
-                if (State.weapon === 'rat') {
-                    for(let i=0; i<360; i+=20) {
-                        State.bullets.push(new Bullet(State.playerX, 520, bCfg, i, false));
-                    }
-                    State.bullets = State.bullets.filter(b => !b.isEnemy); // 清理敌弹
-                } else {
-                    // 通用大招：疯狂乱射
-                    for(let i=0; i<360; i+=10) {
-                        State.bullets.push(new Bullet(State.playerX, 520, bCfg, i, false));
-                    }
-                }
+                if (State.frameCount - startFrame > duration) { State.isUltimateActive = false; clearInterval(ultInterval); return; }
+                for(let i=0; i<360; i+=20) State.bullets.push(new Bullet(State.playerX, 520, bCfg, i, false));
             }, 100);
         }
 
@@ -666,254 +640,417 @@
             if (!State.gameActive) return;
             try {
                 State.frameCount++;
+                
+                // 清屏
                 ctx.clearRect(0, 0, 400, 600);
                 
-                // 渲染心跳：在状态栏显示帧率，证明引擎在动
+                // 每60帧更新一次日志，减少DOM操作
                 if (State.frameCount % 60 === 0) {
-                    const elapsed = Math.floor((Date.now() - State.startTime) / 1000);
-                    log(`战斗中 - 计时: ${elapsed}s | 帧率: 稳定`);
-                }
-                const ultFill = document.getElementById('ultimate-fill');
-                const ultHint = document.getElementById('ultimate-hint');
-                if (ultFill && ultHint) {
-                    const percent = (State.ultimateEnergy / State.maxUltimateEnergy) * 100;
-                    ultFill.style.width = percent + "%";
-                    if (percent >= 100) {
-                        ultHint.style.display = "block";
-                        ultFill.style.background = "linear-gradient(90deg, #fff, #ffd700)";
-                    } else {
-                        ultHint.style.display = "none";
-                        ultFill.style.background = "linear-gradient(90deg, #00ffff, #ffd700)";
+                    log(`战斗中 - 计时: ${Math.floor((Date.now()-State.startTime)/1000)}s`);
+                    // 更新能量条
+                    const ultFill = document.getElementById('ultimate-fill');
+                    if (ultFill) {
+                        const percent = (State.ultimateEnergy / State.maxUltimateEnergy) * 100;
+                        ultFill.style.width = percent + "%";
                     }
                 }
                 
-                // 星空
+                // 绘制星星背景
                 ctx.fillStyle = "#fff";
                 State.stars.forEach(s => {
-                    s.y += s.sp * State.speed; if (s.y > 600) s.y = -10;
+                    s.y += s.sp * State.speed;
+                    if (s.y > 600) s.y = -10;
                     ctx.fillRect(s.x, s.y, 2, 2);
                 });
 
-                // 玩家
+                // 更新玩家位置
                 State.playerX += (State.playerTargetX - State.playerX) * 0.2;
-                const bCfg = (Config.zodiac_bullets && Config.zodiac_bullets.find(b => b.id === State.weapon)) || {color:'#e0e0e0', id: State.weapon};
-                if (!safeDrawImage(State.assets['player'], State.playerX-25, 500, 50, 50)) {
-                    ctx.fillStyle = "#1a1a1e"; ctx.beginPath(); ctx.moveTo(State.playerX, 500); ctx.lineTo(State.playerX-20, 540); ctx.lineTo(State.playerX+20, 540); ctx.fill();
-                    ctx.fillStyle = bCfg.color || "#fff"; ctx.beginPath(); ctx.arc(State.playerX, 520, 5, 0, Math.PI*2); ctx.fill();
+                
+                // 绘制玩家
+                if (State.playerHitFlash > 0) {
+                    State.playerHitFlash--;
+                    ctx.filter = "brightness(3)";
                 }
+                const bCfg = Config.zodiac_bullets.find(b => b.id === State.weapon) || {color:'#e0e0e0', id: State.weapon};
+                if (!safeDrawImage(State.assets['player'], State.playerX-25, 500, 50, 50)) {
+                    ctx.fillStyle = "#1a1a1e";
+                    ctx.fillRect(State.playerX-20, 510, 40, 40);
+                }
+                ctx.filter = "none";
 
-                // 侧翼机枪
+                // 更新和绘制僚机
                 State.wingmen.forEach(w => {
-                    w.update(); w.draw();
-                    if (State.frameCount % 20 === 0) w.shoot();
+                    w.update();
+                    w.draw();
+                    if (State.frameCount % 20 === 0) {
+                        w.shoot();
+                    }
                 });
 
-                // 生成逻辑
+                // 生成敌人
                 if (State.frameCount % Math.floor(60/State.speed) === 0 && !State.boss) {
                     const r = Math.random();
                     if(r < 0.7) State.enemies.push(new Enemy('scout'));
                     else if(r < 0.9) State.enemies.push(new Enemy('shooter'));
                     else State.enemies.push(new Enemy('tank'));
                 }
-
-                // 固定精英怪
-                if ((State.frameCount === 600 || State.frameCount === 1200) && !State.boss) {
+                if (State.frameCount % 1000 === 0 && !State.boss) {
                     State.enemies.push(new Enemy('elite'));
-                    log("精英怪出现！击败它获取生肖灵珠");
                 }
 
-                // Boss 降临
+                // 生成BOSS
                 const elapsed = (Date.now() - State.startTime) / 1000;
                 if (elapsed >= 30 && !State.boss) {
-                    const bossCfg = Config.constellation_levels ? Config.constellation_levels[State.level] : null;
+                    console.log(`尝试生成BOSS，时间: ${elapsed.toFixed(1)}s，关卡: ${State.level}`);
+                    console.log(`关卡配置数量: ${Config.constellation_levels.length}`);
+                    const bossCfg = Config.constellation_levels[State.level];
                     if (bossCfg) {
+                        console.log(`找到BOSS配置: ${bossCfg.constellation}`);
                         State.boss = new Boss(bossCfg);
-                        log(`${bossCfg.constellation} 降临！`);
+                        console.log(`BOSS生成成功: ${bossCfg.constellation}，生命值: ${State.boss.hp}`);
+                        log(`BOSS已降临：${bossCfg.constellation}！`);
+                    } else {
+                        console.log(`未找到关卡配置，当前关卡: ${State.level}`);
+                        log(`关卡配置数量: ${Config.constellation_levels.length}`);
+                    }
+                } else if (elapsed < 30) {
+                    if (State.frameCount % 120 === 0) {
+                        console.log(`等待BOSS生成，当前时间: ${elapsed.toFixed(1)}s`);
                     }
                 }
 
-                // 更新与绘制
-                [...State.bullets, ...State.enemies, ...State.powerups].forEach((obj) => {
-                    obj.update(); obj.draw();
-                });
+                // 批量更新和绘制游戏对象
+                const objects = [...State.bullets, ...State.enemies, ...State.powerups];
+                for (let i = 0; i < objects.length; i++) {
+                    objects[i].update();
+                    objects[i].draw();
+                }
 
-                // 清理越界
-                State.bullets = State.bullets.filter(b => b.y > -50 && b.y < 650 && b.x > -50 && b.x < 450);
+                // 更新粒子
+                for (let i = State.particles.length - 1; i >= 0; i--) {
+                    const p = State.particles[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.life -= 0.02;
+                    if (p.life <= 0) {
+                        State.particles.splice(i, 1);
+                    } else {
+                        ctx.save();
+                        ctx.globalAlpha = p.life;
+                        ctx.fillStyle = p.color;
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+                        ctx.fill();
+                        ctx.restore();
+                    }
+                }
+
+                // 过滤掉超出边界的对象
+                State.bullets = State.bullets.filter(b => !b.isDead && b.y > -50 && b.y < 650 && b.x > -50 && b.x < 450);
                 State.enemies = State.enemies.filter(e => e.y < 650);
                 State.powerups = State.powerups.filter(p => p.y < 650);
 
+                // 处理BOSS
                 if (State.boss) {
-                    State.boss.update(); State.boss.draw();
+                    State.boss.update();
+                    State.boss.draw();
                     document.getElementById('boss-hp-bar').style.display = "block";
                     document.getElementById('boss-hp-fill').style.width = (State.boss.hp / State.boss.maxHp * 100) + "%";
                 } else {
                     document.getElementById('boss-hp-bar').style.display = "none";
                 }
 
-                // 碰撞检测
-                // 1. 玩家子弹 vs 敌人/Boss
-                State.bullets.forEach((b, bi) => {
-                    if (!b.isEnemy) {
-                        State.enemies.forEach((e, ei) => {
-                            if (Math.hypot(b.x - e.x, b.y - e.y) < 30) {
-                                e.hp -= (1 * State.bulletLevel);
-                                b.y = -999; // 标记待清理
+                // 碰撞检测优化
+                const playerHitbox = { x: State.playerX, y: 520, radius: 25 };
+                
+                // 玩家子弹与敌人碰撞
+                for (let i = State.bullets.length - 1; i >= 0; i--) {
+                    const b = State.bullets[i];
+                    if (!b.isEnemy && !b.isDead) {
+                        let damage = (b.cfg.damage || 1) * (1 + (State.bulletLevel-1)*0.2) * (1 + State.level*0.15);
+                        
+                        // 生肖特性：暴击 (Tiger, Monkey)
+                        if ((b.cfg.id === 'tiger' || b.cfg.id === 'monkey') && Math.random() < 0.25) {
+                            damage *= 2;
+                        }
+                        // 生肖特性：距离增伤 (Tiger)
+                        if (b.cfg.id === 'tiger') {
+                            damage *= (1 + b.lifeTime * 0.01);
+                        }
+
+                        // 检测与敌人碰撞
+                        for (let j = State.enemies.length - 1; j >= 0; j--) {
+                            const e = State.enemies[j];
+                            if (Math.hypot(b.x - e.x, b.y - e.y) < 35) {
+                                e.hp -= damage;
+                                e.hitFlash = 5;
                                 
+                                // 生肖特性：击退 (Ox)
+                                if (b.cfg.id === 'ox') {
+                                    e.y -= 30;
+                                }
+                                
+                                // 生肖特性：吸血/治疗 (Goat)
+                                if (b.cfg.id === 'goat' && Math.random() < 0.08) {
+                                    State.lives = Math.min(State.lives + 1, 5);
+                                    updateHUD();
+                                    log("灵羊治愈！");
+                                }
+
+                                // 生肖特性：穿透 (Dragon, Rabbit)
+                                if (b.cfg.id === 'dragon') {
+                                    // 龙息穿透一切，不计次数
+                                } else if (b.cfg.id === 'rabbit') {
+                                    if (b.pierceCount < 3) {
+                                        b.pierceCount++;
+                                    } else {
+                                        b.isDead = true;
+                                    }
+                                } else {
+                                    b.isDead = true;
+                                }
+
                                 if (e.hp <= 0) {
-                                    if (e.type === 'elite') {
-                                        const z = State.unlockedZodiacs[Math.floor(Math.random() * State.unlockedZodiacs.length)];
-                                        State.powerups.push(new Powerup(e.x, e.y, 'zodiac', z));
+                                    // 生肖特性：爆炸 (Pig)
+                                    if (b.cfg.id === 'pig') {
+                                        createExplosion(e.x, e.y, "#e91e63");
+                                        // 爆炸伤害
+                                        for (let k = 0; k < State.enemies.length; k++) {
+                                            const o = State.enemies[k];
+                                            if (Math.hypot(o.x - e.x, o.y - e.y) < 150) {
+                                                o.hp -= damage * 0.8;
+                                                o.hitFlash = 5;
+                                            }
+                                        }
+                                    }
+                                    
+                                    // 掉落逻辑
+                                    if (e.type === 'elite' || (State.level === 0 && Math.random() < 0.3)) {
+                                        // 第一关特供：30% 概率掉落当前或下一个生肖道具，让玩家提前体验
+                                        const nextZodiac = Config.constellation_levels[State.level + 1]?.unlock_bullet || State.weapon;
+                                        const zodiacToDrop = (State.level === 0 && Math.random() < 0.5) ? 'ox' : nextZodiac;
+                                        State.powerups.push(new Powerup(e.x, e.y, 'zodiac', zodiacToDrop));
                                     } else {
                                         const r = Math.random();
-                                        if (r < 0.05) State.powerups.push(new Powerup(e.x, e.y, 'health'));
-                                        else if (r < 0.10) State.powerups.push(new Powerup(e.x, e.y, 'wingman'));
-                                        else if (r < 0.15) State.powerups.push(new Powerup(e.x, e.y, 'bullet'));
+                                        if (r < 0.05) {
+                                            State.powerups.push(new Powerup(e.x, e.y, 'health'));
+                                        } else if (r < 0.15) {
+                                            State.powerups.push(new Powerup(e.x, e.y, 'wingman'));
+                                        } else if (r < 0.25) {
+                                            State.powerups.push(new Powerup(e.x, e.y, 'bullet'));
+                                        }
                                     }
-                                    State.enemies.splice(ei, 1);
-                                    State.ultimateEnergy = Math.min(State.ultimateEnergy + (e.type === 'elite' ? 20 : 5), State.maxUltimateEnergy);
+                                    
+                                    State.enemies.splice(j, 1);
+                                    State.ultimateEnergy = Math.min(State.ultimateEnergy + (e.type === 'elite' ? 30 : 10), State.maxUltimateEnergy);
                                     State.score += (e.type === 'elite' ? 100 : 10);
                                     updateHUD();
                                 }
                             }
-                        });
-                        if (State.boss && Math.hypot(b.x - State.boss.x, b.y - State.boss.y) < 60) {
-                            State.boss.hp -= (5 * State.bulletLevel); 
-                            b.y = -999;
-                            if(State.boss.hp <= 0) { 
-                                State.boss = null; State.level++; State.score += 500; 
-                                    State.startTime = Date.now(); // 重置计时器，开启下一关的 30秒 倒计时
-                                    log("晋级！"); updateHUD(); 
-                                    if(State.level >= (Config.constellation_levels ? Config.constellation_levels.length : 0)) {
-                                        log("全秘境通关！"); endGame();
+                        }
+
+                        // 检测与BOSS碰撞
+                        if (State.boss && Math.hypot(b.x - State.boss.x, b.y - State.boss.y) < 80) {
+                            // 确保BOSS完全进入屏幕后才开始受攻击
+                            if (State.boss.y >= 0) {
+                                State.boss.hp -= damage;
+                                State.boss.hitFlash = 5;
+                                if (b.cfg.id !== 'dragon' && b.cfg.id !== 'rabbit') {
+                                    b.isDead = true;
+                                }
+                                if (State.boss.hp <= 0) {
+                                    createExplosion(State.boss.x, State.boss.y, "#ffd700", 50);
+                                    
+                                    // 解锁新生肖逻辑
+                                    const currentLevelCfg = Config.constellation_levels[State.level];
+                                    const nextLevelCfg = Config.constellation_levels[State.level + 1];
+                                    if (nextLevelCfg && nextLevelCfg.unlock_bullet) {
+                                        const newZodiac = nextLevelCfg.unlock_bullet;
+                                        if (!State.unlockedZodiacs.includes(newZodiac)) {
+                                            State.unlockedZodiacs.push(newZodiac);
+                                            State.weapon = newZodiac; // 自动切换到新解锁的生肖
+                                            log(`解锁新生肖灵力：${newZodiac}！已自动切换。`);
+                                        }
                                     }
+
+                                    State.boss = null;
+                                    State.level++;
+                                    State.score += 500;
+                                    State.startTime = Date.now(); // 重置计时器
+                                    log("秘境净化！");
+                                    updateHUD();
+                                }
                             }
                         }
-                    } else {
-                        // 敌人子弹 vs 玩家
-                        if (Math.hypot(b.x - State.playerX, b.y - 520) < 20) {
-                            b.y = 999; State.lives--; updateHUD();
-                            if(State.lives <= 0) endGame();
+                    } else if (b.isEnemy && !b.isDead) {
+                        // 敌方子弹与玩家碰撞
+                        if (Math.hypot(b.x - playerHitbox.x, b.y - playerHitbox.y) < playerHitbox.radius) {
+                            b.isDead = true;
+                            State.lives--;
+                            State.playerHitFlash = 10;
+                            updateHUD();
+                            if (State.lives <= 0) {
+                                endGame();
+                            }
                         }
-                        // 鼠的特性
+                        // 生肖特性：拦截 (Rat)
                         if (State.weapon === 'rat') {
-                            State.bullets.forEach((pb) => {
-                                if (!pb.isEnemy && Math.hypot(b.x - pb.x, b.y - pb.y) < 15) {
-                                    b.y = 999; pb.y = -999;
+                            for (let j = 0; j < State.bullets.length; j++) {
+                                const pb = State.bullets[j];
+                                if (!pb.isEnemy && !pb.isDead && Math.hypot(b.x - pb.x, b.y - pb.y) < 30) {
+                                    b.isDead = true;
+                                    pb.isDead = true;
+                                    createExplosion(b.x, b.y, "#fff", 5);
                                 }
-                            });
+                            }
                         }
-                    }
-                });
-
-                // 2. 玩家 vs 敌人/道具
-                State.enemies.forEach((e, ei) => {
-                    if (Math.hypot(e.x - State.playerX, e.y - 520) < 30) {
-                        State.enemies.splice(ei, 1); State.lives--; updateHUD();
-                        if(State.lives <= 0) endGame();
-                    }
-                });
-
-                State.powerups.forEach((p, pi) => {
-                    if (Math.hypot(p.x - State.playerX, p.y - 520) < 30) {
-                        if (p.type === 'bullet') { State.bulletLevel = Math.min(State.bulletLevel + 1, 5); log("子弹升级！"); }
-                        if (p.type === 'health') { State.lives = Math.min(State.lives + 1, 5); log("获得生命！"); }
-                        if (p.type === 'wingman') {
-                            if (State.wingmen.length === 0) State.wingmen.push(new Wingman(-1));
-                            else if (State.wingmen.length === 1) State.wingmen.push(new Wingman(1));
-                            log("侧翼支援已就位！");
-                        }
-                        if (p.type === 'zodiac') { State.weapon = p.zodiacId; log(`生肖切换: ${p.zodiacId.toUpperCase()}`); }
-                        State.powerups.splice(pi, 1); updateHUD();
-                    }
-                });
-
-                // 自动射击
-                if (State.frameCount % 10 === 0) {
-                    const spread = (State.bulletLevel - 1) * 10;
-                    for(let i=0; i<State.bulletLevel; i++) {
-                        const angle = -90 - spread/2 + (i * (spread/(State.bulletLevel-1 || 1)));
-                        State.bullets.push(new Bullet(State.playerX, 500, bCfg, angle, false));
                     }
                 }
 
+                // 敌人与玩家碰撞
+                for (let i = State.enemies.length - 1; i >= 0; i--) {
+                    const e = State.enemies[i];
+                    if (Math.hypot(e.x - playerHitbox.x, e.y - playerHitbox.y) < 30) {
+                        State.enemies.splice(i, 1);
+                        State.lives--;
+                        State.playerHitFlash = 10;
+                        updateHUD();
+                        if (State.lives <= 0) {
+                            endGame();
+                        }
+                    }
+                }
+
+                // 道具拾取
+                for (let i = State.powerups.length - 1; i >= 0; i--) {
+                    const p = State.powerups[i];
+                    if (Math.hypot(p.x - playerHitbox.x, p.y - playerHitbox.y) < 30) {
+                        if (p.type === 'bullet') {
+                            State.bulletLevel = Math.min(State.bulletLevel + 1, 5);
+                        } else if (p.type === 'health') {
+                            State.lives = Math.min(State.lives + 1, 5);
+                        } else if (p.type === 'wingman') {
+                            if (State.wingmen.length < 2) {
+                                State.wingmen.push(new Wingman(State.wingmen.length === 0 ? -1 : 1));
+                            }
+                        } else if (p.type === 'zodiac') {
+                            State.weapon = p.zodiacId;
+                            if (!State.unlockedZodiacs.includes(p.zodiacId)) {
+                                State.unlockedZodiacs.push(p.zodiacId);
+                                log(`拾取灵珠：解锁新生肖 ${p.zodiacId}！`);
+                            }
+                        }
+                        State.powerups.splice(i, 1);
+                        updateHUD();
+                    }
+                }
+
+                // 玩家射击
+                const fireRate = bCfg.fire_rate || 10;
+                if (State.frameCount % Math.floor(fireRate / State.speed) === 0) {
+                    const count = Math.min(State.bulletLevel, 5);
+                    const totalSpread = (count - 1) * 12;
+                    for (let i = 0; i < count; i++) {
+                        const angle = -90 - totalSpread/2 + (count > 1 ? (i * totalSpread/(count-1)) : 0);
+                        State.bullets.push(new Bullet(State.playerX, 500, bCfg, angle, false));
+                    }
+                }
+                
+                // 继续游戏循环
                 gameLoopId = requestAnimationFrame(loop);
             } catch (err) {
-                console.error("Game Loop Error:", err);
-                log(`内核错误: ${err.message}`);
+                console.error('Game loop error:', err);
                 State.gameActive = false;
             }
         }
 
-        function endGame() {
-            State.gameActive = false;
-            document.getElementById('game-over').classList.remove('hidden');
-            document.getElementById('final-score-display').innerText = `得分: ${State.score}`;
-        }
-
-        function updateHUD() {
-            document.getElementById('score').innerText = `得分: ${State.score}`;
-            document.getElementById('life').innerText = `❤️x${State.lives}`;
-            const lv = Config.constellation_levels[State.level];
-            document.getElementById('level-name').innerText = lv ? lv.constellation : "终焉秘境";
-        }
-
+        function endGame() { State.gameActive = false; document.getElementById('game-over').classList.remove('hidden'); document.getElementById('final-score-display').innerText = `得分: ${State.score}`; }
+        function updateHUD() { document.getElementById('score').innerText = `得分: ${State.score}`; document.getElementById('life').innerText = `❤️x${State.lives}`; const lv = Config.constellation_levels[State.level]; document.getElementById('level-name').innerText = lv ? lv.constellation : "终焉秘境"; }
         function renderList() {
-            const list = document.getElementById('zodiac-list');
-            list.innerHTML = '';
+            const list = document.getElementById('zodiac-list'); list.innerHTML = '';
             const icons = { rat: '🐀', ox: '🐂', tiger: '🐅', rabbit: '🐇', dragon: '🐉', snake: '🐍', horse: '🐎', goat: '🐐', monkey: '🐒', rooster: '🐓', dog: '🐕', pig: '🐖' };
             State.unlockedZodiacs.forEach(zId => {
-                const item = document.createElement('div');
-                item.className = `zodiac-item ${State.weapon === zId ? 'selected' : ''}`;
+                const item = document.createElement('div'); item.className = `zodiac-item ${State.weapon === zId ? 'selected' : ''}`;
                 item.innerHTML = `<div class="zodiac-icon">${icons[zId]}</div><div style="font-size:10px;">${zId}</div>`;
-                item.onclick = () => {
-                    State.weapon = zId;
-                    document.querySelectorAll('.zodiac-item').forEach(el => el.classList.remove('selected'));
-                    item.classList.add('selected');
-                };
+                item.onclick = () => { State.weapon = zId; document.querySelectorAll('.zodiac-item').forEach(el => el.classList.remove('selected')); item.classList.add('selected'); };
                 list.appendChild(item);
             });
         }
+        function initStars() { State.stars = Array.from({length:50}, () => ({ x: Math.random()*400, y: Math.random()*600, sp: Math.random()*2+1 })); }
 
-        function initStars() {
-            State.stars = Array.from({length:50}, () => ({
-                x: Math.random()*400, y: Math.random()*600, sp: Math.random()*2+1
-            }));
-        }
-
-        // 🛡️ [进化 v7.8] 自动化测试引擎
         window.runAutoTest = function() {
-            log("🧪 自动化测试启动...");
-            window.autoTestActive = true; // 暴露给无头测试工具
-            startGame(true);
-            State.lives = 99; // 测试模式无限生命
+            startGame(true); 
+            State.lives = 99; // 测试模式给予超多生命
             
-            const testInterval = setInterval(() => {
-                // 同步状态给 window 以供无头浏览器读取
-                window.score = State.score;
-                window.currentLevelIdx = State.level;
+            log("仿真启动：正在模拟真人操作...");
 
+            const simulationLoop = setInterval(() => {
                 if (!State.gameActive) {
-                    window.autoTestActive = false;
-                    clearInterval(testInterval);
+                    clearInterval(simulationLoop);
                     return;
                 }
+
+                // --- 真人操作模拟算法 (Autopilot v2.0) ---
                 
-                // 模拟人类操作
-                State.playerTargetX = 200 + Math.sin(State.frameCount * 0.05) * 150;
+                // 1. 危险感知：躲避子弹
+                let nearestDanger = null;
+                let minDist = 120; // 危险警戒半径
                 
-                // 随机触发大招
+                State.bullets.filter(b => b.isEnemy).forEach(b => {
+                    let d = Math.hypot(b.x - State.playerX, b.y - 520);
+                    if (d < minDist) {
+                        minDist = d;
+                        nearestDanger = b;
+                    }
+                });
+
+                if (nearestDanger) {
+                    // 如果子弹在左边，向右闪；反之亦然
+                    let escapeDir = nearestDanger.x < State.playerX ? 40 : -40;
+                    State.playerTargetX = Math.max(20, Math.min(380, State.playerX + escapeDir));
+                    return; // 优先级最高：生存
+                }
+
+                // 2. 收益驱动：吃道具
+                let nearestPowerup = null;
+                let minItemDist = 300;
+                State.powerups.forEach(p => {
+                    let d = Math.hypot(p.x - State.playerX, p.y - 520);
+                    if (d < minItemDist) {
+                        minItemDist = d;
+                        nearestPowerup = p;
+                    }
+                });
+
+                if (nearestPowerup) {
+                    State.playerTargetX = nearestPowerup.x;
+                    return; // 优先级第二：成长
+                }
+
+                // 3. 进攻本能：主动对准敌人
+                let targetEnemy = null;
+                if (State.boss) {
+                    targetEnemy = State.boss;
+                } else if (State.enemies.length > 0) {
+                    // 优先对准血量最少或最靠近底部的敌机
+                    targetEnemy = State.enemies.sort((a, b) => b.y - a.y)[0];
+                }
+
+                if (targetEnemy) {
+                    // 增加一点拟人化的延迟抖动，不完美对齐
+                    let jitter = (Math.random() - 0.5) * 10;
+                    State.playerTargetX = Math.max(20, Math.min(380, targetEnemy.x + jitter));
+                } else {
+                    // 闲时回归中心
+                    State.playerTargetX += (200 - State.playerX) * 0.05;
+                }
+
+                // 4. 自动大招
                 if (State.ultimateEnergy >= State.maxUltimateEnergy) {
                     triggerUltimate();
                 }
-                
-                // 自动通关逻辑 (可选)
-                if (State.level >= 1 && State.frameCount > 5000) {
-                    log("✅ 仿真测试完成");
-                    clearInterval(testInterval);
-                    State.gameActive = false;
-                    showScreen('start-screen');
-                }
-            }, 16);
+
+            }, 50); // 20Hz 的决策频率，模拟人类反应时间
         };
     </script>
 </body>
